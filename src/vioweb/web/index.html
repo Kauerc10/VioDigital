@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VioWeb — Verificador Notarial de CRLV-e e CNH</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1>VioWeb</h1>
+          <p class="subtitle">Conferência Notarial Offline de Documentos Oficiais (CRLV-e / CNH)</p>
+        </div>
+      </div>
+      <div class="system-status">
+        <span class="status-indicator"></span>
+        <span class="status-text">Motor Serpro/Vio 100% Offline</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Upload Zone -->
+      <section class="upload-section" id="upload-section">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none">
+          <div class="dropzone-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h2>Arraste o PDF ou imagem do documento aqui</h2>
+          <p class="dropzone-hint">Suporta CRLV-e e CNH Digital em PDF, PNG ou JPEG</p>
+          <div class="dropzone-actions">
+            <button class="btn btn-primary" id="btn-browse">Selecionar Arquivo</button>
+            <span class="paste-hint">ou apenas pressione <kbd>Ctrl</kbd> + <kbd>V</kbd> para colar print</span>
+          </div>
+        </div>
+
+        <div class="loading-state" id="loading-state" style="display:none">
+          <div class="spinner"></div>
+          <h3>Processando documento...</h3>
+          <p>Renderizando páginas em alta resolução e conferindo assinatura criptográfica offline</p>
+        </div>
+      </section>
+
+      <!-- Error Banner -->
+      <div class="error-banner" id="error-banner" style="display:none">
+        <div class="error-icon">⚠️</div>
+        <div class="error-details">
+          <h4 id="error-title">Erro na leitura</h4>
+          <p id="error-message">Nenhum QR Code foi detectado no arquivo enviado.</p>
+        </div>
+        <button class="btn btn-sm btn-ghost" id="btn-error-close">✕</button>
+      </div>
+
+      <!-- Result Container -->
+      <section class="result-section" id="result-section" style="display:none">
+        <div class="result-card">
+          <!-- Header do Resultado -->
+          <div class="result-header">
+            <div class="doc-badge" id="doc-type-badge">CRLV Digital</div>
+            <div class="auth-badge" id="auth-badge">
+              <span class="auth-icon">✓</span>
+              <span class="auth-text" id="auth-status-text">Documento Autêntico</span>
+            </div>
+            <div class="result-actions">
+              <button class="btn btn-secondary btn-sm" id="btn-copy-all">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copiar Ficha Completa
+              </button>
+              <button class="btn btn-ghost btn-sm" id="btn-new-check">Verificar Outro</button>
+            </div>
+          </div>
+
+          <!-- Alerta Jurídico Notarial -->
+          <div class="notary-disclaimer">
+            <strong>⚠️ Nota Notarial:</strong> A autenticidade comprovada pelo VIO atesta a legitimidade do documento no instante de sua emissão pela SENATRAN. Restrições judiciais ou alienações supervenientes (ex: Renajud) devem ser checadas na base online do Detran caso o ato notarial exija certidão atualizada.
+          </div>
+
+          <!-- Grid de Campos -->
+          <div class="fields-container" id="fields-container">
+            <!-- Inserido dinamicamente via app.js -->
+          </div>
+
+          <!-- Foto Biométrica (quando presente em CNH) -->
+          <div class="photo-container" id="photo-container" style="display:none">
+            <h4>Fotografia Biométrica</h4>
+            <div class="photo-preview" id="photo-preview"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>VioWeb — Verificação offline local em conformidade com a LGPD (Lei 13.709/18). Nenhum dado é enviado para servidores externos.</p>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast">Copiado para a área de transferência!</div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
