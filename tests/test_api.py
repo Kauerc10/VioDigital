@@ -72,3 +72,38 @@ def test_api_verify_no_qr_found():
     data = response.json()
     assert data["is_parsed"] is False
     assert data["error"] == "QR_NOT_FOUND"
+
+
+def test_api_verify_document_with_photo(rsa_material, cert_store, monkeypatch):
+    from vioweb.core import DigitalDocumentChecker
+    from vioweb.core.models import Photo, DocumentResult
+    from vioweb.core.documents.cnh import CNHData
+    from vioweb.api import app as api_module
+
+    fake_result = DocumentResult(
+        raw=b"test",
+        is_parsed=True,
+        is_authentic=True,
+        document_type="cnh",
+        document_name="CNH Digital",
+        data=CNHData(nome="CONDUTOR TESTE", cpf="12345678909", categoria="B"),
+        fields={"nome": "CONDUTOR TESTE", "cpf": "12345678909"},
+        photo=Photo(data=b"\x89PNG\r\n\x1a\nfake_png", format="PNG"),
+    )
+
+    class MockChecker:
+        def parse_file(self, content):
+            return fake_result
+
+    monkeypatch.setattr(api_module, "_checker", MockChecker())
+
+    response = client.post(
+        "/api/documents/verify",
+        files={"file": ("cnh.png", b"fakecontent", "image/png")},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_parsed"] is True
+    assert data["photo_b64"] is not None
+    assert "data:image/png;base64," in data["photo_b64"]

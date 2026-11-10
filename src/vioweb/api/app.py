@@ -74,8 +74,17 @@ def _format_result(res) -> Dict[str, Any]:
         }
 
     photo_b64 = None
-    if getattr(res, "photo", None) and res.photo.raw_bytes:
-        photo_b64 = base64.b64encode(res.photo.raw_bytes).decode("ascii")
+    photo_obj = getattr(res, "photo", None)
+    if photo_obj and getattr(photo_obj, "data", None):
+        try:
+            try:
+                png_bytes = photo_obj.to_png()
+                photo_b64 = f"data:image/png;base64,{base64.b64encode(png_bytes).decode('ascii')}"
+            except Exception:
+                fmt = (getattr(photo_obj, "format", None) or "jpeg").lower()
+                photo_b64 = f"data:image/{fmt};base64,{base64.b64encode(photo_obj.data).decode('ascii')}"
+        except Exception:
+            photo_b64 = None
 
     return {
         "is_parsed": bool(res.is_parsed),
@@ -99,6 +108,11 @@ def _format_result(res) -> Dict[str, Any]:
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "VioWeb", "version": "0.1.0"}
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    return JSONResponse(status_code=204, content=None)
 
 
 @app.post("/api/documents/verify")

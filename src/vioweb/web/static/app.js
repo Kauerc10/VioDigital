@@ -211,6 +211,17 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    const photoContainer = document.getElementById('photo-container');
+    const photoPreview = document.getElementById('photo-preview');
+    if (photoContainer && photoPreview) {
+      if (data.photo_b64) {
+        photoPreview.innerHTML = `<img src="${data.photo_b64}" alt="Foto" style="max-width: 140px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.3);">`;
+        photoContainer.style.display = 'block';
+      } else {
+        photoContainer.style.display = 'none';
+      }
+    }
+
     resultSection.style.display = 'block';
   }
 
