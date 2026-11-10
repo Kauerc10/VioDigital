@@ -77,18 +77,27 @@ class DigitalDocumentChecker:
 
         return self._process(read_qr_from_image(source), now=now)
 
-    def parse_pdf(self, path: str, *, dpi: int = 300, now: Optional[datetime] = None) -> DocumentResult:
+    def parse_pdf(
+        self, source: str | bytes, *, dpi: int = 300, now: Optional[datetime] = None
+    ) -> DocumentResult:
         from .qr import read_qr_from_pdf
 
-        return self._process(read_qr_from_pdf(path, dpi=dpi), now=now)
+        return self._process(read_qr_from_pdf(source, dpi=dpi), now=now)
 
-    def parse_file(self, path: str, *, now: Optional[datetime] = None) -> DocumentResult:
-        """Detecta PDF vs imagem pelo conteúdo e faz o parsing."""
-        with open(path, "rb") as handle:
+    def parse_file(
+        self, source: str | bytes, *, now: Optional[datetime] = None
+    ) -> DocumentResult:
+        """Detecta PDF vs imagem pelo conteúdo ou caminho e faz o parsing."""
+        if isinstance(source, (bytes, bytearray)):
+            if source.startswith(b"%PDF"):
+                return self.parse_pdf(source, now=now)
+            return self.parse_image(source, now=now)
+
+        with open(source, "rb") as handle:
             head = handle.read(5)
         if head.startswith(b"%PDF"):
-            return self.parse_pdf(path, now=now)
-        return self.parse_image(path, now=now)
+            return self.parse_pdf(source, now=now)
+        return self.parse_image(source, now=now)
 
     # ------------------------------------------------------------------ #
     # Núcleo
