@@ -16,16 +16,50 @@ from ..exceptions import ParseError
 from ..models import Envelope
 
 
+def looks_like_external_qr(data: bytes) -> bool:
+    """Identifica se os bytes do QRCode representam uma URL web ou código PIX/EMV."""
+    if not data:
+        return False
+    stripped = data.lstrip()
+    if stripped.startswith((b"http://", b"https://", b"HTTP://", b"HTTPS://", b"www.", b"WWW.")):
+        return True
+    if stripped.startswith(b"000201") and b"br.gov.bcb.pix" in stripped.lower():
+        return True
+    return False
+
+
 def _try_hex_header(data: bytes) -> tuple[int, int] | None:
     if len(data) < 10:
         return None
     try:
         head = data[:10].decode("latin-1")
+        if head.startswith("000201"):
+            return None
         timestamp = int(head[:8], 16)
         version = int(head[8:10], 16)
     except (ValueError, UnicodeDecodeError):
         return None
     return timestamp, version
+
+
+def is_vio_or_cin_qr(data: bytes) -> bool:
+    """Retorna True se o payload decodifica como um envelope VIO suportado ou JWS da CIN."""
+    if not data or len(data) < 10 or looks_like_external_qr(data):
+        return False
+    from .base import get_format
+    from .jws import looks_like_compact_jws
+
+    if looks_like_compact_jws(data):
+        return True
+    try:
+        env = parse_envelope(data)
+        fmt = get_format(env.version)
+        if fmt is None:
+            return False
+        payload = fmt.parse(env)
+        return bool(payload and payload.template_id >= 0 and (payload.field_values or payload.signature))
+    except Exception:
+        return False
 
 
 def parse_envelope(data: bytes) -> Envelope:

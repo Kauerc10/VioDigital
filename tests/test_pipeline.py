@@ -126,3 +126,73 @@ def test_pipeline_no_qr_found():
     checker = DigitalDocumentChecker()
     with pytest.raises(QRCodeNotFoundError):
         checker.parse_image(buf.getvalue())
+
+
+def test_pipeline_multi_qr_prioritizes_vio_over_url_qr(
+    rsa_material, cert_store, crlv_template_store
+):
+    """Simula um print de documento com 2 QR Codes: um Selo Digital (URL) grande
+    e o QR Code VIO denso do CRLV-e menor no canto superior direito.
+    O leitor deve ignorar a URL e extrair o envelope VIO do CRLV-e.
+    """
+    url_qr = _create_qr_image(b"https://selo.tjsc.jus.br/confere/ABC123456")
+    vio_bytes = build_multiblock_qr(
+        CRLV_FIELDS,
+        version=4,
+        template_id=70,
+        timestamp=TIMESTAMP,
+        sign=rsa_material["sign"],
+    )
+    vio_qr = _create_qr_image(vio_bytes)
+    # Redimensiona o QR VIO para simular print de tela de menor resolução
+    vio_qr_small = vio_qr.resize((220, 220), Image.Resampling.BILINEAR)
+
+    canvas = Image.new("RGB", (1000, 700), color="white")
+    canvas.paste(url_qr.resize((260, 260)), (40, 40))
+    canvas.paste(vio_qr_small, (720, 40))
+
+    buf = io.BytesIO()
+    canvas.save(buf, format="PNG")
+
+    checker = DigitalDocumentChecker(
+        certificates=cert_store, templates=crlv_template_store
+    )
+    result = checker.parse_image(buf.getvalue())
+
+    assert result.is_parsed is True
+    assert result.document_type == "crlv"
+    assert result.is_authentic is True
+    assert isinstance(result.data, CRLVData)
+    assert result.data.placa_formatada == "ABC1D23"
+
+
+def test_pipeline_external_qr_fallback():
+    """Quando a imagem contém APENAS um QR Code de URL externa (ex.: Selo Digital TJSC),
+    o sistema não deve falhar com 'versão de envelope não suportada: 115', mas retornar
+    document_type='external_qr' com diagnóstico claro.
+    """
+    url_qr = _create_qr_image(b"https://selo.tjsc.jus.br/confere?selo=XYZ987")
+    buf = io.BytesIO()
+    url_qr.save(buf, format="PNG")
+
+    checker = DigitalDocumentChecker()
+    result = checker.parse_image(buf.getvalue())
+
+    assert result.is_parsed is True
+    assert result.is_authentic is False
+    assert result.document_type == "external_qr"
+    assert "selo.tjsc.jus.br" in result.fields.get("dominio", "")
+    assert result.warnings
+
+
+def test_qr_shift_jis_recovery():
+    """Garante que bytes binários interpretados como Shift-JIS pelo libzbar sejam recuperados."""
+    from vioweb.core.qr import _decode_qr_bytes_candidates
+
+    # Sequência binária com par Shift-JIS válido (0x82 0xA0 = 'あ' em cp932)
+    original_binary = b"d\xb5\x8d\xc3\x02\x00\x04\x82\xa0\x83\x41test"
+    sjis_decoded_str = original_binary.decode("cp932")
+    zbar_utf8_bytes = sjis_decoded_str.encode("utf-8")
+
+    candidates = _decode_qr_bytes_candidates(zbar_utf8_bytes)
+    assert original_binary in candidates

@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Optional
 
 from ..models import Template
+from .atpv import ATPVData, ATPVHandler
 from .base import DocumentData, DocumentHandler
 from .cin import CINData, CINHandler
 from .cnh import CNHData, CNHHandler
@@ -37,6 +38,7 @@ def find_handler(template_id: int, template: Optional[Template]) -> DocumentHand
 
 # handlers embarcados
 register_handler(CRLVHandler())
+register_handler(ATPVHandler())
 register_handler(CNHHandler())
 register_handler(DNIHandler())
 register_handler(RGHandler())
@@ -45,6 +47,8 @@ register_handler(RGHandler())
 __all__ = [
     "DocumentData",
     "DocumentHandler",
+    "ATPVData",
+    "ATPVHandler",
     "CRLVData",
     "CRLVHandler",
     "CINData",

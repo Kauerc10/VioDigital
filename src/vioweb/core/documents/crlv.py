@@ -80,11 +80,28 @@ class CRLVData(DocumentData):
     local: Optional[str] = None
     data: Optional[str] = None
     observacoes: Optional[str] = None
+    # Aliases presentes nos templates 10, 12 e 24 (CRVe RENAVE)
+    codigo_seguranca: Optional[str] = None
+    numero_tipografico: Optional[str] = None
+    numero: Optional[str] = None
+    via: Optional[str] = None
+    capacidade: Optional[str] = None
+    capacidade_carga: Optional[str] = None
+    validade: Optional[str] = None
+    tipo_veiculo: Optional[str] = None
+    placa_anterior_uf: Optional[str] = None
+    cilindrada: Optional[str] = None
+    peso_bruto_total: Optional[str] = None
+    nome_proprietario: Optional[str] = None
+    documento_proprietario: Optional[str] = None
+    municipio_jurisdicao_veiculo: Optional[str] = None
+    uf_jurisdicao_veiculo: Optional[str] = None
+    data_emissao_crv: Optional[str] = None
 
     @property
     def proprietario(self) -> Optional[str]:
         """Alias conveniente para o nome do proprietário."""
-        return self.nome
+        return self.nome or self.nome_proprietario
 
     @property
     def placa_formatada(self) -> Optional[str]:
@@ -101,14 +118,15 @@ class CRLVData(DocumentData):
 
     @property
     def cpf_cnpj_formatado(self) -> Optional[str]:
-        if not self.cpf_cnpj:
+        raw_doc = self.cpf_cnpj or self.documento_proprietario
+        if not raw_doc:
             return None
-        digits = re.sub(r"\D", "", self.cpf_cnpj)
+        digits = re.sub(r"\D", "", raw_doc)
         if len(digits) == 11:
             return f"{digits[0:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:11]}"
         elif len(digits) == 14:
             return f"{digits[0:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
-        return self.cpf_cnpj
+        return raw_doc
 
     @property
     def renavam_formatado(self) -> Optional[str]:
@@ -132,15 +150,43 @@ class CRLVData(DocumentData):
 class CRLVHandler(DocumentHandler):
     type_name = "crlv"
     display_name = "CRLV Digital"
-    template_ids = (10, 12, 62, 70)
+    template_ids = (10, 12, 24, 62, 70)
 
     def matches(self, template_id: int, template: Optional[Template]) -> bool:
         if template_id in self.template_ids:
             return True
         if template and template.name:
             norm = template.name.strip().upper()
-            return norm in ("CRLV DIGITAL", "CRLV", "CERTIFICADO DE REGISTRO E LICENCIAMENTO DE VEÍCULO")
+            return (
+                norm in ("CRLV DIGITAL", "CRLV", "CERTIFICADO DE REGISTRO E LICENCIAMENTO DE VEÍCULO")
+                or "CRLV" in norm
+                or "CRVE" in norm
+            )
         return False
 
     def build(self, payload: RawPayload, template: Optional[Template]) -> CRLVData:
-        return map_fields(CRLVData(), payload, template, FIELD_ORDER_DEFAULT)
+        obj: CRLVData = map_fields(CRLVData(), payload, template, FIELD_ORDER_DEFAULT)  # type: ignore[assignment]
+        # Normaliza aliases dos templates 10, 12 e 24 nos campos principais
+        if not obj.nome and obj.nome_proprietario:
+            obj.nome = obj.nome_proprietario
+        if not obj.cpf_cnpj and obj.documento_proprietario:
+            obj.cpf_cnpj = obj.documento_proprietario
+        if not obj.codigo_seguranca_cla and obj.codigo_seguranca:
+            obj.codigo_seguranca_cla = obj.codigo_seguranca
+        if not obj.numero_crv and (obj.numero_tipografico or obj.numero):
+            obj.numero_crv = obj.numero_tipografico or obj.numero
+        if not obj.local and obj.municipio_jurisdicao_veiculo:
+            obj.local = obj.municipio_jurisdicao_veiculo
+        if not obj.uf and obj.uf_jurisdicao_veiculo:
+            obj.uf = obj.uf_jurisdicao_veiculo
+        if not obj.data and obj.data_emissao_crv:
+            obj.data = obj.data_emissao_crv
+        if not obj.tipo and obj.tipo_veiculo:
+            obj.tipo = obj.tipo_veiculo
+        if not obj.cilindradas and obj.cilindrada:
+            obj.cilindradas = obj.cilindrada
+        if not obj.pbt and obj.peso_bruto_total:
+            obj.pbt = obj.peso_bruto_total
+        if not obj.capacidade_maxima_carga and (obj.capacidade_carga or obj.capacidade):
+            obj.capacidade_maxima_carga = obj.capacidade_carga or obj.capacidade
+        return obj

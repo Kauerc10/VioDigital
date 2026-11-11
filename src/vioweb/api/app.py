@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from vioweb.core import DigitalDocumentChecker
+from vioweb.core.documents.atpv import ATPVData
 from vioweb.core.documents.crlv import CRLVData
 from vioweb.core.documents.cnh import CNHData
 from vioweb.core.exceptions import DigitalDocumentError, QRCodeNotFoundError
@@ -96,6 +97,36 @@ def _format_result(res) -> Dict[str, Any]:
             "acc": data_obj.acc,
             "observacoes": data_obj.observacoes,
         }
+    elif isinstance(data_obj, ATPVData):
+        formatted = {
+            "numero_atpv": data_obj.numero_atpv,
+            "placa_formatada": data_obj.placa_formatada,
+            "renavam_formatado": data_obj.renavam_formatado,
+            "chassi": data_obj.chassi,
+            "valor_venda": data_obj.valor_venda,
+            "local_venda": data_obj.local_venda,
+            "data_venda": data_obj.data_venda,
+            "numero_crv": data_obj.numero_crv,
+            "codigo_seguranca_crv": data_obj.codigo_seguranca_crv,
+            "uf_emissao_crv": data_obj.uf_emissao_crv,
+            "data_emissao_crv": data_obj.data_emissao_crv,
+            "marca_modelo": data_obj.marca_modelo,
+            "cor": data_obj.cor,
+            "ano_fabricacao_modelo": data_obj.ano_fabricacao_modelo,
+            "kilometragem_hodometro": data_obj.kilometragem_hodometro,
+            "nome_vendedor": data_obj.nome_vendedor,
+            "documento_vendedor_formatado": data_obj.documento_vendedor_formatado,
+            "email_vendedor": data_obj.email_vendedor,
+            "municipio_vendedor": data_obj.municipio_vendedor,
+            "uf_vendedor": data_obj.uf_vendedor,
+            "nome_comprador": data_obj.nome_comprador,
+            "documento_comprador_formatado": data_obj.documento_comprador_formatado,
+            "email_comprador": data_obj.email_comprador,
+            "municipio_comprador": data_obj.municipio_comprador,
+            "uf_comprador": data_obj.uf_comprador,
+        }
+    elif isinstance(res.fields, dict) and res.fields:
+        formatted = dict(res.fields)
 
     photo_b64 = None
     photo_obj = getattr(res, "photo", None)
@@ -109,6 +140,15 @@ def _format_result(res) -> Dict[str, Any]:
                 photo_b64 = f"data:image/{fmt};base64,{base64.b64encode(photo_obj.data).decode('ascii')}"
         except Exception:
             photo_b64 = None
+
+    message = None
+    if not res.is_parsed:
+        if res.errors:
+            message = "Falha ao decodificar documento: " + "; ".join(res.errors)
+        else:
+            message = "Não foi possível decodificar o envelope VIO deste QR Code."
+    elif res.warnings:
+        message = "; ".join(res.warnings)
 
     return {
         "is_parsed": bool(res.is_parsed),
@@ -127,6 +167,7 @@ def _format_result(res) -> Dict[str, Any]:
         "photo_format": photo_obj.format if photo_obj else None,
         "errors": res.errors,
         "warnings": res.warnings,
+        "message": message,
     }
 
 

@@ -115,7 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingState.style.display = 'none';
 
       if (!response.ok || !data.is_parsed) {
-        showError(data.message || 'Falha ao decodificar documento.');
+        const errDetail = data.message || (Array.isArray(data.errors) && data.errors.length ? data.errors.join(' | ') : 'Falha ao decodificar documento.');
+        showError(errDetail);
         dropzone.style.display = 'flex';
         return;
       }
@@ -158,9 +159,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderResult(data) {
-    docTypeBadge.textContent = data.document_name || (data.document_type === 'crlv' ? 'CRLV Digital' : 'CNH Digital');
+    const typeLabels = {
+      crlv: 'CRLV Digital',
+      cnh: 'CNH Digital',
+      atpv: 'ATPV-e (Intenção de Venda)',
+      cin: 'CIN (Carteira de Identidade Nacional)',
+      external_qr: 'QR Code Externo',
+    };
+    docTypeBadge.textContent = data.document_name || typeLabels[data.document_type] || 'Documento Digital';
 
-    if (data.is_authentic) {
+    if (data.document_type === 'external_qr') {
+      authBadge.className = 'auth-badge invalid';
+      authStatusText.textContent = 'QR Code Externo (Sem Assinatura VIO)';
+    } else if (data.is_authentic) {
       authBadge.className = 'auth-badge authentic';
       authStatusText.textContent = 'Documento Autêntico (Assinatura VIO Válida)';
     } else {
@@ -170,10 +181,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     documentContent.innerHTML = '';
 
+    // Exibir avisos/alertas diagnósticos se houver
+    const diagnostics = [
+      ...(Array.isArray(data.warnings) ? data.warnings : []),
+      ...(!data.is_authentic && Array.isArray(data.errors) ? data.errors : []),
+    ];
+    if (diagnostics.length > 0) {
+      const diagBox = document.createElement('div');
+      diagBox.className = 'notary-disclaimer';
+      diagBox.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+      diagBox.style.background = 'rgba(239, 68, 68, 0.08)';
+      diagBox.innerHTML = `<strong>🔎 Diagnóstico da Leitura:</strong> ${diagnostics.join(' • ')}`;
+      documentContent.appendChild(diagBox);
+    }
+
     if (data.document_type === 'cnh') {
       renderCnhLayout(data, documentContent);
     } else if (data.document_type === 'crlv') {
       renderCrlvLayout(data, documentContent);
+    } else if (data.document_type === 'atpv') {
+      renderAtpvLayout(data, documentContent);
+    } else if (data.document_type === 'external_qr') {
+      renderExternalQrLayout(data, documentContent);
     } else {
       renderGenericLayout(data, documentContent);
     }
@@ -360,6 +389,127 @@ document.addEventListener('DOMContentLoaded', () => {
       obsSection.appendChild(obsGrid);
       container.appendChild(obsSection);
     }
+  }
+
+  function renderAtpvLayout(data, container) {
+    const fmt = data.formatted || {};
+    const f = data.fields || {};
+
+    // 1. Identificação do Veículo e ATPV-e
+    const veicSection = createDocSection('Identificação do Veículo e ATPV-e', '🚗');
+    const veicGrid = document.createElement('div');
+    veicGrid.className = 'fields-grid';
+
+    const veicCards = [
+      { label: 'Placa do Veículo', val: fmt.placa_formatada || f.placa, highlight: true },
+      { label: 'Código Renavam', val: fmt.renavam_formatado || f.renavam, highlight: true },
+      { label: 'Chassi do Veículo', val: fmt.chassi || f.chassi },
+      { label: 'Marca / Modelo / Versão', val: fmt.marca_modelo || f.marca_modelo, span: 'span-2' },
+      { label: 'Ano Fabricação / Modelo', val: fmt.ano_fabricacao_modelo || `${f.ano_fabricacao || ''}/${f.ano_modelo || ''}` },
+      { label: 'Cor Predominante', val: fmt.cor || f.cor },
+      { label: 'Número da ATPV-e', val: fmt.numero_atpv || f.numero_atpv, highlight: true },
+      { label: 'Cód. Segurança CRV / CLA', val: fmt.codigo_seguranca_crv || f.codigo_seguranca_crv },
+      { label: 'Número do CRV', val: fmt.numero_crv || f.numero_crv },
+      { label: 'UF / Emissão do CRV', val: `${fmt.uf_emissao_crv || f.uf_emissao_crv || ''} - ${fmt.data_emissao_crv || f.data_emissao_crv || ''}` },
+    ];
+
+    veicCards.forEach(c => {
+      if (c.val && String(c.val).trim() && c.val !== '/' && c.val !== ' - ') {
+        veicGrid.appendChild(createFieldCard(c.label, String(c.val), c.highlight, c.span));
+      }
+    });
+    veicSection.appendChild(veicGrid);
+    container.appendChild(veicSection);
+
+    // 2. Dados da Transação e Hodômetro
+    const vendaSection = createDocSection('Dados da Venda, Local e Hodômetro', '💰');
+    const vendaGrid = document.createElement('div');
+    vendaGrid.className = 'fields-grid';
+
+    const vendaCards = [
+      { label: 'Valor Declarado da Venda', val: fmt.valor_venda || f.valor_venda, highlight: true },
+      { label: 'Data da Venda', val: fmt.data_venda || f.data_venda, highlight: true },
+      { label: 'Local / Município da Venda', val: fmt.local_venda || f.local_venda },
+      { label: 'Quilometragem / Hodômetro (km)', val: fmt.kilometragem_hodometro || f.kilometragem_hodometro },
+    ];
+
+    vendaCards.forEach(c => {
+      if (c.val && String(c.val).trim() && c.val !== ' - ') {
+        vendaGrid.appendChild(createFieldCard(c.label, String(c.val), c.highlight, c.span));
+      }
+    });
+    vendaSection.appendChild(vendaGrid);
+    container.appendChild(vendaSection);
+
+    // 3. Vendedor / Proprietário Anterior
+    const vendSection = createDocSection('Vendedor / Proprietário Anterior (Transmitente)', '📤');
+    const vendGrid = document.createElement('div');
+    vendGrid.className = 'fields-grid';
+
+    const vendCards = [
+      { label: 'Nome do Vendedor', val: fmt.nome_vendedor || f.nome_vendedor, highlight: true, span: 'span-2' },
+      { label: 'CPF / CNPJ do Vendedor', val: fmt.documento_vendedor_formatado || f.documento_vendedor, highlight: true },
+      { label: 'E-mail do Vendedor', val: fmt.email_vendedor || f.email_vendedor },
+      { label: 'Município / UF do Vendedor', val: `${fmt.uf_vendedor || f.uf_vendedor || ''} - ${fmt.municipio_vendedor || f.municipio_vendedor || ''}` },
+    ];
+
+    vendCards.forEach(c => {
+      if (c.val && String(c.val).trim() && c.val !== ' - ') {
+        vendGrid.appendChild(createFieldCard(c.label, String(c.val), c.highlight, c.span));
+      }
+    });
+    vendSection.appendChild(vendGrid);
+    container.appendChild(vendSection);
+
+    // 4. Comprador / Adquirente
+    const compSection = createDocSection('Comprador / Adquirente', '📥');
+    const compGrid = document.createElement('div');
+    compGrid.className = 'fields-grid';
+
+    const compCards = [
+      { label: 'Nome do Comprador', val: fmt.nome_comprador || f.nome_comprador, highlight: true, span: 'span-2' },
+      { label: 'CPF / CNPJ do Comprador', val: fmt.documento_comprador_formatado || f.documento_comprador, highlight: true },
+      { label: 'E-mail do Comprador', val: fmt.email_comprador || f.email_comprador },
+      { label: 'Município / UF do Comprador', val: `${fmt.uf_comprador || f.uf_comprador || ''} - ${fmt.municipio_comprador || f.municipio_comprador || ''}` },
+    ];
+
+    compCards.forEach(c => {
+      if (c.val && String(c.val).trim() && c.val !== ' - ') {
+        compGrid.appendChild(createFieldCard(c.label, String(c.val), c.highlight, c.span));
+      }
+    });
+    compSection.appendChild(compGrid);
+    container.appendChild(compSection);
+  }
+
+  function renderExternalQrLayout(data, container) {
+    const f = data.fields || {};
+    const section = createDocSection('Conteúdo do QR Code Externo (Não-VIO)', '🌐');
+    const grid = document.createElement('div');
+    grid.className = 'fields-grid';
+
+    if (f.tipo_qr_detectado) {
+      grid.appendChild(createFieldCard('Padrão Detectado', f.tipo_qr_detectado, true, 'span-2'));
+    }
+    if (f.dominio) {
+      grid.appendChild(createFieldCard('Domínio / Emissor', f.dominio));
+    }
+    if (f.url_verificacao) {
+      grid.appendChild(createFieldCard('URL Completa do QR Code', f.url_verificacao, false, 'full-width'));
+    } else if (f.conteudo_qr) {
+      grid.appendChild(createFieldCard('Conteúdo Bruto do QR Code', f.conteudo_qr, false, 'full-width'));
+    }
+
+    Object.entries(f).forEach(([key, val]) => {
+      if (['tipo_qr_detectado', 'dominio', 'url_verificacao', 'conteudo_qr'].includes(key)) return;
+      if (val && String(val).trim()) {
+        const label = key.replace(/_/g, ' ').toUpperCase();
+        grid.appendChild(createFieldCard(label, String(val)));
+      }
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
   }
 
   function renderGenericLayout(data, container) {
@@ -695,7 +845,25 @@ document.addEventListener('DOMContentLoaded', () => {
         lines.push(`GRAVAMES/OBSERVAÇÕES: ${fmt.observacoes || f.observacoes}`);
       }
       return lines.filter(Boolean).join('\n');
-    } else {
+    } else if (data.document_type === 'atpv') {
+      const lines = [
+        `=== DADOS OFICIAIS DA ATPV-e (INTENÇÃO DE VENDA / VIO) ===`,
+        `AUTENTICIDADE SERPRO/VIO: ${data.is_authentic ? 'AUTÊNTICO / ASSINATURA VÁLIDA' : 'NÃO CONFERE / INVÁLIDO'}`,
+        `Nº ATPV-e: ${fmt.numero_atpv || f.numero_atpv || ''} | CÓD. SEGURANÇA CRV: ${fmt.codigo_seguranca_crv || f.codigo_seguranca_crv || ''} | Nº CRV: ${fmt.numero_crv || f.numero_crv || ''}`,
+        `PLACA: ${fmt.placa_formatada || f.placa || ''} | RENAVAM: ${fmt.renavam_formatado || f.renavam || ''} | CHASSI: ${fmt.chassi || f.chassi || ''}`,
+        `MARCA/MODELO: ${fmt.marca_modelo || f.marca_modelo || ''} (${fmt.ano_fabricacao_modelo || `${f.ano_fabricacao || ''}/${f.ano_modelo || ''}`})`,
+        `COR: ${fmt.cor || f.cor || ''} | UF/EMISSÃO CRV: ${fmt.uf_emissao_crv || f.uf_emissao_crv || ''} - ${fmt.data_emissao_crv || f.data_emissao_crv || ''}`,
+        `VALOR DA VENDA: ${fmt.valor_venda || f.valor_venda || ''} | DATA VENDA: ${fmt.data_venda || f.data_venda || ''} | LOCAL VENDA: ${fmt.local_venda || f.local_venda || ''}`,
+        `HODÔMETRO: ${fmt.kilometragem_hodometro || f.kilometragem_hodometro || ''} km`,
+        `--- VENDEDOR (TRANSMITENTE) ---`,
+        `NOME VENDEDOR: ${fmt.nome_vendedor || f.nome_vendedor || ''}`,
+        `CPF/CNPJ VENDEDOR: ${fmt.documento_vendedor_formatado || f.documento_vendedor || ''} | E-MAIL: ${fmt.email_vendedor || f.email_vendedor || ''} | MUNICÍPIO/UF: ${fmt.municipio_vendedor || f.municipio_vendedor || ''}/${fmt.uf_vendedor || f.uf_vendedor || ''}`,
+        `--- COMPRADOR (ADQUIRENTE) ---`,
+        `NOME COMPRADOR: ${fmt.nome_comprador || f.nome_comprador || ''}`,
+        `CPF/CNPJ COMPRADOR: ${fmt.documento_comprador_formatado || f.documento_comprador || ''} | E-MAIL: ${fmt.email_comprador || f.email_comprador || ''} | MUNICÍPIO/UF: ${fmt.municipio_comprador || f.municipio_comprador || ''}/${fmt.uf_comprador || f.uf_comprador || ''}`,
+      ];
+      return lines.filter(Boolean).join('\n');
+    } else if (data.document_type === 'cnh') {
       const lines = [
         `=== DADOS OFICIAIS DA HABILITAÇÃO (CNH / VIO) ===`,
         `AUTENTICIDADE SERPRO/VIO: ${data.is_authentic ? 'AUTÊNTICO / ASSINATURA VÁLIDA' : 'NÃO CONFERE / INVÁLIDO'}`,
@@ -719,6 +887,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fmt.filiacao_pai || f.filiacao_pai) lines.push(`PAI: ${fmt.filiacao_pai || f.filiacao_pai}`);
       if (fmt.observacoes || f.observacoes) lines.push(`OBSERVAÇÕES/RESTRIÇÕES: ${fmt.observacoes || f.observacoes}`);
       return lines.filter(Boolean).join('\n');
+    } else {
+      const lines = [
+        `=== DADOS DO DOCUMENTO (${data.document_name || data.document_type || 'VIO'}) ===`,
+        `AUTENTICIDADE SERPRO/VIO: ${data.is_authentic ? 'AUTÊNTICO / ASSINATURA VÁLIDA' : 'SEM ASSINATURA VIO / EXTERNO'}`,
+      ];
+      Object.entries(f).forEach(([k, v]) => {
+        if (v && String(v).trim()) {
+          lines.push(`${k.toUpperCase()}: ${v}`);
+        }
+      });
+      return lines.join('\n');
     }
   }
 });

@@ -165,3 +165,71 @@ def test_api_verify_cnh_complete_fields(monkeypatch):
     assert fmt["data_primeira_habilitacao"] == "15/02/2013"
     assert fmt["observacoes"] == "EAR"
     assert fmt["numero_validacao_cnh"] == "99887766"
+
+
+def test_api_verify_atpv_complete_fields(monkeypatch):
+    from vioweb.core.models import DocumentResult
+    from vioweb.core.documents.atpv import ATPVData
+    from vioweb.api import app as api_module
+
+    fake_result = DocumentResult(
+        raw=b"test",
+        is_parsed=True,
+        is_authentic=True,
+        document_type="atpv",
+        document_name="ATPVe",
+        data=ATPVData(
+            numero_atpv="00012345678",
+            placa="abc1d23",
+            renavam="11223344556",
+            chassi="9BWZZZ377VT004251",
+            valor_venda="R$ 85.000,00",
+            local_venda="FLORIANOPOLIS",
+            data_venda="10/11/2026",
+            numero_crv="9876543210",
+            codigo_seguranca_crv="12345678901",
+            uf_emissao_crv="SC",
+            data_emissao_crv="05/01/2024",
+            marca_modelo="VW/T-CROSS HIGHLINE",
+            cor="CINZA",
+            ano_fabricacao="2023",
+            ano_modelo="2024",
+            kilometragem_hodometro="32500",
+            nome_vendedor="CARLOS VENDEDOR SILVA",
+            documento_vendedor="09854034976",
+            email_vendedor="carlos@email.com",
+            municipio_vendedor="FLORIANOPOLIS",
+            uf_vendedor="SC",
+            nome_comprador="MARCOS COMPRADOR SOUZA",
+            documento_comprador="12345678909",
+            email_comprador="marcos@email.com",
+            municipio_comprador="SAO JOSE",
+            uf_comprador="SC",
+        ),
+        fields={"numero_atpv": "00012345678", "placa": "ABC1D23"},
+    )
+
+    class MockChecker:
+        def parse_file(self, content):
+            return fake_result
+
+    monkeypatch.setattr(api_module, "_checker", MockChecker())
+
+    response = client.post(
+        "/api/documents/verify",
+        files={"file": ("atpv.png", b"imgcontent", "image/png")},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["document_type"] == "atpv"
+    fmt = res["formatted"]
+    assert fmt["numero_atpv"] == "00012345678"
+    assert fmt["placa_formatada"] == "ABC1D23"
+    assert fmt["renavam_formatado"] == "11223344556"
+    assert fmt["ano_fabricacao_modelo"] == "2023/2024"
+    assert fmt["valor_venda"] == "R$ 85.000,00"
+    assert fmt["nome_vendedor"] == "CARLOS VENDEDOR SILVA"
+    assert fmt["documento_vendedor_formatado"] == "098.540.349-76"
+    assert fmt["nome_comprador"] == "MARCOS COMPRADOR SOUZA"
+    assert fmt["documento_comprador_formatado"] == "123.456.789-09"

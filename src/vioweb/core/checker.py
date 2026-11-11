@@ -20,6 +20,7 @@ from .documents import find_handler
 from .documents.cin import EXPECTED_ISSUER, CINHandler
 from .exceptions import ParseError
 from .formats import get_format, parse_envelope
+from .formats.envelope import looks_like_external_qr
 from .formats.jws import looks_like_compact_jws, parse_compact_jws
 from .images import make_photo
 from .models import DocumentResult, SignatureInfo
@@ -113,10 +114,16 @@ class DigitalDocumentChecker:
         if looks_like_compact_jws(data):
             return self._process_cin(data, result, now=now)
 
+        # 0.1) QRCode externo (URL http/https, Selo Digital TJ, e-Notariado, PIX)
+        if looks_like_external_qr(data):
+            return self._process_external_qr(data, result)
+
         # 1) Envelope
         try:
             envelope = parse_envelope(data)
         except ParseError as exc:
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
             result.add_error(f"envelope inválido: {exc}")
             return result
 
@@ -127,15 +134,21 @@ class DigitalDocumentChecker:
         # 2) Formato específico da versão
         fmt = get_format(envelope.version)
         if fmt is None:
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
             result.add_error(f"versão de envelope não suportada: {envelope.version}")
             return result
 
         try:
             payload = fmt.parse(envelope)
         except ParseError as exc:
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
             result.add_error(f"falha no parsing do payload (v{envelope.version}): {exc}")
             return result
         except Exception as exc:  # noqa: BLE001
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
             result.add_error(f"erro inesperado no parsing (v{envelope.version}): {exc}")
             return result
 
@@ -188,6 +201,82 @@ class DigitalDocumentChecker:
             and result.is_authentic
             and not (result.is_expired is True)
         )
+        return result
+
+    # ------------------------------------------------------------------ #
+    # QRCode Externo (URLs de Selo Digital TJ, e-Notariado, Detran, PIX)
+    # ------------------------------------------------------------------ #
+    def _process_external_qr(
+        self, data: bytes, result: DocumentResult
+    ) -> DocumentResult:
+        """Processa QR Codes não-VIO (URLs, Selo Digital TJ, e-Notariado, PIX)
+        sem quebrar a aplicação, retornando campos estruturados e diagnóstico claro.
+        """
+        from urllib.parse import parse_qs, urlparse
+
+        try:
+            text = data.decode("utf-8").strip()
+        except UnicodeDecodeError:
+            text = data.decode("latin-1", errors="replace").strip()
+
+        result.is_parsed = True
+        result.is_authentic = False
+        result.is_valid = False
+        result.document_type = "external_qr"
+        result.header_format = "external"
+        result.fields_raw_string = text
+        result.raw_fields = [text]
+
+        fields: dict[str, str] = {"conteudo_qr": text}
+        lower = text.lower()
+
+        if lower.startswith(("http://", "https://", "www.")):
+            url_str = text if not lower.startswith("www.") else f"https://{text}"
+            parsed = urlparse(url_str)
+            host = (parsed.netloc or "").lower()
+            fields["url_verificacao"] = url_str
+            if host:
+                fields["dominio"] = host
+            if parsed.path and parsed.path != "/":
+                fields["caminho_recurso"] = parsed.path
+
+            for k, vals in parse_qs(parsed.query).items():
+                if vals:
+                    fields[f"param_{k}"] = ", ".join(vals)
+
+            if "tjsc" in host or "selo" in host or "tj" in host:
+                result.document_name = "QR Code de Selo Digital / TJ"
+                fields["tipo_qr_detectado"] = "Selo Digital de Fiscalização Judiciária"
+            elif "notariado" in host or "cenad" in host:
+                result.document_name = "QR Code e-Notariado"
+                fields["tipo_qr_detectado"] = "Validação Externa e-Notariado"
+            elif "senatran" in host or "detran" in host or "serpro" in host or "gov.br" in host:
+                result.document_name = "QR Code de Link Gov.br / Detran"
+                fields["tipo_qr_detectado"] = "Link de Consulta Online (Não-VIO)"
+            else:
+                result.document_name = "QR Code de Link Externo (URL)"
+                fields["tipo_qr_detectado"] = "URL Externa"
+
+            result.add_warning(
+                "O QR Code lido contém um link web externo (URL), e não um envelope criptográfico offline Serpro/VIO. "
+                "Caso a imagem possua dois QR Codes (ex.: QR Code do Selo Cartorário e QR Code VIO do CRLV-e/ATPV-e), "
+                "recorte ou dê zoom apenas no QR Code principal do documento veicular para validar a assinatura VIO."
+            )
+        elif "br.gov.bcb.pix" in lower or text.startswith("000201"):
+            result.document_name = "QR Code PIX (Pagamento)"
+            fields["tipo_qr_detectado"] = "BR Code / PIX (Banco Central)"
+            result.add_warning(
+                "Foi detectado um QR Code de pagamento PIX (DUA/ Taxa Detran), e não o QR Code VIO de autenticidade do documento. "
+                "Se o documento possuir outro QR Code maior (VIO/Serpro), envie um recorte focado nele."
+            )
+        else:
+            result.document_name = "QR Code de Texto / Padrão Externo"
+            fields["tipo_qr_detectado"] = "Texto plano (Sem envelope criptográfico VIO)"
+            result.add_warning(
+                "O QR Code lido contém texto simples sem envelope criptográfico Serpro/VIO."
+            )
+
+        result.fields = fields
         return result
 
     # ------------------------------------------------------------------ #
@@ -400,3 +489,17 @@ def _parse_br_date(value: Optional[str]) -> Optional[datetime]:
         except ValueError:
             continue
     return None
+
+
+def _looks_like_printable_text(data: bytes) -> bool:
+    """Retorna True se ``data`` for texto UTF-8/ASCII legível sem bytes nulos de envelope binário."""
+    if not data or len(data) < 8 or b"\x00" in data:
+        return False
+    if looks_like_external_qr(data):
+        return True
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    printable = sum(1 for ch in text if ch.isprintable() or ch in "\r\n\t")
+    return (printable / len(text)) >= 0.95

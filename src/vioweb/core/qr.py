@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from .exceptions import MissingDependencyError, QRCodeNotFoundError
+from .formats.envelope import is_vio_or_cin_qr
 
 #: Fatores de ampliação tentados em sequência até o QRCode ser decodificado.
 UPSCALE_STEPS = (1, 2, 3, 4)
@@ -30,12 +31,60 @@ UPSCALE_STEPS = (1, 2, 3, 4)
 MAX_PIXELS = 100_000_000
 
 
-def _decode_qr_bytes(raw_text_bytes: bytes) -> bytes:
-    """Converte o texto do QRCode de volta para os bytes originais."""
+def _decode_qr_bytes_candidates(raw_text_bytes: bytes) -> list[bytes]:
+    """Gera candidatos de bytes originais a partir do buffer retornado pelo zbar.
+
+    O libzbar tenta adivinhar a codificação de QRCodes em modo binário entre
+    UTF-8, ISO-8859-1 (Latin-1) e Shift-JIS (CP932), convertendo tudo para UTF-8.
+    Testamos Latin-1, CP932 e recuperação híbrida caractere a caractere.
+    """
+    candidates: list[bytes] = []
     try:
-        return raw_text_bytes.decode("utf-8").encode("latin-1")
-    except (UnicodeDecodeError, UnicodeEncodeError):
-        return raw_text_bytes
+        decoded_str = raw_text_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        return [raw_text_bytes]
+
+    # 1) Caminho padrão: libzbar interpretou os bytes como ISO-8859-1
+    try:
+        candidates.append(decoded_str.encode("latin-1"))
+    except UnicodeEncodeError:
+        pass
+
+    # 2) Caminho Shift-JIS / CP932: libzbar interpretou sequências binárias como SJIS
+    try:
+        cp932_bytes = decoded_str.encode("cp932")
+        if cp932_bytes not in candidates:
+            candidates.append(cp932_bytes)
+    except UnicodeEncodeError:
+        pass
+
+    # 3) Recuperação híbrida (caso misture codepoints <= 0xFF e CP932)
+    try:
+        out = bytearray()
+        for ch in decoded_str:
+            code = ord(ch)
+            if code <= 0xFF:
+                out.append(code)
+            else:
+                out.extend(ch.encode("cp932"))
+        hybrid = bytes(out)
+        if hybrid not in candidates:
+            candidates.append(hybrid)
+    except UnicodeEncodeError:
+        pass
+
+    if raw_text_bytes not in candidates:
+        candidates.append(raw_text_bytes)
+    return candidates
+
+
+def _decode_qr_bytes(raw_text_bytes: bytes) -> bytes:
+    """Converte o texto do QRCode de volta para os bytes originais (priorizando VIO/CIN)."""
+    candidates = _decode_qr_bytes_candidates(raw_text_bytes)
+    for cand in candidates:
+        if is_vio_or_cin_qr(cand):
+            return cand
+    return candidates[0] if candidates else raw_text_bytes
 
 
 def _import_readers():
@@ -69,13 +118,87 @@ def _scaled_variants(gray, factor: int, Image):
         yield gray.resize(size, resample)
 
 
+def _candidate_filters(scaled, ImageOps):
+    """Gera variações de contraste, nitidez e binarização para facilitar a leitura."""
+    yield scaled
+    try:
+        yield ImageOps.autocontrast(scaled)
+    except Exception:
+        pass
+
+    try:
+        from PIL import ImageFilter
+
+        sharpened = scaled.filter(ImageFilter.SHARPEN)
+        yield sharpened
+    except Exception:
+        pass
+
+    try:
+        import cv2
+        import numpy as np
+        from PIL import Image
+
+        arr = np.array(scaled)
+        _, otsu = cv2.threshold(arr, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        yield Image.fromarray(otsu)
+
+        adapt = cv2.adaptiveThreshold(
+            arr, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 5
+        )
+        yield Image.fromarray(adapt)
+    except Exception:
+        pass
+
+
+def _region_crops(gray):
+    """Recorta quadrantes estratégicos onde QRCodes de CRLV-e, CNH e ATPV-e costumam ficar."""
+    w, h = gray.width, gray.height
+    if w < 200 or h < 200:
+        return
+    # Canto superior direito (padrão CRLV-e e ATPV-e), superior esquerdo, metade superior e centro
+    boxes = [
+        (int(w * 0.40), 0, w, int(h * 0.60)),
+        (0, 0, int(w * 0.65), int(h * 0.60)),
+        (0, 0, w, int(h * 0.55)),
+        (int(w * 0.15), int(h * 0.15), int(w * 0.85), int(h * 0.85)),
+        (0, int(h * 0.45), w, h),
+    ]
+    for box in boxes:
+        try:
+            yield gray.crop(box)
+        except Exception:
+            continue
+
+
 def decode_qr(image, *, upscale_steps: tuple[int, ...] = UPSCALE_STEPS) -> Optional[bytes]:
-    """Decodifica o primeiro QRCode de uma ``PIL.Image``."""
+    """Decodifica o QRCode principal de uma ``PIL.Image``, priorizando envelopes VIO/CIN."""
+    fallback_non_vio: Optional[bytes] = None
+
     try:
         Image, ImageOps, decode, ZBarSymbol = _import_readers()
+        # Se a imagem possuir canal alpha transparente (comum em prints recortados), compõe em fundo branco
+        if getattr(image, "mode", None) in ("RGBA", "LA") or (
+            getattr(image, "mode", None) == "P" and "transparency" in getattr(image, "info", {})
+        ):
+            rgba = image.convert("RGBA")
+            bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+            image = Image.alpha_composite(bg, rgba).convert("RGB")
+
         gray = image if image.mode == "L" else ImageOps.grayscale(image)
         base_pixels = gray.width * gray.height
 
+        def _scan_symbols(found_symbols) -> Optional[bytes]:
+            nonlocal fallback_non_vio
+            for sym in found_symbols:
+                for cand in _decode_qr_bytes_candidates(sym.data):
+                    if is_vio_or_cin_qr(cand):
+                        return cand
+                    if fallback_non_vio is None:
+                        fallback_non_vio = cand
+            return None
+
+        # Passada 1: Escalonamento progressivo na imagem inteira (rápida: normal + autocontrast)
         for factor in upscale_steps:
             if factor > 1 and base_pixels * factor * factor > MAX_PIXELS:
                 break
@@ -84,7 +207,35 @@ def decode_qr(image, *, upscale_steps: tuple[int, ...] = UPSCALE_STEPS) -> Optio
                 for candidate in (scaled, ImageOps.autocontrast(scaled)):
                     found = decode(candidate, symbols=[ZBarSymbol.QRCODE])
                     if found:
-                        return _decode_qr_bytes(found[0].data)
+                        hit = _scan_symbols(found)
+                        if hit is not None:
+                            return hit
+
+        # Passada 2: Filtros avançados (nitidez, Otsu, limiar adaptativo) em 1x e 2x
+        for factor in (1, 2):
+            if factor > 1 and base_pixels * factor * factor > MAX_PIXELS:
+                break
+            for scaled in _scaled_variants(gray, factor, Image):
+                for candidate in _candidate_filters(scaled, ImageOps):
+                    found = decode(candidate, symbols=[ZBarSymbol.QRCODE])
+                    if found:
+                        hit = _scan_symbols(found)
+                        if hit is not None:
+                            return hit
+
+        # Passada 3: Recorte de quadrantes com ampliação (ideal para prints de tela inteira)
+        for crop in _region_crops(gray):
+            crop_pixels = crop.width * crop.height
+            for factor in (2, 3):
+                if crop_pixels * factor * factor > MAX_PIXELS:
+                    continue
+                for scaled in _scaled_variants(crop, factor, Image):
+                    for candidate in _candidate_filters(scaled, ImageOps):
+                        found = decode(candidate, symbols=[ZBarSymbol.QRCODE])
+                        if found:
+                            hit = _scan_symbols(found)
+                            if hit is not None:
+                                return hit
     except Exception:
         gray = image if getattr(image, "mode", None) == "L" else image.convert("L")
 
@@ -97,11 +248,15 @@ def decode_qr(image, *, upscale_steps: tuple[int, ...] = UPSCALE_STEPS) -> Optio
         detector = cv2.QRCodeDetector()
         val, points, _ = detector.detectAndDecode(np_img)
         if val:
-            return _decode_qr_bytes(val.encode("latin-1"))
+            cand = _decode_qr_bytes(val.encode("latin-1"))
+            if is_vio_or_cin_qr(cand):
+                return cand
+            if fallback_non_vio is None:
+                fallback_non_vio = cand
     except Exception:
         pass
 
-    return None
+    return fallback_non_vio
 
 
 def _open_image(source: Union[bytes, bytearray, str, Path]):
@@ -135,11 +290,13 @@ def _not_found_message(image) -> str:
 
 
 def read_qr_from_pdf(source: Union[str, Path, bytes, bytearray], *, dpi: int = 300) -> bytes:
-    """Lê o primeiro QRCode de um PDF (caminho ou bytes), renderizando as páginas em memória."""
+    """Lê o QRCode principal de um PDF (caminho ou bytes), priorizando envelopes VIO/CIN."""
     try:
         import fitz  # PyMuPDF
     except ImportError:
         fitz = None
+
+    fallback_non_vio: Optional[bytes] = None
 
     if fitz is not None:
         from PIL import Image
@@ -150,19 +307,43 @@ def read_qr_from_pdf(source: Union[str, Path, bytes, bytearray], *, dpi: int = 3
             doc = fitz.open(str(source))
 
         try:
+            # 1) Tenta primeiro extrair imagens embutidas diretamente nas páginas (muito rápido e sem perda)
+            for page in doc:
+                try:
+                    for img_info in page.get_images(full=True):
+                        xref = img_info[0]
+                        base_img = doc.extract_image(xref)
+                        if base_img and base_img.get("image"):
+                            pil_img = Image.open(io.BytesIO(base_img["image"]))
+                            data = decode_qr(pil_img)
+                            if data is not None:
+                                if is_vio_or_cin_qr(data):
+                                    return data
+                                if fallback_non_vio is None:
+                                    fallback_non_vio = data
+                except Exception:
+                    continue
+
+            # 2) Renderiza cada página em alta resolução (300 DPI e 600 DPI)
             for render_dpi in (dpi, dpi * 2):
                 zoom = render_dpi / 72
                 matrix = fitz.Matrix(zoom, zoom)
                 for page in doc:
-                    pixmap = page.get_pixmap(matrix=matrix)
+                    pixmap = page.get_pixmap(matrix=matrix, alpha=False)
                     image = Image.frombytes(
                         "RGB", (pixmap.width, pixmap.height), pixmap.samples
                     )
                     data = decode_qr(image)
                     if data is not None:
-                        return data
+                        if is_vio_or_cin_qr(data):
+                            return data
+                        if fallback_non_vio is None:
+                            fallback_non_vio = data
         finally:
             doc.close()
+
+        if fallback_non_vio is not None:
+            return fallback_non_vio
         raise QRCodeNotFoundError("nenhum QRCode encontrado no PDF")
 
     # fallback: pdf2image
@@ -182,5 +363,11 @@ def read_qr_from_pdf(source: Union[str, Path, bytes, bytearray], *, dpi: int = 3
         for image in images:
             data = decode_qr(image)
             if data is not None:
-                return data
+                if is_vio_or_cin_qr(data):
+                    return data
+                if fallback_non_vio is None:
+                    fallback_non_vio = data
+
+    if fallback_non_vio is not None:
+        return fallback_non_vio
     raise QRCodeNotFoundError("nenhum QRCode encontrado no PDF")
