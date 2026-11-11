@@ -3,7 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VioWeb — Validação Oficial de Documentos (CRLV-e, CNH e ATPV-e)</title>
+  <title>VioWeb — Validador Oficial Gratuito de QR Code VIO (CRLV-e, CNH, ATPV-e, CIN e TIE)</title>
+  <meta name="description" content="Valide e decodifique gratuitamente documentos oficiais brasileiros com QR Code Serpro/VIO e CIN direto no computador: CRLV-e, CNH Digital e Física (com foto), ATPV-e, CIN/Novo RG, TIE Marinha e +160 documentos. Leitura por PDF, Ctrl+V ou Webcam.">
+  <meta name="keywords" content="validar qr code crlv no pc, ler qr code cnh computador, validar atpv-e cartorio gratis, leitor vio serpro web, validar cin novo rg, validar tie marinha qr code, conferencia notarial crlv cnh, decodificador vio open source">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://vioweb.vercel.app/">
+
+  <!-- OpenGraph / WhatsApp / Redes Sociais -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="VioWeb — Conferência Criptográfica de Documentos">
+  <meta property="og:title" content="VioWeb — Validador Gratuito de CRLV-e, CNH, ATPV-e e +160 Documentos VIO no PC">
+  <meta property="og:description" content="Sistema gratuito e Open Source para cartórios, despachantes e cidadãos. Arraste o PDF, cole print (Ctrl+V) ou use a webcam do PC para validar a assinatura digital Serpro/SENATRAN.">
+  <meta property="og:url" content="https://vioweb.vercel.app/">
+
+  <!-- Dados Estruturados JSON-LD para Google Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "VioWeb",
+    "url": "https://vioweb.vercel.app/",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web, Windows, macOS, Linux",
+    "isAccessibleForFree": true,
+    "license": "https://opensource.org/licenses/MIT",
+    "description": "Verificador e decodificador criptográfico gratuito de documentos oficiais brasileiros baseados no padrão Serpro/VIO e CIN (CRLV-e, CNH Digital, ATPV-e, CIN, TIE Marinha, CRAF e Carteiras Profissionais) para uso em computadores de cartórios e empresas.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    }
+  }
+  </script>
+
   <link rel="stylesheet" href="/static/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,6 +64,14 @@
       <nav class="header-nav">
         <button type="button" class="nav-link-btn" id="btn-header-upload">ENVIAR ARQUIVO</button>
         <button type="button" class="nav-link-btn" id="btn-header-camera">LER COM CÂMERA</button>
+        <button type="button" class="nav-link-btn" id="btn-header-api">API PARA SISTEMAS</button>
+        <button type="button" class="nav-link-btn nav-link-highlight" id="btn-header-pix">APOIAR PROJETO</button>
+        <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="nav-github-link" title="Projeto Open Source no GitHub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>Open Source</span>
+        </a>
       </nav>
     </div>
   </header>
@@ -50,7 +91,7 @@
             </svg>
           </div>
           <h2>Validação de Documentos Oficiais</h2>
-          <p class="dropzone-hint">Arraste o PDF ou imagem do documento (CRLV-e, CNH Digital, ATPV-e ou CIN), cole uma captura de tela ou utilize a webcam para leitura direta do documento físico.</p>
+          <p class="dropzone-hint">Arraste o PDF ou imagem do documento (CRLV-e, CNH, ATPV-e, CIN, TIE Marinha e +160 modelos VIO), cole uma captura de tela ou utilize a webcam para leitura direta do documento físico.</p>
 
           <div class="dropzone-actions">
             <div class="action-buttons-row">
@@ -174,11 +215,174 @@
           <div id="document-content"></div>
         </div>
       </section>
+
+      <!-- Community Open Source, PIX & API Banner -->
+      <section class="community-strip" aria-label="Projeto Open Source e Apoio Comunitário">
+        <div class="community-strip-text">
+          <div class="community-strip-title">
+            <span class="community-pill">100% GRATUITO &amp; OPEN SOURCE</span>
+            <h3>De um Cartório para a Comunidade</h3>
+          </div>
+          <p>
+            O <strong>VioWeb</strong> foi criado para eliminar a necessidade de usar celulares pessoais no balcão ou pagar taxas por documento validado. Mantemos este sistema aberto e livre para todos os cartórios, despachantes e cidadãos.
+          </p>
+        </div>
+        <div class="community-strip-actions">
+          <button type="button" class="btn btn-outline-primary btn-sm" id="btn-open-pix-modal">
+            Apoiar Projeto (PIX)
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-open-api-modal">
+            API para Sistemas
+          </button>
+          <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">
+            GitHub Oficial
+          </a>
+        </div>
+      </section>
+
+      <!-- Collapsible SEO Catalog & FAQ Section -->
+      <section class="seo-faq-section" id="seo-faq-section" aria-label="Documentos Suportados e Perguntas Frequentes">
+        <details class="seo-accordion">
+          <summary>Catálogo Completo: Quais documentos oficiais o VioWeb lê e valida? (161 Modelos Serpro/VIO + CIN)</summary>
+          <div class="seo-accordion-body">
+            <p>O motor criptográfico do VioWeb embarca o dicionário oficial de <strong>161 templates do Serpro/VIO</strong> e as chaves públicas da <strong>Carteira de Identidade Nacional (CIN)</strong>, decodificando texto e fotografia biométrica BPG:</p>
+            <div class="seo-catalog-grid">
+              <div class="seo-catalog-item">
+                <h4>1. Trânsito e Veículos (SENATRAN / DETRAN / PRF)</h4>
+                <p>CRLV-e Digital (Templates 10, 12, 62, 70), CRV-e RENAVE (Template 24), CNH Digital e Física com Foto Biométrica (Templates 2, 4, 83), ATPV-e — Intenção de Venda (Template 43), Placa Veicular Mercosul (11, 17), Credencial de Estacionamento Idoso/PcD (95, 162), Boletim de Acidente PRF (50, 51) e Carteira de Instrutor (237).</p>
+              </div>
+              <div class="seo-catalog-item">
+                <h4>2. Identificação Civil Nacional</h4>
+                <p>CIN — Carteira de Identidade Nacional / Novo RG (padrão JWS ES512 ICP-Brasil), RG Digital Estadual (91, 92), DNI — Documento Nacional de Identidade (8, 9, 73), CPF Digital (25) e Identidade Estudantil MEC (23, 236).</p>
+              </div>
+              <div class="seo-catalog-item">
+                <h4>3. Marinha do Brasil / Embarcações (DPC)</h4>
+                <p>TIE — Título de Inscrição de Embarcação PF e PJ (Templates 116, 118 — 34 campos para escrituras e transferências náuticas), CHA — Carteira de Habilitação de Amador e Motonauta (97, 104, 110) e Certificados DPC (141, 151, 167).</p>
+              </div>
+              <div class="seo-catalog-item">
+                <h4>4. Exército, Armas (SFPC) e Segurança Pública</h4>
+                <p>CRAF — Certificado de Registro de Arma de Fogo (52), Guia de Tráfego do Exército (53), Identidades Militares do Exército (108) e FAB (79), além de Identidades Funcionais de Polícia, Bombeiros, PM e Guardas Municipais.</p>
+              </div>
+              <div class="seo-catalog-item">
+                <h4>5. Conselhos Profissionais e Funcional</h4>
+                <p>Carteiras Profissionais do CREA (PR, RS, RN, SE, CE, TO, AL), CRA (incluindo CRA-SC, CRA-SP, CRA-RS, CRA-PR, CRA-ES, CRA-BA), CREF, CREFITO, CFN, CONFERP, Magistrados (TJ), Ministério Público (MP) e Defensoria Pública (DPE).</p>
+              </div>
+              <div class="seo-catalog-item">
+                <h4>6. Saúde, Trabalho e Administração Federal</h4>
+                <p>Atestado Médico Digital do Ministério da Saúde (31), CAT — Comunicação de Acidente de Trabalho (229) e Extratos CAUC, SICONFI e Nota CAPAG do Tesouro Nacional.</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="seo-accordion">
+          <summary>Como validar QR Code de CRLV-e, CNH Digital e ATPV-e no computador sem usar celular?</summary>
+          <div class="seo-accordion-body">
+            <p>Você pode validar qualquer documento oficial em segundos diretamente no PC de três maneiras: <strong>(1) Arrastando o PDF ou imagem</strong> recebido por WhatsApp Web ou e-mail; <strong>(2) Pressionando Ctrl + V</strong> após tirar um print da tela do documento; ou <strong>(3) Clicando em "Ler com Webcam"</strong> e apontando o documento físico impresso para a câmera do computador. O VioWeb extrai os campos, exibe a foto biométrica 3x4 e permite copiar toda a ficha para o sistema do cartório em um clique.</p>
+          </div>
+        </details>
+
+        <details class="seo-accordion">
+          <summary>A validação criptográfica do VioWeb é segura e está em conformidade com a LGPD?</summary>
+          <div class="seo-accordion-body">
+            <p>Sim. A verificação matemática da assinatura digital (ECDSA/RSA) utiliza exclusivamente as chaves públicas oficiais do Serpro/SENATRAN/ICP-Brasil. Nenhum documento, foto ou dado pessoal é comercializado ou retido em bancos de dados externos, atendendo rigorosamente à Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Além disso, o código-fonte é 100% auditável no GitHub e pode ser executado localmente na rede interna do cartório.</p>
+          </div>
+        </details>
+      </section>
     </main>
 
     <footer class="app-footer">
-      <p>VioWeb — Conferência Criptográfica Offline de Documentos Oficiais em conformidade com a LGPD (Lei nº 13.709/2018).</p>
+      <p>
+        VioWeb — Conferência Criptográfica de Documentos Oficiais em conformidade com a LGPD (Lei nº 13.709/2018) ·
+        <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer">Código Aberto (MIT)</a> ·
+        <button type="button" class="footer-link-btn" id="btn-footer-pix">Apoiar com PIX</button> ·
+        <button type="button" class="footer-link-btn" id="btn-footer-api">API Comercial</button>
+      </p>
     </footer>
+  </div>
+
+  <!-- Modal: Apoiar Projeto via PIX -->
+  <div class="modal-backdrop" id="modal-pix" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-pix-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="community-pill">APOIO COMUNITÁRIO</span>
+          <h3 id="modal-pix-title">Apoie o VioWeb e Mantenha o Sistema Gratuito</h3>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-close-pix-modal" aria-label="Fechar modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Enquanto plataformas comerciais cobram mensalidades ou taxas por cada documento consultado, o <strong>VioWeb</strong> foi criado para ser <strong>100% gratuito e aberto</strong> para todos os escreventes, cartórios, despachantes e cidadãos.
+        </p>
+        <p>
+          Se a ferramenta economiza tempo e custos no seu balcão ou escritório, considere fazer uma contribuição voluntária via PIX para ajudar a manter o domínio e a infraestrutura online:
+        </p>
+
+        <div class="pix-box">
+          <div class="pix-qr-placeholder" id="pix-qr-container">
+            <img src="/static/pix-qrcode.png" alt="QR Code PIX de Doação" id="pix-qr-img" onerror="this.style.display='none'; document.getElementById('pix-qr-fallback').style.display='flex';">
+            <div class="pix-qr-fallback" id="pix-qr-fallback">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              <span>QR Code PIX em configuração</span>
+            </div>
+          </div>
+          <div class="pix-details">
+            <span class="field-label">CHAVE PIX / APOIO AO PROJETO</span>
+            <code class="pix-key-code" id="pix-key-value">Em breve (acompanhe em github.com/Kauerc10/VioWeb)</code>
+            <div class="pix-actions">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-copy-pix">
+                COPIAR CHAVE PIX
+              </button>
+              <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+                DAR ESTRELA NO GITHUB
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: API Comercial para Sistemas e Empresas -->
+  <div class="modal-backdrop" id="modal-api" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-api-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="community-pill">INTEGRAÇÃO B2B &amp; ERPs NOTARIAIS</span>
+          <h3 id="modal-api-title">API VioWeb para Cartórios, Despachantes e Empresas</h3>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-close-api-modal" aria-label="Fechar modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>
+          O uso do <strong>VioWeb</strong> pelo navegador é e continuará sendo <strong>100% gratuito</strong>. Para softwares de gestão notarial (ERPs de cartórios), plataformas de despachantes, locadoras de veículos, seguradoras e bancos que desejam automatizar a leitura e validação em lote, disponibilizamos opções de integração dedicada via <strong>API REST</strong>:
+        </p>
+        <ul class="api-feature-list">
+          <li><strong>Extração e Validação em Milissegundos:</strong> envie PDF ou imagem via <code>POST /api/documents/verify</code> e receba JSON estruturado com status criptográfico ICP-Brasil/SENATRAN, campos formatados e foto biométrica convertida em PNG/Base64.</li>
+          <li><strong>Suporte aos 161 Templates VIO + CIN:</strong> CRLV-e, CNH, ATPV-e, CIN, TIE Marinha, CRAF e Carteiras Profissionais.</li>
+          <li><strong>Implantação Cloud ou On-Premise (Self-Hosted):</strong> rode na nuvem com SLA dedicado ou dentro da infraestrutura privada da sua empresa para conformidade total com a LGPD.</li>
+        </ul>
+        <pre class="api-code-sample">POST /api/documents/verify
+{
+  "is_authentic": true,
+  "document_type": "crlv",
+  "template_name": "CRLV Digital",
+  "formatted": {
+    "placa_formatada": "ABC1D23",
+    "renavam_formatado": "01122334455",
+    "cpf_cnpj_formatado": "123.456.789-09"
+  }
+}</pre>
+        <div class="modal-footer-actions">
+          <a href="https://github.com/Kauerc10/VioWeb/issues" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            SOLICITAR ACESSO COMERCIAL / CONTATO NO GITHUB
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast">Copiado para a área de transferência</div>

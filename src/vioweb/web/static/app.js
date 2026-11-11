@@ -123,8 +123,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Keyboard shortcuts for camera mode (Space = capture now, Esc = close camera)
+  // Keyboard shortcuts for camera mode and modals
+  const modalPix = document.getElementById('modal-pix');
+  const modalApi = document.getElementById('modal-api');
+  const btnHeaderPix = document.getElementById('btn-header-pix');
+  const btnOpenPixModal = document.getElementById('btn-open-pix-modal');
+  const btnFooterPix = document.getElementById('btn-footer-pix');
+  const btnClosePixModal = document.getElementById('btn-close-pix-modal');
+  const btnCopyPix = document.getElementById('btn-copy-pix');
+  const pixKeyValue = document.getElementById('pix-key-value');
+
+  const btnHeaderApi = document.getElementById('btn-header-api');
+  const btnOpenApiModal = document.getElementById('btn-open-api-modal');
+  const btnFooterApi = document.getElementById('btn-footer-api');
+  const btnCloseApiModal = document.getElementById('btn-close-api-modal');
+
+  function openModal(modalEl) {
+    if (modalEl) modalEl.style.display = 'flex';
+  }
+  function closeModal(modalEl) {
+    if (modalEl) modalEl.style.display = 'none';
+  }
+
+  [btnHeaderPix, btnOpenPixModal, btnFooterPix].forEach(btn => {
+    if (btn) btn.addEventListener('click', () => openModal(modalPix));
+  });
+  if (btnClosePixModal) btnClosePixModal.addEventListener('click', () => closeModal(modalPix));
+  if (modalPix) {
+    modalPix.addEventListener('click', (e) => {
+      if (e.target === modalPix) closeModal(modalPix);
+    });
+  }
+  if (btnCopyPix && pixKeyValue) {
+    btnCopyPix.addEventListener('click', () => {
+      copyToClipboard(pixKeyValue.textContent.trim(), 'Chave PIX copiada para a área de transferência');
+    });
+  }
+
+  [btnHeaderApi, btnOpenApiModal, btnFooterApi].forEach(btn => {
+    if (btn) btn.addEventListener('click', () => openModal(modalApi));
+  });
+  if (btnCloseApiModal) btnCloseApiModal.addEventListener('click', () => closeModal(modalApi));
+  if (modalApi) {
+    modalApi.addEventListener('click', (e) => {
+      if (e.target === modalApi) closeModal(modalApi);
+    });
+  }
+
   window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (modalPix && modalPix.style.display !== 'none') {
+        closeModal(modalPix);
+        return;
+      }
+      if (modalApi && modalApi.style.display !== 'none') {
+        closeModal(modalApi);
+        return;
+      }
+    }
     if (cameraPanel.style.display !== 'none') {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -793,21 +849,103 @@ document.addEventListener('DOMContentLoaded', () => {
     container.appendChild(section);
   }
 
+  const GENERIC_FIELD_LABELS = {
+    nome: 'Nome / Titular',
+    nome_civil: 'Nome Civil',
+    nome_social: 'Nome Social',
+    cpf: 'CPF',
+    cnpj: 'CNPJ',
+    cpf_cnpj: 'CPF / CNPJ',
+    rg: 'RG / Identidade',
+    identidade: 'Documento de Identidade',
+    data_nascimento: 'Data de Nascimento',
+    dn: 'Data de Nascimento',
+    data_emissao: 'Data de Emissão',
+    data_validade: 'Data de Validade',
+    validade: 'Validade',
+    filiacao_mae: 'Filiação (Mãe)',
+    filiacao_pai: 'Filiação (Pai)',
+    naturalidade: 'Naturalidade',
+    nacionalidade: 'Nacionalidade',
+    orgao_expedidor: 'Órgão Expedidor',
+    uf: 'UF',
+    municipio: 'Município',
+    placa: 'Placa Mercosul / Veículo',
+    renavam: 'Código RENAVAM',
+    chassi: 'Chassi',
+    nome_embarcacao: 'Nome da Embarcação',
+    numero_inscricao: 'Nº de Inscrição (Marinha / TIE)',
+    capitania: 'Capitania / Delegacia / Agência',
+    tipo_embarcacao: 'Tipo de Embarcação',
+    area_navegacao: 'Área de Navegação',
+    arqueacao_bruta: 'Arqueação Bruta (AB)',
+    registro_profissional: 'Registro Profissional',
+    numero_registro: 'Número de Registro',
+    inscricao: 'Número de Inscrição',
+    matricula: 'Matrícula Funcional',
+    cargo: 'Cargo / Função',
+    funcao: 'Função',
+    lotacao: 'Lotação',
+    conselho: 'Conselho / Órgão Emissor',
+    titulo_profissional: 'Título Profissional',
+    sigma: 'Nº SIGMA (Exército)',
+    especie_arma: 'Espécie da Arma',
+    marca_arma: 'Marca da Arma',
+    calibre: 'Calibre',
+    numero_serie: 'Número de Série',
+  };
+
+  function humanizeFieldKey(key) {
+    const k = String(key || '').toLowerCase();
+    if (GENERIC_FIELD_LABELS[k]) return GENERIC_FIELD_LABELS[k];
+    return String(key || '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, ch => ch.toUpperCase());
+  }
+
   function renderGenericLayout(data, container) {
-    const f = data.fields || {};
-    const section = createDocSection('Campos Extraídos do Documento');
+    const f = (data.formatted && Object.keys(data.formatted).length) ? data.formatted : (data.fields || {});
+    const docTitle = data.document_name || data.template_name || 'Documento Oficial VIO';
+    const section = createDocSection(`Dados Extraídos — ${docTitle}`);
     const grid = document.createElement('div');
     grid.className = 'fields-grid';
 
+    const highlightKeys = new Set([
+      'nome', 'cpf', 'cnpj', 'cpf_cnpj', 'placa', 'renavam',
+      'numero_inscricao', 'nome_embarcacao', 'registro_profissional',
+      'numero_registro', 'matricula', 'sigma',
+    ]);
+
     Object.entries(f).forEach(([key, val]) => {
+      if (key === '_extras') return;
       if (val && String(val).trim()) {
-        const label = key.replace(/_/g, ' ').toUpperCase();
-        grid.appendChild(createFieldCard(label, String(val)));
+        const label = humanizeFieldKey(key);
+        const isHighlight = highlightKeys.has(key.toLowerCase());
+        const span = (key.toLowerCase().includes('nome') || String(val).length > 36) ? 'span-2' : '';
+        grid.appendChild(createFieldCard(label, String(val), isHighlight, span));
       }
     });
 
     section.appendChild(grid);
-    container.appendChild(section);
+
+    if (data.photo_b64) {
+      const mainLayout = document.createElement('div');
+      mainLayout.className = 'cnh-main-layout';
+
+      const fieldsCol = document.createElement('div');
+      fieldsCol.className = 'cnh-fields-col';
+      fieldsCol.appendChild(section);
+
+      const photoCol = document.createElement('div');
+      photoCol.className = 'cnh-photo-col';
+      photoCol.appendChild(createPhotoShowcase(data.photo_b64, data.photo_format));
+
+      mainLayout.appendChild(fieldsCol);
+      mainLayout.appendChild(photoCol);
+      container.appendChild(mainLayout);
+    } else {
+      container.appendChild(section);
+    }
   }
 
   function createPhotoShowcase(photoB64, photoFormat) {
@@ -1156,13 +1294,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fmt.observacoes || f.observacoes) lines.push(`OBSERVAÇÕES/RESTRIÇÕES: ${fmt.observacoes || f.observacoes}`);
       return lines.filter(Boolean).join('\n');
     } else {
+      const sourceFields = (fmt && Object.keys(fmt).length) ? fmt : f;
       const lines = [
-        `=== DADOS DO DOCUMENTO (${data.document_name || data.document_type || 'VIO'}) ===`,
+        `=== DADOS OFICIAIS DO DOCUMENTO (${data.document_name || data.template_name || data.document_type || 'VIO'}) ===`,
         `AUTENTICIDADE SERPRO/VIO: ${data.is_authentic ? 'AUTÊNTICO / ASSINATURA VÁLIDA' : 'SEM ASSINATURA VIO / EXTERNO'}`,
       ];
-      Object.entries(f).forEach(([k, v]) => {
+      Object.entries(sourceFields).forEach(([k, v]) => {
+        if (k === '_extras') return;
         if (v && String(v).trim()) {
-          lines.push(`${k.toUpperCase()}: ${v}`);
+          lines.push(`${humanizeFieldKey(k).toUpperCase()}: ${v}`);
         }
       });
       return lines.join('\n');

@@ -233,3 +233,86 @@ def test_api_verify_atpv_complete_fields(monkeypatch):
     assert fmt["documento_vendedor_formatado"] == "098.540.349-76"
     assert fmt["nome_comprador"] == "MARCOS COMPRADOR SOUZA"
     assert fmt["documento_comprador_formatado"] == "123.456.789-09"
+
+
+def test_api_templates_catalog():
+    res = client.get("/api/templates")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_templates"] >= 161
+    assert isinstance(data["categories"], list)
+    assert len(data["categories"]) >= 5
+
+
+def test_api_verify_generic_vio_template_with_photo_and_masks(monkeypatch):
+    from vioweb.core.models import DocumentResult, Photo
+    from vioweb.core.documents.base import DocumentData
+    from vioweb.api import app as api_module
+
+    fake_fields = {
+        "nome": "MARINHEIRO TESTE",
+        "cpf": "09854034976",
+        "cnpj": "12345678000199",
+        "placa": "abc1d23",
+        "numero_inscricao": "4012345678",
+        "nome_embarcacao": "VENTO SUL I",
+    }
+    fake_result = DocumentResult(
+        raw=b"test",
+        is_parsed=True,
+        is_authentic=True,
+        template_id=116,
+        template_name="TIE-Título de Inscrição de Embarcação",
+        document_type="generic",
+        document_name="TIE-Título de Inscrição de Embarcação",
+        data=DocumentData(raw_fields=list(fake_fields.values()), fields=fake_fields),
+        fields=fake_fields,
+        photo=Photo(data=b"BPG\xfb\x00\x01fake_bpg_bytes", format="BPG"),
+    )
+
+    class MockChecker:
+        def parse_file(self, content):
+            return fake_result
+
+    monkeypatch.setattr(api_module, "_checker", MockChecker())
+
+    response = client.post(
+        "/api/documents/verify",
+        files={"file": ("tie.png", b"imgcontent", "image/png")},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    assert res["document_type"] == "generic"
+    assert res["photo_b64"] is not None
+    assert res["photo_b64"].startswith("data:image/bpg;base64,")
+    fmt = res["formatted"]
+    assert fmt["cpf"] == "098.540.349-76"
+    assert fmt["cnpj"] == "12.345.678/0001-99"
+    assert fmt["placa"] == "ABC1D23"
+    assert fmt["nome_embarcacao"] == "VENTO SUL I"
+
+
+def test_api_root_contains_opensource_pix_and_api_modals():
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.text
+    assert "https://github.com/Kauerc10/VioWeb" in html
+    assert 'id="modal-pix"' in html
+    assert 'id="modal-api"' in html
+
+
+def test_api_seo_endpoints_and_metadata():
+    robots = client.get("/robots.txt")
+    assert robots.status_code == 200
+    assert "Sitemap: https://vioweb.vercel.app/sitemap.xml" in robots.text
+
+    sitemap = client.get("/sitemap.xml")
+    assert sitemap.status_code == 200
+    assert "<loc>https://vioweb.vercel.app/</loc>" in sitemap.text
+
+    root = client.get("/")
+    assert root.status_code == 200
+    assert 'property="og:title"' in root.text
+    assert 'application/ld+json' in root.text
+    assert 'id="seo-faq-section"' in root.text

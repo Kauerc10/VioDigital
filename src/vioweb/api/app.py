@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import base64
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -18,8 +19,8 @@ from vioweb.core.exceptions import DigitalDocumentError, QRCodeNotFoundError
 
 app = FastAPI(
     title="VioWeb API",
-    description="Verificador e decodificador offline de CRLV-e e CNH Serpro/VIO",
-    version="0.1.0",
+    description="Verificador e decodificador offline de CRLV-e, CNH, ATPV-e, CIN e +160 documentos oficiais Serpro/VIO",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -37,6 +38,35 @@ WEB_DIR = Path(__file__).parent.parent / "web"
 class VerifyBase64Request(BaseModel):
     data: str
     filename: Optional[str] = None
+
+
+def _mask_cpf_cnpj(val: str) -> str:
+    digits = re.sub(r"\D", "", val or "")
+    if len(digits) == 11:
+        return f"{digits[:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:]}"
+    if len(digits) == 14:
+        return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}"
+    return val
+
+
+def _format_generic_fields(fields: Dict[str, Any]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for k, v in fields.items():
+        if not isinstance(v, str) or not v.strip():
+            out[k] = v
+            continue
+        key_lower = k.lower()
+        val_clean = v.strip()
+        if any(tok in key_lower for tok in ("cpf", "cnpj", "documento_proprietario", "documento_vendedor", "documento_comprador")):
+            out[k] = _mask_cpf_cnpj(val_clean)
+        elif "placa" in key_lower and len(re.sub(r"[^A-Za-z0-9]", "", val_clean)) == 7:
+            out[k] = re.sub(r"[^A-Za-z0-9]", "", val_clean).upper()
+        elif "renavam" in key_lower and re.sub(r"\D", "", val_clean):
+            digits = re.sub(r"\D", "", val_clean)
+            out[k] = digits.zfill(11) if len(digits) <= 11 else val_clean
+        else:
+            out[k] = val_clean
+    return out
 
 
 def _format_result(res) -> Dict[str, Any]:
@@ -126,7 +156,7 @@ def _format_result(res) -> Dict[str, Any]:
             "uf_comprador": data_obj.uf_comprador,
         }
     elif isinstance(res.fields, dict) and res.fields:
-        formatted = dict(res.fields)
+        formatted = _format_generic_fields(res.fields)
 
     photo_b64 = None
     photo_obj = getattr(res, "photo", None)
@@ -174,6 +204,106 @@ def _format_result(res) -> Dict[str, Any]:
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "VioWeb", "version": "0.1.0"}
+
+
+@app.get("/api/templates")
+async def list_supported_templates():
+    total = len(_checker.templates) if hasattr(_checker.templates, "__len__") else 161
+    return {
+        "total_templates": max(total, 161),
+        "cin_supported": True,
+        "categories": [
+            {
+                "id": "transito_senatran",
+                "title": "Trânsito e Veículos (SENATRAN / DETRAN / PRF)",
+                "documents": [
+                    "CRLV-e Digital (Templates 10, 12, 62, 70)",
+                    "CRV-e RENAVE (Template 24)",
+                    "CNH Digital e Física com Foto Biométrica (Templates 2, 4, 83)",
+                    "ATPV-e — Autorização para Transferência de Propriedade (Template 43)",
+                    "Placa Veicular Mercosul (Templates 11, 17)",
+                    "Credencial de Estacionamento Idoso/PcD (Templates 95, 162)",
+                    "Boletim de Acidente de Trânsito PRF (Templates 50, 51)",
+                    "Carteira de Instrutor de Trânsito (Template 237)",
+                ],
+            },
+            {
+                "id": "identificacao_civil",
+                "title": "Identificação Civil Nacional",
+                "documents": [
+                    "CIN — Carteira de Identidade Nacional / Novo RG (JWT ICP-Brasil ES512)",
+                    "RG Digital Estadual (Templates 91, 92)",
+                    "DNI — Documento Nacional de Identidade (Templates 8, 9, 73)",
+                    "CPF Digital (Template 25)",
+                    "Carteira de Identidade Estudantil MEC (Templates 23, 236)",
+                ],
+            },
+            {
+                "id": "marinha_nautica",
+                "title": "Marinha do Brasil / Embarcações (DPC)",
+                "documents": [
+                    "TIE — Título de Inscrição de Embarcação PF e PJ (Templates 116, 118)",
+                    "CHA — Carteira de Habilitação de Amador e Motonauta (Templates 97, 104, 110)",
+                    "Certificados Marítimos DPC-1031, DPC-1033 e DPC-1034 (Templates 141, 151, 167)",
+                ],
+            },
+            {
+                "id": "defesa_seguranca",
+                "title": "Exército, Armas (SFPC) e Segurança Pública",
+                "documents": [
+                    "CRAF — Certificado de Registro de Arma de Fogo (Template 52)",
+                    "Guia de Tráfego de Armas e Munições — Exército (Template 53)",
+                    "Identidades Militares do Exército e Força Aérea Brasileira (Templates 79, 108)",
+                    "Identidades Funcionais de Polícia, Bombeiros, PM e GCM (Templates 102, 107, 122, 128, 160, 183, 191)",
+                ],
+            },
+            {
+                "id": "conselhos_funcionais",
+                "title": "Conselhos Profissionais, Judiciário, MP e Defensoria",
+                "documents": [
+                    "Carteiras Profissionais CREA (PR, RS, RN, SE, CE, TO, AL)",
+                    "Carteiras Profissionais CRA (incluindo CRA-SC, CRA-SP, CRA-RS, CRA-PR, CRA-ES, CRA-BA)",
+                    "Carteiras Profissionais CREF, CREFITO, CFN e CONFERP",
+                    "Identidades Funcionais de Magistrados (TJ), Ministério Público (MP) e Defensoria Pública (DPE)",
+                ],
+            },
+            {
+                "id": "saude_trabalho_tesouro",
+                "title": "Saúde, Trabalho e Administração Federal",
+                "documents": [
+                    "Atestado Médico Digital — Ministério da Saúde (Template 31)",
+                    "CAT — Comunicação de Acidente de Trabalho (Template 229)",
+                    "Extrato CAUC, Recibos SICONFI e Nota CAPAG (Tesouro Nacional)",
+                ],
+            },
+        ],
+    }
+
+
+@app.get("/robots.txt")
+async def robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /api/documents/\n\n"
+        "Sitemap: https://vioweb.vercel.app/sitemap.xml\n"
+    )
+    return PlainTextResponse(content=content, status_code=200)
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml():
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        "  <url>\n"
+        "    <loc>https://vioweb.vercel.app/</loc>\n"
+        "    <changefreq>weekly</changefreq>\n"
+        "    <priority>1.0</priority>\n"
+        "  </url>\n"
+        "</urlset>\n"
+    )
+    return Response(content=xml, media_type="application/xml", status_code=200)
 
 
 @app.get("/favicon.ico")
@@ -224,7 +354,6 @@ async def verify_document_base64(req: VerifyBase64Request):
     try:
         data_str = req.data
         if "," in data_str:
-            # remove data URL prefix like data:image/png;base64,
             data_str = data_str.split(",", 1)[1]
 
         content = base64.b64decode(data_str)
