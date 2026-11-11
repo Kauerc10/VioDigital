@@ -293,13 +293,38 @@ def test_api_verify_generic_vio_template_with_photo_and_masks(monkeypatch):
     assert fmt["nome_embarcacao"] == "VENTO SUL I"
 
 
-def test_api_root_contains_opensource_pix_and_api_modals():
+def test_api_dedicated_pages_and_seo_routes():
     res = client.get("/")
     assert res.status_code == 200
     html = res.text
     assert "https://github.com/Kauerc10/VioWeb" in html
-    assert 'id="modal-pix"' in html
-    assert 'id="modal-api"' in html
+    assert 'href="/documentos"' in html
+    assert 'href="/apoiar"' in html
+    assert 'href="/api-comercial"' in html
+
+    docs_page = client.get("/documentos")
+    assert docs_page.status_code == 200
+    assert "Todos os 161 Documentos Oficiais Suportados" in docs_page.text
+
+    apoiar_page = client.get("/apoiar")
+    assert apoiar_page.status_code == 200
+    assert "COPIAR CHAVE PIX" in apoiar_page.text
+
+    api_page = client.get("/api-comercial")
+    assert api_page.status_code == 200
+    assert "POST /api/documents/verify" in api_page.text
+
+    for slug, expected in [
+        ("crlv", "CRLV-e Digital"),
+        ("cnh", "CNH Digital"),
+        ("atpv", "ATPV-e"),
+        ("cin", "Carteira de Identidade Nacional"),
+        ("tie-marinha", "Marinha do Brasil"),
+    ]:
+        seo_page = client.get(f"/validar-{slug}")
+        assert seo_page.status_code == 200
+        assert expected in seo_page.text
+        assert f'href="https://vioweb.vercel.app/validar-{slug}"' in seo_page.text
 
 
 def test_api_seo_endpoints_and_metadata():

@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -33,6 +33,39 @@ app.add_middleware(
 
 _checker = DigitalDocumentChecker()
 WEB_DIR = Path(__file__).parent.parent / "web"
+
+SEO_DOC_PAGES: Dict[str, Dict[str, str]] = {
+    "crlv": {
+        "title": "Validar QR Code CRLV-e Digital e CRV-e RENAVE no PC (Grátis) — VioWeb",
+        "description": "Valide gratuitamente o QR Code VIO do CRLV-e Digital (Templates 10, 12, 62, 70) e CRV-e RENAVE (Template 24) no computador por PDF, Ctrl+V ou Webcam. Extração imediata de Placa, RENAVAM, Chassi e Proprietário.",
+        "hero_title": "Validador Oficial de CRLV-e Digital e CRV-e RENAVE",
+        "hero_subtitle": "Arraste o PDF do CRLV-e recebido no WhatsApp, cole um print (Ctrl+V) ou aponte o documento impresso para a webcam para validar a assinatura Serpro/SENATRAN e copiar Placa, RENAVAM, Chassi e CPF/CNPJ.",
+    },
+    "cnh": {
+        "title": "Validar QR Code CNH Digital e Física no Computador (Com Foto 3x4) — VioWeb",
+        "description": "Leia e valide gratuitamente o QR Code da CNH Digital e Física no PC (Templates VIO 2, 4 e 83). Verifica a assinatura digital SENATRAN e decodifica a fotografia biométrica BPG 3x4 do condutor.",
+        "hero_title": "Validador de CNH Digital e Física (Com Fotografia Biométrica)",
+        "hero_subtitle": "Confira a autenticidade da Carteira Nacional de Habilitação pelo computador, visualize a fotografia biométrica 3x4 assinada pelo Serpro e copie CPF, Registro, RENACH, Filiação e Validade em 1 clique.",
+    },
+    "atpv": {
+        "title": "Validar QR Code ATPV-e (Intenção de Venda) para Cartório no PC — VioWeb",
+        "description": "Valide gratuitamente a ATPV-e (Autorização para Transferência de Propriedade de Veículo — Template VIO 43) no computador. Extrai dados completos do Vendedor, Comprador, Valor da Venda, Hodômetro e CRV para reconhecimento de firma.",
+        "hero_title": "Validador Notarial de ATPV-e (Intenção de Venda)",
+        "hero_subtitle": "Conferência instantânea de ATPV-e para reconhecimento de firma em cartório: valida o QR Code VIO mesmo em páginas com Selo Digital do TJ e extrai Vendedor, Comprador, Placa, Chassi, Valor e Hodômetro.",
+    },
+    "cin": {
+        "title": "Validar QR Code CIN / Novo RG Nacional (ICP-Brasil) no PC — VioWeb",
+        "description": "Verifique gratuitamente o QR Code da Carteira de Identidade Nacional (CIN / Novo RG), RG Digital Estadual e DNI diretamente no computador com validação criptográfica ES512 ICP-Brasil.",
+        "hero_title": "Validador de CIN (Carteira de Identidade Nacional / Novo RG)",
+        "hero_subtitle": "Verifique a assinatura digital ICP-Brasil (ES512) do QR Code da nova Carteira de Identidade Nacional, RG Digital Estadual e DNI diretamente pelo navegador ou webcam.",
+    },
+    "tie-marinha": {
+        "title": "Validar QR Code TIE (Título de Inscrição de Embarcação) e CHA da Marinha — VioWeb",
+        "description": "Valide gratuitamente documentos náuticos da Marinha do Brasil (DPC) com QR Code VIO: TIE (Título de Inscrição de Embarcação PF e PJ — Templates 116 e 118) e CHA (Carteira de Habilitação de Amador e Motonauta).",
+        "hero_title": "Validador de TIE (Embarcações) e CHA da Marinha do Brasil",
+        "hero_subtitle": "Ideal para cartórios litorâneos e despachantes marítimos: valide a autenticidade do Título de Inscrição de Embarcação (TIE PF/PJ) e Carteira de Arrais/Motonauta (CHA) extraindo todos os 34 campos oficiais.",
+    },
+}
 
 
 class VerifyBase64Request(BaseModel):
@@ -208,10 +241,22 @@ async def health():
 
 @app.get("/api/templates")
 async def list_supported_templates():
-    total = len(_checker.templates) if hasattr(_checker.templates, "__len__") else 161
+    templates_list = []
+    store = getattr(_checker, "templates", None)
+    by_id = getattr(store, "_by_id", {}) if store else {}
+    for tpl_id in sorted(by_id.keys()):
+        tpl = by_id[tpl_id]
+        templates_list.append({
+            "id": tpl.id,
+            "name": tpl.name,
+            "owner": tpl.owner,
+            "fields_count": len(tpl.field_names),
+        })
+
     return {
-        "total_templates": max(total, 161),
+        "total_templates": max(len(templates_list), 161),
         "cin_supported": True,
+        "templates": templates_list,
         "categories": [
             {
                 "id": "transito_senatran",
@@ -293,14 +338,25 @@ async def robots_txt():
 
 @app.get("/sitemap.xml")
 async def sitemap_xml():
+    urls = [
+        ("https://vioweb.vercel.app/", "1.0"),
+        ("https://vioweb.vercel.app/documentos", "0.9"),
+        ("https://vioweb.vercel.app/validar-crlv", "0.9"),
+        ("https://vioweb.vercel.app/validar-cnh", "0.9"),
+        ("https://vioweb.vercel.app/validar-atpv", "0.9"),
+        ("https://vioweb.vercel.app/validar-cin", "0.8"),
+        ("https://vioweb.vercel.app/validar-tie-marinha", "0.8"),
+        ("https://vioweb.vercel.app/api-comercial", "0.8"),
+        ("https://vioweb.vercel.app/apoiar", "0.7"),
+    ]
+    items = "\n".join(
+        f"  <url>\n    <loc>{loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>{prio}</priority>\n  </url>"
+        for loc, prio in urls
+    )
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        "  <url>\n"
-        "    <loc>https://vioweb.vercel.app/</loc>\n"
-        "    <changefreq>weekly</changefreq>\n"
-        "    <priority>1.0</priority>\n"
-        "  </url>\n"
+        f"{items}\n"
         "</urlset>\n"
     )
     return Response(content=xml, media_type="application/xml", status_code=200)
@@ -379,7 +435,7 @@ async def verify_document_base64(req: VerifyBase64Request):
         )
 
 
-# Servir frontend estático
+# Servir frontend estático e páginas dedicadas
 if (WEB_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
 
@@ -390,3 +446,76 @@ async def root():
     if index_file.exists():
         return FileResponse(index_file)
     return {"message": "VioWeb API operacional. Frontend não localizado."}
+
+
+@app.get("/documentos")
+async def page_documentos():
+    page = WEB_DIR / "documentos.html"
+    if page.exists():
+        return FileResponse(page)
+    raise HTTPException(status_code=404)
+
+
+@app.get("/apoiar")
+async def page_apoiar():
+    page = WEB_DIR / "apoiar.html"
+    if page.exists():
+        return FileResponse(page)
+    raise HTTPException(status_code=404)
+
+
+@app.get("/api-comercial")
+async def page_api_comercial():
+    page = WEB_DIR / "api.html"
+    if page.exists():
+        return FileResponse(page)
+    raise HTTPException(status_code=404)
+
+
+@app.get("/validar-{slug}")
+async def page_validar_documento(slug: str):
+    meta = SEO_DOC_PAGES.get(slug)
+    if not meta:
+        raise HTTPException(status_code=404, detail="Página de documento não encontrada.")
+    index_file = WEB_DIR / "index.html"
+    if not index_file.exists():
+        raise HTTPException(status_code=404)
+
+    html = index_file.read_text(encoding="utf-8")
+    canonical_url = f"https://vioweb.vercel.app/validar-{slug}"
+    html = re.sub(r"<title>.*?</title>", f"<title>{meta['title']}</title>", html, flags=re.DOTALL)
+    html = re.sub(
+        r'<meta name="description" content=".*?">',
+        f'<meta name="description" content="{meta["description"]}">',
+        html,
+    )
+    html = re.sub(
+        r'<link rel="canonical" href=".*?">',
+        f'<link rel="canonical" href="{canonical_url}">',
+        html,
+    )
+    html = re.sub(
+        r'<meta property="og:title" content=".*?">',
+        f'<meta property="og:title" content="{meta["title"]}">',
+        html,
+    )
+    html = re.sub(
+        r'<meta property="og:description" content=".*?">',
+        f'<meta property="og:description" content="{meta["description"]}">',
+        html,
+    )
+    html = re.sub(
+        r'<meta property="og:url" content=".*?">',
+        f'<meta property="og:url" content="{canonical_url}">',
+        html,
+    )
+    html = html.replace(
+        '<h2 id="hero-title">Validação de Documentos Oficiais</h2>',
+        f'<h2 id="hero-title">{meta["hero_title"]}</h2>',
+    )
+    html = re.sub(
+        r'<p class="dropzone-hint" id="hero-subtitle">.*?</p>',
+        f'<p class="dropzone-hint" id="hero-subtitle">{meta["hero_subtitle"]}</p>',
+        html,
+    )
+    return HTMLResponse(content=html, status_code=200)

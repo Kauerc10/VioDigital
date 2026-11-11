@@ -1,6 +1,7 @@
 :root {
   --bg-page: #f4f6f4;
   --bg-surface: #ffffff;
+  --bg-card: #ffffff;
   --bg-subtle: #f8faf8;
   --bg-muted: #eef2ee;
   --border-color: #dde3dd;
@@ -11,7 +12,9 @@
   --primary: #3b7a28;
   --primary-hover: #2e621f;
   --primary-soft: #eef6eb;
+  --primary-light: #eef6eb;
   --primary-border: #b7d7ad;
+  --radius: 10px;
   --detran-red: #c81e1e;
   --detran-gradient: linear-gradient(90deg, #b91c1c 0%, #684b26 52%, #2f6e28 100%);
   --success-bg: #edf7ed;
@@ -1063,10 +1066,23 @@ kbd {
   text-decoration: underline;
 }
 
-/* Header GitHub & Highlight Nav */
+/* Header GitHub & Multi-Page Navigation */
+a.nav-link-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-link-btn.active {
+  color: var(--primary);
+  background-color: var(--primary-soft);
+  border-color: var(--primary-border);
+  font-weight: 700;
+}
+
 .nav-link-highlight {
   color: var(--primary);
-  background-color: var(--primary-light);
+  background-color: var(--primary-soft);
   border: 1px solid var(--primary-border);
 }
 
@@ -1088,7 +1104,173 @@ kbd {
 .nav-github-link:hover {
   border-color: var(--primary);
   color: var(--primary);
-  background-color: var(--primary-light);
+  background-color: var(--primary-soft);
+}
+
+/* Barra de Atalhos SEO por Documento */
+.doc-shortcuts-bar {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.doc-shortcut-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: 0.38rem 0.75rem;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.doc-shortcut-link:hover,
+.doc-shortcut-link.active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background-color: var(--primary-soft);
+}
+
+/* Páginas Dedicadas (/documentos, /apoiar, /api-comercial) */
+.page-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 1.5rem;
+}
+
+.page-card h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0.4rem 0 0.65rem;
+}
+
+.page-lead {
+  font-size: 0.94rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.page-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.info-panel {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.info-panel h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.info-panel p,
+.info-panel li {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.info-panel ul {
+  padding-left: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Catálogo Interativo de 161 Templates (/documentos) */
+.catalog-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  flex-wrap: wrap;
+}
+
+.catalog-search-input {
+  flex: 1 1 280px;
+  padding: 0.65rem 0.95rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-family: var(--font-sans);
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+}
+
+.catalog-search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 122, 40, 0.14);
+}
+
+.templates-table-wrap {
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-surface);
+}
+
+.templates-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.templates-table th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.templates-table td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.templates-table tr:hover {
+  background-color: var(--primary-soft);
+}
+
+.tpl-id-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
 }
 
 /* Faixa Comunitária Open Source & PIX */
