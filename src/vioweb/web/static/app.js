@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const cameraVideo = document.getElementById('camera-video');
   const cameraSelect = document.getElementById('camera-select');
   const cameraStatusText = document.getElementById('camera-status-text');
-  const cameraScanIndicator = document.getElementById('camera-scan-indicator');
   const btnMirrorCamera = document.getElementById('btn-mirror-camera');
   const btnCloseCamera = document.getElementById('btn-close-camera');
   const btnCaptureNow = document.getElementById('btn-capture-now');
@@ -273,7 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scanAttemptCount = 0;
     cameraStatusText.textContent = 'Posicione o QR Code do documento físico ou tela dentro da área de leitura';
-    cameraScanIndicator.textContent = 'Varredura automática ativa';
 
     if (scanIntervalId) clearInterval(scanIntervalId);
     scanIntervalId = setInterval(() => {
@@ -330,12 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
         captureCtx.drawImage(cameraVideo, 0, 0, vw, vh);
       }
 
-      if (isManual) {
-        cameraScanIndicator.textContent = 'Analisando captura em alta definição...';
-      } else {
-        cameraScanIndicator.textContent = `Varredura automática ativa (quadro #${scanAttemptCount})`;
-      }
-
       const blob = await new Promise(resolve => captureCanvas.toBlob(resolve, 'image/jpeg', 0.92));
       if (!blob || !mediaStream) {
         isScanningFrame = false;
@@ -354,7 +346,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok && data.is_parsed) {
         cameraStage.classList.add('scan-success');
-        cameraScanIndicator.textContent = 'QR Code identificado com sucesso!';
         playScanSuccessTone();
         stopCamera();
         currentResult = data;
