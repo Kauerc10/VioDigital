@@ -107,3 +107,61 @@ def test_api_verify_document_with_photo(rsa_material, cert_store, monkeypatch):
     assert data["is_parsed"] is True
     assert data["photo_b64"] is not None
     assert "data:image/png;base64," in data["photo_b64"]
+
+
+def test_api_verify_cnh_complete_fields(monkeypatch):
+    from vioweb.core.models import DocumentResult
+    from vioweb.core.documents.cnh import CNHData
+    from vioweb.api import app as api_module
+
+    fake_result = DocumentResult(
+        raw=b"test",
+        is_parsed=True,
+        is_authentic=True,
+        document_type="cnh",
+        document_name="CNH Digital",
+        data=CNHData(
+            nome="JOAO VITOR DIAS",
+            cpf="09854034976",
+            categoria="AB",
+            identidade="123456 SSP/SC",
+            data_nascimento="15/02/1995",
+            filiacao_mae="MARIA DIAS",
+            filiacao_pai="JOSE DIAS",
+            numero_registro="07260723692",
+            data_validade="15/02/2034",
+            data_emissao="19/02/2024",
+            data_primeira_habilitacao="15/02/2013",
+            local_emissao="FLORIANOPOLIS",
+            uf_emissao="SC",
+            numero_renach="SC195462467",
+            numero_validacao_cnh="99887766",
+            observacoes="EAR",
+        ),
+        fields={"nome": "JOAO VITOR DIAS", "cpf": "09854034976"},
+    )
+
+    class MockChecker:
+        def parse_file(self, content):
+            return fake_result
+
+    monkeypatch.setattr(api_module, "_checker", MockChecker())
+
+    response = client.post(
+        "/api/documents/verify",
+        files={"file": ("cnh.pdf", b"pdfcontent", "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+    fmt = res["formatted"]
+    assert fmt["nome"] == "JOAO VITOR DIAS"
+    assert fmt["cpf_formatado"] == "098.540.349-76"
+    assert fmt["categoria"] == "AB"
+    assert fmt["identidade"] == "123456 SSP/SC"
+    assert fmt["data_nascimento"] == "15/02/1995"
+    assert fmt["filiacao_mae"] == "MARIA DIAS"
+    assert fmt["filiacao_pai"] == "JOSE DIAS"
+    assert fmt["data_primeira_habilitacao"] == "15/02/2013"
+    assert fmt["observacoes"] == "EAR"
+    assert fmt["numero_validacao_cnh"] == "99887766"

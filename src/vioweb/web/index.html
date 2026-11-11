@@ -94,15 +94,9 @@
             <strong>⚠️ Nota Notarial:</strong> A autenticidade comprovada pelo VIO atesta a legitimidade do documento no instante de sua emissão pela SENATRAN. Restrições judiciais ou alienações supervenientes (ex: Renajud) devem ser checadas na base online do Detran caso o ato notarial exija certidão atualizada.
           </div>
 
-          <!-- Grid de Campos -->
-          <div class="fields-container" id="fields-container">
+          <!-- Conteúdo Dinâmico do Documento -->
+          <div id="document-content">
             <!-- Inserido dinamicamente via app.js -->
-          </div>
-
-          <!-- Foto Biométrica (quando presente em CNH) -->
-          <div class="photo-container" id="photo-container" style="display:none">
-            <h4>Fotografia Biométrica</h4>
-            <div class="photo-preview" id="photo-preview"></div>
           </div>
         </div>
       </section>
@@ -114,6 +108,7 @@
   </div>
 
   <div class="toast" id="toast">Copiado para a área de transferência!</div>
+  <script src="/static/bpgdec8.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

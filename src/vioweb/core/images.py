@@ -61,18 +61,44 @@ def to_png(photo: Photo, *, decoder: Optional[str] = None) -> bytes:
 
 def _bpg_to_png(data: bytes, *, decoder: Optional[str] = None) -> bytes:
     binary = decoder or shutil.which("bpgdec")
-    if not binary:
-        raise MissingDependencyError(
-            "bpgdec não encontrado no PATH — instale libbpg para converter a foto BPG"
-        )
-    with tempfile.TemporaryDirectory() as tmp:
-        bpg_path = os.path.join(tmp, "in.bpg")
-        png_path = os.path.join(tmp, "out.png")
-        with open(bpg_path, "wb") as handle:
-            handle.write(data)
-        subprocess.run([binary, "-o", png_path, bpg_path], check=True)
-        with open(png_path, "rb") as handle:
-            return handle.read()
+    if binary:
+        with tempfile.TemporaryDirectory() as tmp:
+            bpg_path = os.path.join(tmp, "in.bpg")
+            png_path = os.path.join(tmp, "out.png")
+            with open(bpg_path, "wb") as handle:
+                handle.write(data)
+            subprocess.run([binary, "-o", png_path, bpg_path], check=True)
+            with open(png_path, "rb") as handle:
+                return handle.read()
+
+    # Fallback transparente via Node.js + bpgdec8.js embutido
+    node = shutil.which("node")
+    if node:
+        script = os.path.join(os.path.dirname(__file__), "bpg_converter.js")
+        if os.path.exists(script):
+            proc = subprocess.run(
+                [node, script],
+                input=data,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if proc.returncode == 0 and len(proc.stdout) >= 8:
+                import io
+                from PIL import Image
+
+                w = int.from_bytes(proc.stdout[0:4], "big")
+                h = int.from_bytes(proc.stdout[4:8], "big")
+                rgba = proc.stdout[8:]
+                if len(rgba) == w * h * 4:
+                    img = Image.frombytes("RGBA", (w, h), rgba)
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    return buf.getvalue()
+
+    raise MissingDependencyError(
+        "bpgdec ou node não encontrado no PATH para converter a foto BPG"
+    )
 
 
 def save(photo: Photo, path: str, *, as_png: bool = False, decoder: Optional[str] = None) -> str:

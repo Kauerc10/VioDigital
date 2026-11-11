@@ -45,3 +45,7 @@ htmlcov/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Local test samples (LGPD safe)
+test_samples/
+*.bpg
