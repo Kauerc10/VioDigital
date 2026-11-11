@@ -2,6 +2,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('file-input');
   const btnBrowse = document.getElementById('btn-browse');
+  const btnOpenCamera = document.getElementById('btn-open-camera');
+  const btnHeaderUpload = document.getElementById('btn-header-upload');
+  const btnHeaderCamera = document.getElementById('btn-header-camera');
+  const btnResultCamera = document.getElementById('btn-result-camera');
+
+  const cameraPanel = document.getElementById('camera-panel');
+  const cameraStage = document.getElementById('camera-stage');
+  const cameraVideo = document.getElementById('camera-video');
+  const cameraSelect = document.getElementById('camera-select');
+  const cameraStatusText = document.getElementById('camera-status-text');
+  const cameraScanIndicator = document.getElementById('camera-scan-indicator');
+  const btnMirrorCamera = document.getElementById('btn-mirror-camera');
+  const btnCloseCamera = document.getElementById('btn-close-camera');
+  const btnCaptureNow = document.getElementById('btn-capture-now');
+
   const loadingState = document.getElementById('loading-state');
   const errorBanner = document.getElementById('error-banner');
   const errorTitle = document.getElementById('error-title');
@@ -10,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultSection = document.getElementById('result-section');
   const docTypeBadge = document.getElementById('doc-type-badge');
   const authBadge = document.getElementById('auth-badge');
+  const authIcon = document.getElementById('auth-icon');
   const authStatusText = document.getElementById('auth-status-text');
   const documentContent = document.getElementById('document-content');
   const btnCopyAll = document.getElementById('btn-copy-all');
@@ -17,6 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const toast = document.getElementById('toast');
 
   let currentResult = null;
+  let mediaStream = null;
+  let scanIntervalId = null;
+  let isScanningFrame = false;
+  let scanAttemptCount = 0;
+  let isMirrored = localStorage.getItem('vioweb_camera_mirrored') === '1';
+
+  const captureCanvas = document.createElement('canvas');
+  const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
 
   // Browse click
   btnBrowse.addEventListener('click', (e) => {
@@ -24,7 +48,33 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.click();
   });
 
-  dropzone.addEventListener('click', () => {
+  btnOpenCamera.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCameraScanner();
+  });
+
+  if (btnHeaderUpload) {
+    btnHeaderUpload.addEventListener('click', () => {
+      stopCamera();
+      resetView();
+      fileInput.click();
+    });
+  }
+
+  if (btnHeaderCamera) {
+    btnHeaderCamera.addEventListener('click', () => {
+      openCameraScanner();
+    });
+  }
+
+  if (btnResultCamera) {
+    btnResultCamera.addEventListener('click', () => {
+      openCameraScanner();
+    });
+  }
+
+  dropzone.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
     fileInput.click();
   });
 
@@ -65,10 +115,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (items[i].type.indexOf('image') !== -1) {
         const blob = items[i].getAsFile();
         if (blob) {
+          stopCamera();
           processFile(blob);
-          showToast('Imagem colada da área de transferência!');
+          showToast('Imagem colada da área de transferência');
           return;
         }
+      }
+    }
+  });
+
+  // Keyboard shortcuts for camera mode (Space = capture now, Esc = close camera)
+  window.addEventListener('keydown', (e) => {
+    if (cameraPanel.style.display !== 'none') {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        stopCamera();
+        resetView();
+      } else if (e.code === 'Space' && document.activeElement !== cameraSelect) {
+        e.preventDefault();
+        captureCameraFrame(true);
       }
     }
   });
@@ -78,27 +143,262 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnNewCheck.addEventListener('click', () => {
+    stopCamera();
     resetView();
   });
 
   btnCopyAll.addEventListener('click', () => {
     if (!currentResult) return;
     const text = formatNotarySummary(currentResult);
-    copyToClipboard(text, 'Ficha completa copiada para o sistema notarial!');
+    copyToClipboard(text, 'Ficha completa copiada para o sistema notarial');
+  });
+
+  // Camera controls
+  btnCloseCamera.addEventListener('click', () => {
+    stopCamera();
+    resetView();
+  });
+
+  btnMirrorCamera.addEventListener('click', () => {
+    isMirrored = !isMirrored;
+    localStorage.setItem('vioweb_camera_mirrored', isMirrored ? '1' : '0');
+    cameraVideo.classList.toggle('mirrored', isMirrored);
+  });
+
+  cameraSelect.addEventListener('change', () => {
+    const deviceId = cameraSelect.value;
+    if (deviceId) {
+      localStorage.setItem('vioweb_camera_id', deviceId);
+      startCameraStream(deviceId);
+    }
+  });
+
+  btnCaptureNow.addEventListener('click', () => {
+    captureCameraFrame(true);
   });
 
   function resetView() {
     resultSection.style.display = 'none';
     errorBanner.style.display = 'none';
+    cameraPanel.style.display = 'none';
     dropzone.style.display = 'flex';
     loadingState.style.display = 'none';
     fileInput.value = '';
     currentResult = null;
   }
 
+  // ------------------------------------------------------------------ //
+  // Webcam Scanner Logic
+  // ------------------------------------------------------------------ //
+  async function openCameraScanner() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError('O navegador atual não suporta acesso à câmera ou a página não está em contexto seguro (HTTPS / localhost).');
+      return;
+    }
+
+    errorBanner.style.display = 'none';
+    resultSection.style.display = 'none';
+    dropzone.style.display = 'none';
+    loadingState.style.display = 'none';
+    cameraPanel.style.display = 'flex';
+    cameraStage.classList.remove('scan-success');
+    cameraVideo.classList.toggle('mirrored', isMirrored);
+
+    const savedDeviceId = localStorage.getItem('vioweb_camera_id') || '';
+    await startCameraStream(savedDeviceId);
+    await populateCameraDevices();
+  }
+
+  async function populateCameraDevices() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(d => d.kind === 'videoinput');
+      cameraSelect.innerHTML = '';
+
+      videoDevices.forEach((dev, idx) => {
+        const opt = document.createElement('option');
+        opt.value = dev.deviceId;
+        opt.textContent = dev.label || `Câmera ${idx + 1}`;
+        cameraSelect.appendChild(opt);
+      });
+
+      const currentTrack = mediaStream && mediaStream.getVideoTracks()[0];
+      const activeDeviceId = currentTrack && currentTrack.getSettings ? currentTrack.getSettings().deviceId : '';
+      if (activeDeviceId) {
+        cameraSelect.value = activeDeviceId;
+      }
+      cameraSelect.style.display = videoDevices.length > 1 ? 'inline-block' : 'none';
+    } catch (err) {
+      console.warn('Não foi possível listar dispositivos de vídeo:', err);
+    }
+  }
+
+  async function startCameraStream(preferredDeviceId = '') {
+    stopCameraStreamOnly();
+
+    const videoConstraints = {
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+    };
+    if (preferredDeviceId) {
+      videoConstraints.deviceId = { exact: preferredDeviceId };
+    } else {
+      videoConstraints.facingMode = { ideal: 'environment' };
+    }
+
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: videoConstraints,
+        audio: false,
+      });
+    } catch (firstErr) {
+      try {
+        // Fallback sem restrições estritas caso a webcam do PC rejeite 1080p ou exact deviceId
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      } catch (err) {
+        stopCamera();
+        resetView();
+        showError(`Não foi possível acessar a webcam: ${err.message || 'Permissão negada pelo navegador.'}`);
+        return;
+      }
+    }
+
+    cameraVideo.srcObject = mediaStream;
+    try {
+      await cameraVideo.play();
+    } catch (_) {}
+
+    scanAttemptCount = 0;
+    cameraStatusText.textContent = 'Posicione o QR Code do documento físico ou tela dentro da área de leitura';
+    cameraScanIndicator.textContent = 'Varredura automática ativa';
+
+    if (scanIntervalId) clearInterval(scanIntervalId);
+    scanIntervalId = setInterval(() => {
+      captureCameraFrame(false);
+    }, 550);
+  }
+
+  function stopCameraStreamOnly() {
+    if (scanIntervalId) {
+      clearInterval(scanIntervalId);
+      scanIntervalId = null;
+    }
+    isScanningFrame = false;
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+    if (cameraVideo) {
+      cameraVideo.srcObject = null;
+    }
+  }
+
+  function stopCamera() {
+    stopCameraStreamOnly();
+    if (cameraPanel) {
+      cameraPanel.style.display = 'none';
+    }
+  }
+
+  async function captureCameraFrame(isManual) {
+    if (!mediaStream || !cameraVideo || cameraVideo.readyState < 2) return;
+    if (isScanningFrame && !isManual) return;
+
+    const vw = cameraVideo.videoWidth;
+    const vh = cameraVideo.videoHeight;
+    if (!vw || !vh) return;
+
+    isScanningFrame = true;
+    scanAttemptCount += 1;
+
+    try {
+      // Alterna entre recorte central de alta densidade (mira) e quadro completo
+      const useCenterCrop = !isManual && (scanAttemptCount % 2 === 1);
+      if (useCenterCrop) {
+        const side = Math.floor(Math.min(vw, vh) * 0.72);
+        const sx = Math.floor((vw - side) / 2);
+        const sy = Math.floor((vh - side) / 2);
+        captureCanvas.width = side;
+        captureCanvas.height = side;
+        captureCtx.drawImage(cameraVideo, sx, sy, side, side, 0, 0, side, side);
+      } else {
+        captureCanvas.width = vw;
+        captureCanvas.height = vh;
+        captureCtx.drawImage(cameraVideo, 0, 0, vw, vh);
+      }
+
+      if (isManual) {
+        cameraScanIndicator.textContent = 'Analisando captura em alta definição...';
+      } else {
+        cameraScanIndicator.textContent = `Varredura automática ativa (quadro #${scanAttemptCount})`;
+      }
+
+      const blob = await new Promise(resolve => captureCanvas.toBlob(resolve, 'image/jpeg', 0.92));
+      if (!blob || !mediaStream) {
+        isScanningFrame = false;
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', blob, 'webcam-frame.jpg');
+
+      const response = await fetch('/api/documents/verify', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.is_parsed) {
+        cameraStage.classList.add('scan-success');
+        cameraScanIndicator.textContent = 'QR Code identificado com sucesso!';
+        playScanSuccessTone();
+        stopCamera();
+        currentResult = data;
+        renderResult(data);
+        showToast('Documento lido com sucesso pela câmera');
+        return;
+      }
+
+      if (isManual) {
+        cameraStatusText.textContent = data.message || 'Ainda não foi possível focar o QR Code. Aproxime ou incline levemente o documento para evitar reflexo.';
+      }
+    } catch (_) {
+      // Ignora erros transitórios durante o loop de vídeo
+    } finally {
+      isScanningFrame = false;
+    }
+  }
+
+  function playScanSuccessTone() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1174.66, ctx.currentTime + 0.07);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.18);
+    } catch (_) {}
+  }
+
+  // ------------------------------------------------------------------ //
+  // Upload & Document Verification
+  // ------------------------------------------------------------------ //
   async function processFile(file) {
     errorBanner.style.display = 'none';
     dropzone.style.display = 'none';
+    cameraPanel.style.display = 'none';
     loadingState.style.display = 'flex';
     resultSection.style.display = 'none';
 
@@ -144,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2500);
   }
 
-  function copyToClipboard(text, successMsg = 'Copiado!') {
+  function copyToClipboard(text, successMsg = 'Copiado') {
     navigator.clipboard.writeText(text).then(() => {
       showToast(successMsg);
     }).catch(() => {
@@ -160,22 +460,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderResult(data) {
     const typeLabels = {
-      crlv: 'CRLV Digital',
+      crlv: 'CRLV-e Digital',
       cnh: 'CNH Digital',
       atpv: 'ATPV-e (Intenção de Venda)',
-      cin: 'CIN (Carteira de Identidade Nacional)',
+      cin: 'Carteira de Identidade Nacional (CIN)',
       external_qr: 'QR Code Externo',
     };
     docTypeBadge.textContent = data.document_name || typeLabels[data.document_type] || 'Documento Digital';
 
     if (data.document_type === 'external_qr') {
       authBadge.className = 'auth-badge invalid';
+      if (authIcon) authIcon.textContent = '!';
       authStatusText.textContent = 'QR Code Externo (Sem Assinatura VIO)';
     } else if (data.is_authentic) {
       authBadge.className = 'auth-badge authentic';
+      if (authIcon) authIcon.textContent = '✓';
       authStatusText.textContent = 'Documento Autêntico (Assinatura VIO Válida)';
     } else {
       authBadge.className = 'auth-badge invalid';
+      if (authIcon) authIcon.textContent = '✕';
       authStatusText.textContent = 'Assinatura Inválida / Não Autêntico';
     }
 
@@ -189,9 +492,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (diagnostics.length > 0) {
       const diagBox = document.createElement('div');
       diagBox.className = 'notary-disclaimer';
-      diagBox.style.borderColor = 'rgba(239, 68, 68, 0.35)';
-      diagBox.style.background = 'rgba(239, 68, 68, 0.08)';
-      diagBox.innerHTML = `<strong>🔎 Diagnóstico da Leitura:</strong> ${diagnostics.join(' • ')}`;
+      diagBox.style.borderLeftColor = 'var(--detran-red)';
+      diagBox.style.backgroundColor = 'var(--danger-bg)';
+      diagBox.style.color = 'var(--danger-text)';
+      diagBox.innerHTML = `<strong>Diagnóstico da Leitura:</strong> ${diagnostics.join(' • ')}`;
       documentContent.appendChild(diagBox);
     }
 
@@ -215,21 +519,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const fmt = data.formatted || {};
     const f = data.fields || {};
 
-    // 1. Hero: Foto + Identificação Principal
     const heroLayout = document.createElement('div');
     heroLayout.className = 'cnh-hero-layout';
 
-    // Foto Biométrica (se presente)
     if (data.photo_b64) {
       const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format);
       heroLayout.appendChild(photoShowcase);
     }
 
-    // Identificação do Condutor
     const idSection = document.createElement('div');
     idSection.style.display = 'flex';
     idSection.style.flexDirection = 'column';
-    idSection.style.gap = '0.85rem';
+    idSection.style.gap = '0.75rem';
     idSection.style.flex = '1';
 
     const idGrid = document.createElement('div');
@@ -239,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { label: 'Nome do Condutor', val: fmt.nome || f.nome, highlight: true, span: 'span-2' },
       { label: 'Nome Civil / Social', val: fmt.nome_civil || f.nome_civil, span: 'span-2' },
       { label: 'CPF', val: fmt.cpf_formatado || f.cpf },
-      { label: 'RG / Identidade', val: fmt.identidade || f.identidade },
+      { label: 'RG / Documento de Identidade', val: fmt.identidade || f.identidade },
       { label: 'Data de Nascimento', val: fmt.data_nascimento || f.data_nascimento },
       { label: 'Categoria CNH', val: fmt.categoria || f.categoria, highlight: true },
     ];
@@ -254,14 +555,13 @@ document.addEventListener('DOMContentLoaded', () => {
     heroLayout.appendChild(idSection);
     container.appendChild(heroLayout);
 
-    // 2. Seção Filiação (se mãe ou pai preenchidos)
     const filiacaoCards = [
-      { label: 'Nome da Mãe', val: fmt.filiacao_mae || f.filiacao_mae, span: 'span-2' },
-      { label: 'Nome do Pai', val: fmt.filiacao_pai || f.filiacao_pai, span: 'span-2' },
+      { label: 'Filiação Materna (Mãe)', val: fmt.filiacao_mae || f.filiacao_mae, span: 'span-2' },
+      { label: 'Filiação Paterna (Pai)', val: fmt.filiacao_pai || f.filiacao_pai, span: 'span-2' },
     ].filter(c => c.val && c.val.trim());
 
     if (filiacaoCards.length > 0) {
-      const filiacaoSection = createDocSection('Filiação Declarada', '👥');
+      const filiacaoSection = createDocSection('Filiação Declarada');
       const filiacaoGrid = document.createElement('div');
       filiacaoGrid.className = 'fields-grid';
       filiacaoCards.forEach(c => {
@@ -271,20 +571,19 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(filiacaoSection);
     }
 
-    // 3. Seção Habilitação e Validades
     const habCards = [
-      { label: 'Registro CNH', val: fmt.numero_registro || f.numero_registro },
-      { label: 'Validade CNH', val: fmt.data_validade || f.data_validade, highlight: true },
-      { label: '1ª Habilitação', val: fmt.data_primeira_habilitacao || f.data_primeira_habilitacao },
+      { label: 'Número de Registro CNH', val: fmt.numero_registro || f.numero_registro, highlight: true },
+      { label: 'Validade do Exame / CNH', val: fmt.data_validade || f.data_validade, highlight: true },
+      { label: 'Data da 1ª Habilitação', val: fmt.data_primeira_habilitacao || f.data_primeira_habilitacao },
       { label: 'Data de Emissão', val: fmt.data_emissao || f.data_emissao },
-      { label: 'UF / Município', val: `${fmt.uf_emissao || f.uf_emissao || ''} - ${fmt.local_emissao || f.local_emissao || ''}` },
+      { label: 'UF / Município de Emissão', val: `${fmt.uf_emissao || f.uf_emissao || ''} - ${fmt.local_emissao || f.local_emissao || ''}` },
       { label: 'Formulário RENACH', val: fmt.numero_renach || f.numero_renach },
-      { label: 'Código Segurança / Validação', val: fmt.numero_validacao_cnh || f.numero_validacao_cnh },
-      { label: 'Permissão para Dirigir', val: fmt.permissao || f.permissao },
+      { label: 'Código de Segurança / Validação', val: fmt.numero_validacao_cnh || f.numero_validacao_cnh },
+      { label: 'Permissão', val: fmt.permissao || f.permissao },
       { label: 'ACC (Ciclomotor)', val: fmt.acc || f.acc },
     ].filter(c => c.val && c.val.trim() && c.val !== ' - ');
 
-    const habSection = createDocSection('Habilitação, Emissão e Prazos', '🚗');
+    const habSection = createDocSection('Dados da Habilitação, Emissão e Prazos');
     const habGrid = document.createElement('div');
     habGrid.className = 'fields-grid';
     habCards.forEach(c => {
@@ -293,10 +592,9 @@ document.addEventListener('DOMContentLoaded', () => {
     habSection.appendChild(habGrid);
     container.appendChild(habSection);
 
-    // 4. Observações e Restrições (se houver)
     const obsVal = fmt.observacoes || f.observacoes;
     if (obsVal && obsVal.trim()) {
-      const obsSection = createDocSection('Observações e Restrições Médicas / Profissionais', '📝');
+      const obsSection = createDocSection('Observações e Restrições Médicas / Profissionais');
       const obsGrid = document.createElement('div');
       obsGrid.className = 'fields-grid';
       obsGrid.appendChild(createFieldCard('Observações Registradas', obsVal, false, 'full-width', true));
@@ -309,15 +607,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const fmt = data.formatted || {};
     const f = data.fields || {};
 
-    // 1. Identificação do Veículo
-    const veicSection = createDocSection('Identificação Oficial do Veículo', '🚗');
+    const veicSection = createDocSection('Identificação Oficial do Veículo');
     const veicGrid = document.createElement('div');
     veicGrid.className = 'fields-grid';
 
     const veicCards = [
       { label: 'Placa do Veículo', val: fmt.placa_formatada || f.placa, highlight: true },
       { label: 'Código Renavam', val: fmt.renavam_formatado || f.renavam, highlight: true },
-      { label: 'Chassi do Veículo', val: fmt.chassi || f.chassi },
+      { label: 'Chassi', val: fmt.chassi || f.chassi },
       { label: 'Marca / Modelo / Versão', val: fmt.marca_modelo || f.marca_modelo, span: 'span-2' },
       { label: 'Ano Fabricação / Modelo', val: fmt.ano_fabricacao_modelo || `${f.ano_fabricacao || ''}/${f.ano_modelo || ''}` },
       { label: 'Cor Predominante', val: fmt.cor || f.cor },
@@ -327,24 +624,23 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     veicCards.forEach(c => {
-      if (c.val && c.val.trim()) {
+      if (c.val && c.val.trim() && c.val !== '/') {
         veicGrid.appendChild(createFieldCard(c.label, c.val, c.highlight, c.span));
       }
     });
     veicSection.appendChild(veicGrid);
     container.appendChild(veicSection);
 
-    // 2. Proprietário e Registro
-    const propSection = createDocSection('Proprietário Atual e Jurisdição', '👤');
+    const propSection = createDocSection('Proprietário Atual e Licenciamento');
     const propGrid = document.createElement('div');
     propGrid.className = 'fields-grid';
 
     const propCards = [
-      { label: 'Proprietário Atual', val: fmt.proprietario || f.nome, highlight: true, span: 'span-2' },
-      { label: 'CPF / CNPJ', val: fmt.cpf_cnpj_formatado || f.cpf_cnpj },
+      { label: 'Nome do Proprietário', val: fmt.proprietario || f.nome, highlight: true, span: 'span-2' },
+      { label: 'CPF / CNPJ', val: fmt.cpf_cnpj_formatado || f.cpf_cnpj, highlight: true },
       { label: 'Exercício Licenciado', val: fmt.exercicio || f.exercicio, highlight: true },
-      { label: 'Município / UF Registro', val: `${fmt.uf || f.uf || ''} - ${fmt.municipio || f.local || ''}` },
-      { label: 'Data de Emissão / Licenciamento', val: fmt.data_emissao || f.data },
+      { label: 'Município / UF de Jurisdição', val: `${fmt.uf || f.uf || ''} - ${fmt.municipio || f.local || ''}` },
+      { label: 'Data de Emissão', val: fmt.data_emissao || f.data },
     ];
 
     propCards.forEach(c => {
@@ -355,21 +651,20 @@ document.addEventListener('DOMContentLoaded', () => {
     propSection.appendChild(propGrid);
     container.appendChild(propSection);
 
-    // 3. Especificações Técnicas e Carga
     const tecCards = [
       { label: 'Potência / Cilindradas', val: `${fmt.potencia || f.potencia || ''} cv / ${fmt.cilindradas || f.cilindradas || ''} cc` },
       { label: 'Número do Motor', val: fmt.motor || f.motor },
       { label: 'Capacidade Máx. de Carga', val: fmt.capacidade_maxima_carga || f.capacidade_maxima_carga },
-      { label: 'PBT (Peso Bruto Total)', val: fmt.pbt || f.pbt },
-      { label: 'CMT (Capacidade Tração)', val: fmt.cmt || f.cmt },
+      { label: 'Peso Bruto Total (PBT)', val: fmt.pbt || f.pbt },
+      { label: 'Cap. Máx. Tração (CMT)', val: fmt.cmt || f.cmt },
       { label: 'Lotação / Eixos', val: `${fmt.lotacao || f.lotacao || ''} pass. / ${fmt.eixos || f.eixos || ''} eixos` },
-      { label: 'RNTRC (ANTT)', val: fmt.rntrc || f.rntrc },
-      { label: 'Código Segurança CLA', val: fmt.codigo_seguranca_cla || f.codigo_seguranca_cla },
+      { label: 'RNTRC', val: fmt.rntrc || f.rntrc },
+      { label: 'Código de Segurança CLA', val: fmt.codigo_seguranca_cla || f.codigo_seguranca_cla },
       { label: 'Número do CRV', val: fmt.numero_crv || f.numero_crv },
     ].filter(c => c.val && c.val.trim() && c.val !== ' cv /  cc' && c.val !== ' pass. /  eixos');
 
     if (tecCards.length > 0) {
-      const tecSection = createDocSection('Especificações Técnicas e Carga', '⚙️');
+      const tecSection = createDocSection('Especificações Técnicas e Numeração do CRV/CLA');
       const tecGrid = document.createElement('div');
       tecGrid.className = 'fields-grid';
       tecCards.forEach(c => {
@@ -379,13 +674,12 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(tecSection);
     }
 
-    // 4. Observações e Gravames
     const obsVal = fmt.observacoes || f.observacoes;
     if (obsVal && obsVal.trim()) {
-      const obsSection = createDocSection('Observações, Gravames e Restrições', '🔒');
+      const obsSection = createDocSection('Observações, Gravames e Restrições');
       const obsGrid = document.createElement('div');
       obsGrid.className = 'fields-grid';
-      obsGrid.appendChild(createFieldCard('Observações Registradas no CRLV', obsVal, false, 'full-width', true));
+      obsGrid.appendChild(createFieldCard('Observações Registradas no CRLV-e', obsVal, false, 'full-width', true));
       obsSection.appendChild(obsGrid);
       container.appendChild(obsSection);
     }
@@ -395,8 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fmt = data.formatted || {};
     const f = data.fields || {};
 
-    // 1. Identificação do Veículo e ATPV-e
-    const veicSection = createDocSection('Identificação do Veículo e ATPV-e', '🚗');
+    const veicSection = createDocSection('Identificação do Veículo e ATPV-e');
     const veicGrid = document.createElement('div');
     veicGrid.className = 'fields-grid';
 
@@ -408,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { label: 'Ano Fabricação / Modelo', val: fmt.ano_fabricacao_modelo || `${f.ano_fabricacao || ''}/${f.ano_modelo || ''}` },
       { label: 'Cor Predominante', val: fmt.cor || f.cor },
       { label: 'Número da ATPV-e', val: fmt.numero_atpv || f.numero_atpv, highlight: true },
-      { label: 'Cód. Segurança CRV / CLA', val: fmt.codigo_seguranca_crv || f.codigo_seguranca_crv },
+      { label: 'Código de Segurança CRV / CLA', val: fmt.codigo_seguranca_crv || f.codigo_seguranca_crv },
       { label: 'Número do CRV', val: fmt.numero_crv || f.numero_crv },
       { label: 'UF / Emissão do CRV', val: `${fmt.uf_emissao_crv || f.uf_emissao_crv || ''} - ${fmt.data_emissao_crv || f.data_emissao_crv || ''}` },
     ];
@@ -421,8 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
     veicSection.appendChild(veicGrid);
     container.appendChild(veicSection);
 
-    // 2. Dados da Transação e Hodômetro
-    const vendaSection = createDocSection('Dados da Venda, Local e Hodômetro', '💰');
+    const vendaSection = createDocSection('Dados da Transação, Local e Hodômetro');
     const vendaGrid = document.createElement('div');
     vendaGrid.className = 'fields-grid';
 
@@ -441,8 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
     vendaSection.appendChild(vendaGrid);
     container.appendChild(vendaSection);
 
-    // 3. Vendedor / Proprietário Anterior
-    const vendSection = createDocSection('Vendedor / Proprietário Anterior (Transmitente)', '📤');
+    const vendSection = createDocSection('Vendedor / Proprietário Anterior (Transmitente)');
     const vendGrid = document.createElement('div');
     vendGrid.className = 'fields-grid';
 
@@ -461,8 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
     vendSection.appendChild(vendGrid);
     container.appendChild(vendSection);
 
-    // 4. Comprador / Adquirente
-    const compSection = createDocSection('Comprador / Adquirente', '📥');
+    const compSection = createDocSection('Comprador / Adquirente');
     const compGrid = document.createElement('div');
     compGrid.className = 'fields-grid';
 
@@ -484,7 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderExternalQrLayout(data, container) {
     const f = data.fields || {};
-    const section = createDocSection('Conteúdo do QR Code Externo (Não-VIO)', '🌐');
+    const section = createDocSection('Conteúdo do QR Code Externo (Não-VIO)');
     const grid = document.createElement('div');
     grid.className = 'fields-grid';
 
@@ -514,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderGenericLayout(data, container) {
     const f = data.fields || {};
-    const section = createDocSection('Campos do Documento', '📋');
+    const section = createDocSection('Campos Extraídos do Documento');
     const grid = document.createElement('div');
     grid.className = 'fields-grid';
 
@@ -547,13 +837,13 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         const img = document.createElement('img');
         img.src = photoB64;
-        img.alt = 'Foto CNH';
+        img.alt = 'Fotografia CNH';
         wrapper.appendChild(img);
       }
     } else {
       const img = document.createElement('img');
       img.src = photoB64;
-      img.alt = 'Foto CNH';
+      img.alt = 'Fotografia CNH';
       wrapper.appendChild(img);
     }
 
@@ -561,16 +851,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const badge = document.createElement('div');
     badge.className = 'photo-badge';
-    badge.innerHTML = `<span>✓</span> Foto Serpro`;
+    badge.textContent = 'Biometria Serpro';
     showcase.appendChild(badge);
 
     const actions = document.createElement('div');
     actions.className = 'photo-actions';
 
     const btnCopyImg = document.createElement('button');
+    btnCopyImg.type = 'button';
     btnCopyImg.className = 'btn btn-secondary btn-sm';
     btnCopyImg.textContent = 'Copiar Foto';
-    btnCopyImg.title = 'Copiar foto para área de transferência';
+    btnCopyImg.title = 'Copiar fotografia para a área de transferência';
     btnCopyImg.addEventListener('click', () => {
       copyImageToClipboard(wrapper);
     });
@@ -623,9 +914,9 @@ document.addEventListener('DOMContentLoaded', () => {
       canvas.toBlob(blob => {
         if (blob && navigator.clipboard && navigator.clipboard.write) {
           navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
-            showToast('Foto copiada para a área de transferência!');
+            showToast('Fotografia copiada para a área de transferência');
           }).catch(() => {
-            showToast('Não foi possível copiar a imagem diretamente.');
+            showToast('Não foi possível copiar a imagem diretamente');
           });
         }
       });
@@ -633,18 +924,18 @@ document.addEventListener('DOMContentLoaded', () => {
       fetch(img.src).then(res => res.blob()).then(blob => {
         if (blob && navigator.clipboard && navigator.clipboard.write) {
           navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
-            showToast('Foto copiada para a área de transferência!');
+            showToast('Fotografia copiada para a área de transferência');
           });
         }
       }).catch(() => {
-        showToast('Abra a imagem com o botão direito para salvar.');
+        showToast('Clique com o botão direito sobre a foto para salvar');
       });
     } else {
-      showToast('Imagem pronta para uso notarial.');
+      showToast('Imagem pronta para uso notarial');
     }
   }
 
-  function createDocSection(title, icon) {
+  function createDocSection(title) {
     const sec = document.createElement('section');
     sec.className = 'doc-section';
 
@@ -653,7 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const ttl = document.createElement('h3');
     ttl.className = 'section-title';
-    ttl.innerHTML = `<span>${icon}</span> ${title}`;
+    ttl.textContent = title;
 
     hdr.appendChild(ttl);
     sec.appendChild(hdr);
@@ -679,6 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
     info.appendChild(val);
 
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = 'btn-copy-field';
     btn.title = `Copiar ${label}`;
     btn.innerHTML = `
@@ -690,7 +982,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      copyToClipboard(value, `${label} copiado!`);
+      copyToClipboard(value, `${label} copiado`);
     });
 
     card.appendChild(info);
@@ -709,8 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
     header.className = 'raw-accordion-header';
     header.innerHTML = `
       <div class="raw-accordion-title">
-        <span>🔍 Dicionário Completo de Campos e Metadados (VIO Raw / Auditoria)</span>
-        <span class="raw-count-badge">${entries.length} campos decodificados</span>
+        <span>Dicionário Técnico de Campos e Metadados (Auditoria VIO)</span>
+        <span class="raw-count-badge">${entries.length} campos</span>
       </div>
       <div class="raw-accordion-chevron">▼</div>
     `;
@@ -722,11 +1014,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const body = document.createElement('div');
     body.className = 'raw-accordion-body';
 
-    // Campo de busca rápida
     const searchBox = document.createElement('div');
     searchBox.style.marginBottom = '0.75rem';
     searchBox.innerHTML = `
-      <input type="text" placeholder="Filtrar campo por chave ou valor..." class="search-input" style="width: 100%; padding: 0.5rem 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.8rem; font-family: var(--font-mono);">
+      <input type="text" placeholder="Filtrar campo por chave ou valor..." class="search-input" style="width: 100%; padding: 0.5rem 0.75rem; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); font-size: 0.78rem; font-family: var(--font-mono);">
     `;
 
     const tableWrapper = document.createElement('div');
@@ -747,7 +1038,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tbody = table.querySelector('tbody');
 
-    // Metadados adicionais do envelope
     const metaRows = [
       ['__envelope_tipo', data.document_type || '—'],
       ['__envelope_template_id', String(data.template_id || '—')],
@@ -773,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="col-key">${k}</td>
           <td class="col-val">${valStr || '<span style="color: var(--text-muted); font-style: italic;">(vazio)</span>'}</td>
           <td class="col-act">
-            <button class="btn-copy-field" title="Copiar ${k}">
+            <button type="button" class="btn-copy-field" title="Copiar ${k}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -784,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tr.querySelector('.btn-copy-field').addEventListener('click', (e) => {
           e.stopPropagation();
-          copyToClipboard(valStr, `${k} copiado!`);
+          copyToClipboard(valStr, `${k} copiado`);
         });
 
         tbody.appendChild(tr);

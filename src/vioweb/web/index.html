@@ -3,111 +3,200 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VioWeb — Verificador Notarial de CRLV-e e CNH</title>
+  <title>VioWeb — Validação Oficial de Documentos (CRLV-e, CNH e ATPV-e)</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-container">
-    <header class="app-header">
-      <div class="brand">
-        <div class="brand-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <path d="m9 12 2 2 4-4"/>
-          </svg>
-        </div>
-        <div>
-          <h1>VioWeb</h1>
-          <p class="subtitle">Conferência Notarial Offline de Documentos Oficiais (CRLV-e / CNH / ATPV-e / CIN)</p>
-        </div>
-      </div>
-      <div class="system-status">
-        <span class="status-indicator"></span>
-        <span class="status-text">Motor Serpro/Vio 100% Offline</span>
-      </div>
-    </header>
+  <div class="top-brand-bar"></div>
 
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <span class="mark-red"></span>
+          <span class="mark-green"></span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1>VIOWEB</h1>
+            <span class="brand-tag">SERPRO / SENATRAN</span>
+          </div>
+          <p class="subtitle">Sistema de Conferência e Validação Criptográfica de Documentos</p>
+        </div>
+      </div>
+
+      <nav class="header-nav">
+        <button type="button" class="nav-link-btn" id="btn-header-upload">ENVIAR ARQUIVO</button>
+        <button type="button" class="nav-link-btn" id="btn-header-camera">LER COM CÂMERA</button>
+        <div class="system-status" title="Validação realizada localmente com certificados oficiais ICP-Brasil / SENATRAN">
+          <span class="status-indicator"></span>
+          <span class="status-text">Validação Offline Ativa</span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <div class="app-container">
     <main class="main-content">
-      <!-- Upload Zone -->
+      <!-- Upload & Camera Section -->
       <section class="upload-section" id="upload-section">
+        <!-- Dropzone Card -->
         <div class="dropzone" id="dropzone">
           <input type="file" id="file-input" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none">
-          <div class="dropzone-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
+          <div class="dropzone-icon" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <path d="m9 15 2 2 4-4"/>
             </svg>
           </div>
-          <h2>Arraste o PDF ou imagem do documento aqui</h2>
-          <p class="dropzone-hint">Suporta CRLV-e, CNH Digital, ATPV-e e CIN em PDF, PNG, JPEG ou Print</p>
+          <h2>Validação de Documentos Oficiais</h2>
+          <p class="dropzone-hint">Arraste o PDF ou imagem do documento (CRLV-e, CNH Digital, ATPV-e ou CIN), cole uma captura de tela ou utilize a webcam para leitura direta do documento físico.</p>
+
           <div class="dropzone-actions">
-            <button class="btn btn-primary" id="btn-browse">Selecionar Arquivo</button>
-            <span class="paste-hint">ou apenas pressione <kbd>Ctrl</kbd> + <kbd>V</kbd> para colar print</span>
+            <div class="action-buttons-row">
+              <button type="button" class="btn btn-primary" id="btn-browse">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                SELECIONAR ARQUIVO
+              </button>
+              <button type="button" class="btn btn-outline-primary" id="btn-open-camera">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                LER COM WEBCAM
+              </button>
+            </div>
+            <span class="paste-hint">Atalho rápido: pressione <kbd>Ctrl</kbd> + <kbd>V</kbd> em qualquer lugar da tela para colar print</span>
+          </div>
+
+          <div class="supported-pills">
+            <span class="doc-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg> CRLV-e Digital</span>
+            <span class="doc-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg> CNH Digital e Física</span>
+            <span class="doc-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg> ATPV-e (Intenção de Venda)</span>
+            <span class="doc-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg> CIN / RG Nacional</span>
           </div>
         </div>
 
+        <!-- Camera Scanner Panel -->
+        <div class="camera-panel" id="camera-panel" style="display:none">
+          <div class="camera-header">
+            <div class="camera-title-group">
+              <h3>Leitura Óptica via Webcam</h3>
+              <p id="camera-status-text">Posicione o QR Code do documento físico ou tela dentro da área de leitura</p>
+            </div>
+            <div class="camera-controls-top">
+              <select id="camera-select" class="camera-select" title="Selecionar dispositivo de câmera"></select>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-mirror-camera" title="Espelhar imagem da câmera">
+                Espelhar
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-close-camera">
+                Fechar (Esc)
+              </button>
+            </div>
+          </div>
+
+          <div class="camera-stage" id="camera-stage">
+            <video id="camera-video" autoplay playsinline muted></video>
+            <div class="camera-overlay">
+              <div class="qr-reticle" id="qr-reticle">
+                <span class="corner tl"></span>
+                <span class="corner tr"></span>
+                <span class="corner bl"></span>
+                <span class="corner br"></span>
+                <div class="scan-laser"></div>
+              </div>
+            </div>
+            <div class="camera-live-badge" id="camera-live-badge">
+              <span class="pulse-dot"></span>
+              <span id="camera-scan-indicator">Varredura automática ativa</span>
+            </div>
+          </div>
+
+          <div class="camera-footer">
+            <span class="camera-tip">Dica: Mantenha o documento firme a cerca de 15 a 25 cm da câmera, evitando reflexo direto de luz sobre o QR Code.</span>
+            <div class="camera-footer-actions">
+              <button type="button" class="btn btn-primary" id="btn-capture-now">
+                CAPTURAR AGORA (ESPAÇO)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading State -->
         <div class="loading-state" id="loading-state" style="display:none">
           <div class="spinner"></div>
-          <h3>Processando documento...</h3>
-          <p>Renderizando páginas em alta resolução e conferindo assinatura criptográfica offline</p>
+          <h3>Processando e validando documento...</h3>
+          <p>Decodificando envelope binário Serpro/VIO e verificando assinatura digital</p>
         </div>
       </section>
 
       <!-- Error Banner -->
       <div class="error-banner" id="error-banner" style="display:none">
-        <div class="error-icon">⚠️</div>
+        <div class="error-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
         <div class="error-details">
-          <h4 id="error-title">Erro na leitura</h4>
+          <h4 id="error-title">Atenção na leitura do documento</h4>
           <p id="error-message">Nenhum QR Code foi detectado no arquivo enviado.</p>
         </div>
-        <button class="btn btn-sm btn-ghost" id="btn-error-close">✕</button>
+        <button type="button" class="btn btn-sm btn-ghost" id="btn-error-close" aria-label="Fechar alerta">✕</button>
       </div>
 
       <!-- Result Container -->
       <section class="result-section" id="result-section" style="display:none">
         <div class="result-card">
-          <!-- Header do Resultado -->
           <div class="result-header">
-            <div class="doc-badge" id="doc-type-badge">CRLV Digital</div>
-            <div class="auth-badge" id="auth-badge">
-              <span class="auth-icon">✓</span>
-              <span class="auth-text" id="auth-status-text">Documento Autêntico</span>
+            <div class="result-badges">
+              <div class="doc-badge" id="doc-type-badge">CRLV Digital</div>
+              <div class="auth-badge" id="auth-badge">
+                <span class="auth-icon" id="auth-icon">✓</span>
+                <span class="auth-text" id="auth-status-text">Documento Autêntico</span>
+              </div>
             </div>
             <div class="result-actions">
-              <button class="btn btn-secondary btn-sm" id="btn-copy-all">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-all">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                 </svg>
-                Copiar Ficha Completa
+                COPIAR FICHA COMPLETA
               </button>
-              <button class="btn btn-ghost btn-sm" id="btn-new-check">Verificar Outro</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btn-result-camera">
+                LER OUTRO PELA CÂMERA
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-new-check">
+                NOVA CONSULTA
+              </button>
             </div>
           </div>
 
-          <!-- Alerta Jurídico Notarial -->
           <div class="notary-disclaimer">
-            <strong>⚠️ Nota Notarial:</strong> A autenticidade comprovada pelo VIO atesta a legitimidade do documento no instante de sua emissão pela SENATRAN. Restrições judiciais ou alienações supervenientes (ex: Renajud) devem ser checadas na base online do Detran caso o ato notarial exija certidão atualizada.
+            <strong>Nota Técnica Notarial:</strong> A validação criptográfica VIO comprova a autenticidade e integridade dos dados emitidos pela SENATRAN/DETRAN na data de emissão. Restrições judiciais ou gravames supervenientes (ex.: Renajud) devem ser conferidos na base estadual quando exigido pelo ato.
           </div>
 
-          <!-- Conteúdo Dinâmico do Documento -->
-          <div id="document-content">
-            <!-- Inserido dinamicamente via app.js -->
-          </div>
+          <div id="document-content"></div>
         </div>
       </section>
     </main>
 
     <footer class="app-footer">
-      <p>VioWeb — Verificação offline local em conformidade com a LGPD (Lei 13.709/18). Nenhum dado é enviado para servidores externos.</p>
+      <p>VioWeb — Conferência Criptográfica Offline de Documentos Oficiais em conformidade com a LGPD (Lei nº 13.709/2018).</p>
     </footer>
   </div>
 
-  <div class="toast" id="toast">Copiado para a área de transferência!</div>
+  <div class="toast" id="toast">Copiado para a área de transferência</div>
   <script src="/static/bpgdec8.js"></script>
   <script src="/static/app.js"></script>
 </body>
