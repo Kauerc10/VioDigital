@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -178,7 +178,7 @@ async def health():
 
 @app.get("/favicon.ico")
 async def favicon():
-    return JSONResponse(status_code=204, content=None)
+    return Response(status_code=204)
 
 
 @app.post("/api/documents/verify")
