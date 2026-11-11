@@ -929,20 +929,19 @@ document.addEventListener('DOMContentLoaded', () => {
     section.appendChild(grid);
 
     if (data.photo_b64) {
-      const mainLayout = document.createElement('div');
-      mainLayout.className = 'cnh-main-layout';
+      const heroLayout = document.createElement('div');
+      heroLayout.className = 'cnh-hero-layout';
+
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format);
+      heroLayout.appendChild(photoShowcase);
 
       const fieldsCol = document.createElement('div');
       fieldsCol.className = 'cnh-fields-col';
+      fieldsCol.style.flex = '1';
       fieldsCol.appendChild(section);
 
-      const photoCol = document.createElement('div');
-      photoCol.className = 'cnh-photo-col';
-      photoCol.appendChild(createPhotoShowcase(data.photo_b64, data.photo_format));
-
-      mainLayout.appendChild(fieldsCol);
-      mainLayout.appendChild(photoCol);
-      container.appendChild(mainLayout);
+      heroLayout.appendChild(fieldsCol);
+      container.appendChild(heroLayout);
     } else {
       container.appendChild(section);
     }
