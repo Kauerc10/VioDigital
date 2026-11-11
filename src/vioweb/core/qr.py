@@ -173,20 +173,70 @@ def _region_crops(gray):
 
 def decode_qr(image, *, upscale_steps: tuple[int, ...] = UPSCALE_STEPS) -> Optional[bytes]:
     """Decodifica o QRCode principal de uma ``PIL.Image``, priorizando envelopes VIO/CIN."""
+    from PIL import Image, ImageOps
+
     fallback_non_vio: Optional[bytes] = None
 
-    try:
-        Image, ImageOps, decode, ZBarSymbol = _import_readers()
-        # Se a imagem possuir canal alpha transparente (comum em prints recortados), compõe em fundo branco
-        if getattr(image, "mode", None) in ("RGBA", "LA") or (
-            getattr(image, "mode", None) == "P" and "transparency" in getattr(image, "info", {})
-        ):
-            rgba = image.convert("RGBA")
-            bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
-            image = Image.alpha_composite(bg, rgba).convert("RGB")
+    # Se a imagem possuir canal alpha transparente (comum em prints recortados), compõe em fundo branco
+    if getattr(image, "mode", None) in ("RGBA", "LA") or (
+        getattr(image, "mode", None) == "P" and "transparency" in getattr(image, "info", {})
+    ):
+        rgba = image.convert("RGBA")
+        bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+        image = Image.alpha_composite(bg, rgba).convert("RGB")
 
-        gray = image if image.mode == "L" else ImageOps.grayscale(image)
-        base_pixels = gray.width * gray.height
+    gray = image if image.mode == "L" else ImageOps.grayscale(image)
+    base_pixels = gray.width * gray.height
+
+    # 0) Leitor primário C++ (zxing-cpp): preserva bytes binários exatos e funciona sem libzbar
+    try:
+        import zxingcpp
+
+        def _scan_zxing(pil_img) -> Optional[bytes]:
+            nonlocal fallback_non_vio
+            bars = zxingcpp.read_barcodes(
+                pil_img,
+                formats=zxingcpp.BarcodeFormat.QRCode,
+                try_rotate=True,
+                try_downscale=True,
+                try_invert=True,
+            )
+            for bar in bars:
+                raw_b = bytes(bar.bytes)
+                for cand in _decode_qr_bytes_candidates(raw_b):
+                    if is_vio_or_cin_qr(cand):
+                        return cand
+                    if fallback_non_vio is None and cand:
+                        fallback_non_vio = cand
+            return None
+
+        hit = _scan_zxing(gray)
+        if hit is not None:
+            return hit
+
+        for factor in (2, 3):
+            if base_pixels * factor * factor <= MAX_PIXELS:
+                for scaled in _scaled_variants(gray, factor, Image):
+                    hit = _scan_zxing(scaled)
+                    if hit is not None:
+                        return hit
+
+        for crop in _region_crops(gray):
+            hit = _scan_zxing(crop)
+            if hit is not None:
+                return hit
+            crop_pixels = crop.width * crop.height
+            if crop_pixels * 4 <= MAX_PIXELS:
+                for scaled in _scaled_variants(crop, 2, Image):
+                    hit = _scan_zxing(scaled)
+                    if hit is not None:
+                        return hit
+    except Exception:
+        pass
+
+    # 1) Leitor secundário (pyzbar / libzbar) com escalonamento e filtros
+    try:
+        _Image, _ImageOps, decode, ZBarSymbol = _import_readers()
 
         def _scan_symbols(found_symbols) -> Optional[bytes]:
             nonlocal fallback_non_vio
@@ -237,7 +287,7 @@ def decode_qr(image, *, upscale_steps: tuple[int, ...] = UPSCALE_STEPS) -> Optio
                             if hit is not None:
                                 return hit
     except Exception:
-        gray = image if getattr(image, "mode", None) == "L" else image.convert("L")
+        pass
 
     # Fallback com OpenCV caso pyzbar não localize
     try:

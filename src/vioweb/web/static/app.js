@@ -536,9 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const wrapper = document.createElement('div');
     wrapper.className = 'photo-wrapper';
 
-    const isBpg = (photoFormat && photoFormat.toLowerCase() === 'bpg') || photoB64.startsWith('data:image/bpg');
+    const isBpg = photoB64.startsWith('data:image/bpg');
 
-    if (isBpg && typeof window.BPGDecoder !== 'undefined' && window.Module) {
+    if (isBpg && typeof window.BPGDecoder !== 'undefined') {
       const canvas = document.createElement('canvas');
       canvas.id = 'photo-canvas';
       const rendered = decodeBPGToCanvas(photoB64, canvas);
@@ -592,36 +592,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const ctx = canvas.getContext('2d');
       const dec = new window.BPGDecoder(ctx);
-      const img = dec.bpg_decoder_open();
-      if (dec.bpg_decoder_decode(img, u8, u8.length) < 0) return false;
-
-      const img_info_buf = dec.malloc(20);
-      dec.bpg_decoder_get_info(img, img_info_buf);
-      const heap8 = window.Module["HEAPU8"];
-      const heap32 = window.Module["HEAPU32"];
-      const w = heap32[img_info_buf >> 2];
-      const h = heap32[(img_info_buf + 4) >> 2];
-      canvas.width = w;
-      canvas.height = h;
-
-      const w4 = w * 4;
-      const rgba_line = dec.malloc(w4);
-      if (dec.bpg_decoder_start(img, 1) >= 0) {
-        const cimg = ctx.createImageData(w, h);
-        const dst = cimg.data;
-        let p0 = 0;
-        for (let y = 0; y < h; y++) {
-          dec.bpg_decoder_get_line(img, rgba_line);
-          for (let i = 0; i < w4; i++) {
-            dst[p0++] = heap8[rgba_line + i];
-          }
+      let ok = false;
+      dec.onload = function () {
+        const imageData = this.imageData || (this.frames && this.frames[0] && this.frames[0].img);
+        if (imageData) {
+          canvas.width = imageData.width;
+          canvas.height = imageData.height;
+          ctx.putImageData(imageData, 0, 0);
+          ok = true;
         }
-        ctx.putImageData(cimg, 0, 0);
+      };
+      if (typeof dec._onload === 'function') {
+        dec._onload({ response: u8.buffer }, null);
+      } else {
+        dec.load(base64Bpg);
+        ok = true;
       }
-      dec.free(rgba_line);
-      dec.free(img_info_buf);
-      dec.bpg_decoder_close(img);
-      return true;
+      return ok;
     } catch (err) {
       console.warn('Erro ao decodificar BPG no canvas:', err);
       return false;
