@@ -5,8 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vioweb"
 version = "0.1.0"
-description = "Verificador e decodificador offline de documentos veiculares (CRLV-e, CNH) Serpro/VIO"
-authors = [{ name = "VioWeb Team" }]
+description = "Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO)"
+authors = [
+    { name = "Kauê (@Kauerc10)" },
+    { name = "Helvio Junior (M4v3r1ck)", email = "helvio_junior@hotmail.com" },
+]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12"

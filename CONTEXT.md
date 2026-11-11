@@ -8,10 +8,13 @@ Este documento estabelece o modelo de domínio, a terminologia e as premissas op
 
 ### Entidades do Domínio
 
-* **CRLV-e (Certificado de Registro e Licenciamento de Veículo Eletrônico):** Documento veicular obrigatório anual emitido pela SENATRAN/Detran, contendo dados do veículo (placa, renavam, chassi) e do proprietário.
-* **CNH (Carteira Nacional de Habilitação):** Documento de habilitação do condutor emitido pela SENATRAN contendo dados biográficos, foto e categorias de condução.
-* **ATPV-e (Autorização para Transferência de Propriedade de Veículo):** Documento eletrônico utilizado para transferência veicular com reconhecimento de firma em cartório.
+* **CRLV-e (Certificado de Registro e Licenciamento de Veículo Eletrônico):** Documento veicular obrigatório anual emitido pela SENATRAN/Detran, contendo dados do veículo (placa, renavam, chassi) e do proprietário (Templates VIO 10, 12, 62 e 70, além do CRV-e RENAVE Template 24).
+* **CNH (Carteira Nacional de Habilitação):** Documento de habilitação do condutor emitido pela SENATRAN contendo dados biográficos, foto biométrica BPG e categorias de condução (Templates VIO 2, 4 e 83).
+* **ATPV-e (Autorização para Transferência de Propriedade de Veículo):** Documento eletrônico utilizado para intenção de venda e transferência veicular com reconhecimento de firma em cartório (Template VIO 43).
+* **CIN (Carteira de Identidade Nacional / Novo RG):** Documento nacional de identificação civil cujo QR Code armazena um token compacto JWS assinado com algoritmo ES512 pelas chaves públicas oficiais da ONR/ICP-Brasil.
+* **Catálogo de Templates VIO (`templates.json`):** Dicionário embarcado com 161 modelos oficiais de documentos governamentais brasileiros (incluindo TIE da Marinha, CRAF/Guia de Tráfego do Exército, Placas Mercosul, DNI, RG Digital e Carteiras de Conselhos Profissionais como CREA, CRA, CREF e CREFITO).
 * **QR Code VIO:** Código bidimensional de alta densidade impresso nos documentos oficiais brasileiros contendo um payload binário compactado e assinado digitalmente pelo SERPRO.
+* **QR Code Externo (Não-VIO):** Códigos bidimensionais presentes no mesmo documento ou folha (como Selo Digital de Fiscalização do TJ/Cartório, link do e-Notariado ou QR Code PIX de taxa estadual) que apontam para URLs ou pagamentos em vez de conterem um envelope criptográfico VIO.
 * **Assinatura Digital VIO:** Assinatura criptográfica assimétrica gerada pelo SERPRO que comprova matematicamente que os dados gravados no QR Code foram emitidos pelo órgão governamental e não foram alterados.
 * **Validação Criptográfica Offline:** Processo de verificação da integridade do documento realizado localmente na máquina, conferindo a assinatura digital contra as chaves públicas oficiais do governo, sem necessidade de internet nem chamadas de API.
 * **Conferência Notarial:** Procedimento executado pelo escrevente ou funcionário do cartório para confrontar os dados do documento apresentado pelo cliente com os registros do ato notarial (reconhecimento de firma, escritura, procuração).
