@@ -18,7 +18,7 @@ class CSPStaticHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';",
+            "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';",
         )
         self.send_header("Permissions-Policy", "camera=(self)")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -78,6 +78,7 @@ def test_e2e_privacy_zero_external_traffic_and_csp(static_server: str, tmp_path:
         csp = headers.get("content-security-policy", "")
         assert "connect-src 'self'" in csp
         assert "default-src 'self'" in csp
+        assert "manifest-src 'self'" in csp
 
         # 3. Testa bloqueio ativo de conexões externas pelo CSP
         csp_blocked = page.evaluate("""async () => {

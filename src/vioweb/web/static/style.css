@@ -26,8 +26,8 @@
   --warning-bg: #fffbeb;
   --warning-border: #f59e0b;
   --warning-text: #92400e;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --shadow-card: 0 6px 24px rgba(17, 24, 17, 0.06), 0 1px 3px rgba(17, 24, 17, 0.04);
   --shadow-sm: 0 1px 2px rgba(17, 24, 17, 0.05);
 }
@@ -142,7 +142,7 @@ body {
 
 .engine-status-step {
   display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.12rem 0.4rem;
@@ -176,7 +176,7 @@ body {
 }
 
 .engine-percent {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--primary);

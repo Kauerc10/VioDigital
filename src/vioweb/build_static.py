@@ -377,13 +377,16 @@ def build(output_dir: Path | str = "dist") -> Path:
         slug_dir.mkdir(exist_ok=True)
         (slug_dir / "index.html").write_text(seo_html, encoding="utf-8")
 
-    # 5. PWA: sw.js e manifest.json
+    # 5. PWA e Favicon: sw.js, manifest.json e favicon.ico
     sw_file = WEB_DIR / "sw.js"
     if sw_file.exists():
         (out / "sw.js").write_text(sw_file.read_text(encoding="utf-8"), encoding="utf-8")
     manifest_file = WEB_DIR / "manifest.json"
     if manifest_file.exists():
         (out / "manifest.json").write_text(manifest_file.read_text(encoding="utf-8"), encoding="utf-8")
+    favicon_file = WEB_DIR / "favicon.ico"
+    if favicon_file.exists():
+        shutil.copy2(favicon_file, out / "favicon.ico")
 
     # 6. robots.txt e sitemap.xml
     (out / "robots.txt").write_text(generate_robots_txt(), encoding="utf-8")

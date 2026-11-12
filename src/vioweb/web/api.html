@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';">
+  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/static/icon-192.png">
+  <meta name="theme-color" content="#3b7a28">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
   <title>API VioWeb para Cartórios, Despachantes e Empresas — Validação REST Serpro / VIO</title>
   <meta name="description" content="Integre a leitura e validação criptográfica de documentos VIO (CRLV-e, CNH, ATPV-e, CIN e +160 templates) diretamente no seu sistema notarial, ERP de despachante, locadora ou seguradora via API REST.">
   <meta name="robots" content="index, follow">
@@ -14,9 +20,6 @@
   <meta property="og:url" content="https://vioweb.vercel.app/api-comercial">
 
   <link rel="stylesheet" href="/static/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="top-brand-bar"></div>
