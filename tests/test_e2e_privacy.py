@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List
 
 import pytest
+playwright = pytest.importorskip("playwright", reason="playwright não está instalado")
 from playwright.sync_api import sync_playwright
 
 from vioweb.build_static import build
@@ -18,7 +19,7 @@ class CSPStaticHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';",
+            "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';",
         )
         self.send_header("Permissions-Policy", "camera=(self)")
         self.send_header("X-Content-Type-Options", "nosniff")

@@ -1274,10 +1274,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (rendered) {
         wrapper.appendChild(canvas);
       } else {
-        const img = document.createElement('img');
-        img.src = photoB64;
-        img.alt = 'Fotografia CNH';
-        wrapper.appendChild(img);
+        const placeholder = document.createElement('div');
+        placeholder.className = 'photo-placeholder-error';
+        placeholder.style.padding = '1rem';
+        placeholder.style.color = 'var(--text-muted, #666)';
+        placeholder.style.fontSize = '0.85rem';
+        placeholder.style.textAlign = 'center';
+        placeholder.textContent = 'Não foi possível renderizar a fotografia biométrica';
+        wrapper.appendChild(placeholder);
       }
     } else {
       const img = document.createElement('img');
@@ -1313,6 +1317,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function decodeBPGToCanvas(base64Bpg, canvas) {
     try {
+      if (typeof window.BPGDecoder === 'undefined') {
+        return false;
+      }
       const base64Data = base64Bpg.replace(/^data:image\/[a-z0-9_-]+;base64,/, '');
       const bin = atob(base64Data);
       const u8 = new Uint8Array(bin.length);
@@ -1322,6 +1329,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const ctx = canvas.getContext('2d');
       const dec = new window.BPGDecoder(ctx);
+
+      // 1. Tenta decodificação direta via C API (idêntico ao bpg_converter.js)
+      try {
+        const img = dec.bpg_decoder_open();
+        if (img) {
+          const ret = dec.bpg_decoder_decode(img, u8, u8.length);
+          if (ret >= 0) {
+            const img_info_buf = dec.malloc(20);
+            dec.bpg_decoder_get_info(img, img_info_buf);
+            const heap8 = (window.Module && window.Module.HEAPU8) || dec.HEAPU8;
+            const heap32 = (window.Module && window.Module.HEAPU32) || dec.HEAPU32;
+            if (heap8 && heap32) {
+              const w = heap32[img_info_buf >> 2];
+              const h = heap32[(img_info_buf + 4) >> 2];
+              if (w > 0 && h > 0) {
+                const w4 = w * 4;
+                const rgba_line = dec.malloc(w4);
+                if (dec.bpg_decoder_start(img, 1) >= 0) {
+                  canvas.width = w;
+                  canvas.height = h;
+                  const imgData = ctx.createImageData(w, h);
+                  const dst = imgData.data;
+                  let p0 = 0;
+                  for (let y = 0; y < h; y++) {
+                    dec.bpg_decoder_get_line(img, rgba_line);
+                    for (let i = 0; i < w4; i++) {
+                      dst[p0++] = heap8[rgba_line + i];
+                    }
+                  }
+                  ctx.putImageData(imgData, 0, 0);
+                  dec.free(rgba_line);
+                  dec.free(img_info_buf);
+                  dec.bpg_decoder_close(img);
+                  return true;
+                }
+                dec.free(rgba_line);
+              }
+            }
+            dec.free(img_info_buf);
+          }
+          dec.bpg_decoder_close(img);
+        }
+      } catch (directErr) {
+        console.warn('Falha na decodificação direta BPG, tentando fallback _onload:', directErr);
+      }
+
+      // 2. Fallback via dec._onload
       let ok = false;
       dec.onload = function () {
         const imageData = this.imageData || (this.frames && this.frames[0] && this.frames[0].img);
@@ -1334,9 +1388,6 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       if (typeof dec._onload === 'function') {
         dec._onload({ response: u8.buffer }, null);
-      } else {
-        dec.load(base64Bpg);
-        ok = true;
       }
       return ok;
     } catch (err) {
