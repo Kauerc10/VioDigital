@@ -299,7 +299,7 @@ def test_api_dedicated_pages_and_seo_routes():
     assert "https://github.com/Kauerc10/VioWeb" in html
     assert 'href="/documentos"' in html
     assert 'href="/apoiar"' in html
-    assert 'href="/api-comercial"' in html
+    assert 'href="/privacidade"' in html
 
     docs_page = client.get("/documentos")
     assert docs_page.status_code == 200
@@ -307,11 +307,11 @@ def test_api_dedicated_pages_and_seo_routes():
 
     apoiar_page = client.get("/apoiar")
     assert apoiar_page.status_code == 200
-    assert "COPIAR CHAVE PIX" in apoiar_page.text
+    assert "Apoie o VioWeb" in apoiar_page.text
 
-    api_page = client.get("/api-comercial")
-    assert api_page.status_code == 200
-    assert "POST /api/documents/verify" in api_page.text
+    priv_page = client.get("/privacidade")
+    assert priv_page.status_code == 200
+    assert "LGPD" in priv_page.text
 
     for slug, expected in [
         ("crlv", "CRLV-e Digital"),

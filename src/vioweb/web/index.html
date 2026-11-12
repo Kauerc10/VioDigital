@@ -65,7 +65,7 @@
         <button type="button" class="nav-link-btn" id="btn-header-upload">ENVIAR ARQUIVO</button>
         <button type="button" class="nav-link-btn" id="btn-header-camera">LER COM CÂMERA</button>
         <a href="/documentos" class="nav-link-btn">DOCUMENTOS (161)</a>
-        <a href="/api-comercial" class="nav-link-btn">API PARA SISTEMAS</a>
+        <a href="/privacidade" class="nav-link-btn">PRIVACIDADE (LGPD)</a>
         <a href="/apoiar" class="nav-link-btn nav-link-highlight">APOIAR PROJETO</a>
         <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="nav-github-link" title="Projeto Open Source no GitHub">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -240,10 +240,7 @@
         </div>
         <div class="community-strip-actions">
           <a href="/apoiar" class="btn btn-outline-primary btn-sm">
-            Apoiar Projeto (PIX)
-          </a>
-          <a href="/api-comercial" class="btn btn-secondary btn-sm">
-            API para Sistemas
+            Apoiar Projeto
           </a>
           <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">
             GitHub Oficial
@@ -263,25 +260,28 @@
         <details class="seo-accordion">
           <summary>Como validar QR Code de CRLV-e, CNH Digital e ATPV-e no computador sem usar celular?</summary>
           <div class="seo-accordion-body">
-            <p>Você pode validar qualquer documento oficial em segundos diretamente no PC de três maneiras: <strong>(1) Arrastando o PDF ou imagem</strong> recebido por WhatsApp Web ou e-mail; <strong>(2) Pressionando Ctrl + V</strong> após tirar um print da tela do documento; ou <strong>(3) Clicando em "Ler com Webcam"</strong> e apontando o documento físico impresso para a câmera do computador. O VioWeb extrai os campos, exibe a foto biométrica 3x4 e permite copiar toda a ficha para o sistema do cartório em um clique.</p>
+            <p>Você pode validar qualquer documento oficial em segundos diretamente no PC de três maneiras: <strong>(1) Arrastando o PDF ou imagem</strong> recebido por WhatsApp Web ou e-mail; <strong>(2) Pressionando Ctrl + V</strong> após tirar um print da tela do documento; ou <strong>(3) Clicando em "Ler com Câmera"</strong> e apontando o documento físico impresso para a câmera do computador. O VioWeb extrai os campos, exibe a foto biométrica 3x4 e permite copiar toda a ficha para o sistema do cartório em um clique.</p>
           </div>
         </details>
 
         <details class="seo-accordion">
           <summary>A validação criptográfica do VioWeb é segura e está em conformidade com a LGPD?</summary>
           <div class="seo-accordion-body">
-            <p>Sim. A verificação matemática da assinatura digital (ECDSA/RSA) utiliza exclusivamente as chaves públicas oficiais do Serpro/SENATRAN/ICP-Brasil. Nenhum documento, foto ou dado pessoal é comercializado ou retido em bancos de dados externos, atendendo rigorosamente à Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Além disso, o código-fonte é 100% auditável no GitHub e pode ser executado localmente na rede interna do cartório.</p>
+            <p>Sim. A verificação matemática da assinatura digital (ECDSA/RSA) utiliza exclusivamente as chaves públicas oficiais do Serpro/SENATRAN/ICP-Brasil. O processamento no site ocorre inteiramente na memória do seu navegador via WebAssembly, sem tráfego de dados para servidores externos. Nenhum documento, foto ou dado pessoal é comercializado ou retido em bancos de dados externos, atendendo rigorosamente à Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Além disso, o código-fonte é 100% auditável no GitHub e pode ser executado localmente na rede interna do cartório. <a href="/privacidade" style="color:var(--primary); font-weight:600;">Leia nossa política de privacidade e conformidade LGPD →</a></p>
           </div>
         </details>
       </section>
     </main>
 
     <footer class="app-footer">
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">
+        O VioWeb é um projeto independente e open source. Não possui vínculo, afiliação ou endosso por parte do Serpro, SENATRAN ou DETRANs.
+      </p>
       <p>
-        VioWeb — Conferência Criptográfica de Documentos Oficiais em conformidade com a LGPD (Lei nº 13.709/2018) ·
+        VioWeb — Projeto Comunitário Open Source (Licença MIT) ·
         <a href="/documentos">161 Documentos</a> ·
-        <a href="/api-comercial">API Comercial</a> ·
-        <a href="/apoiar">Apoiar com PIX</a> ·
+        <a href="/privacidade">Privacidade (LGPD)</a> ·
+        <a href="/apoiar">Apoiar Projeto</a> ·
         <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer">Código Aberto (MIT)</a>
       </p>
     </footer>

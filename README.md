@@ -2,6 +2,9 @@
 
 > Verificador e decodificador **100% gratuito e Open Source** de documentos oficiais brasileiros (**CRLV-e, CNH, ATPV-e, CIN / Novo RG, TIE Marinha, CRAF e +160 templates VIO**) projetado para **computadores de cartórios, despachantes, empresas e cidadãos**.
 
+> [!NOTE]
+> **Aviso Legal e Não-Afiliação Institucional:** O **VioWeb** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://vioweb.vercel.app/privacidade).
+
 [![CI](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
@@ -136,7 +139,8 @@ O **VioWeb** foi criado para continuar sendo **gratuito, aberto e acessível** p
 
 Se esta ferramenta economiza tempo e dinheiro no seu dia a dia, considere apoiar a manutenção do projeto:
 * Deixe uma **Estrela (Star)** neste repositório no GitHub e compartilhe com colegas de outros cartórios e escritórios!
-* **Doação via PIX:** *(Chave PIX e QR Code de apoio serão disponibilizados aqui em breve)*.
+* Acompanhe e envie feedbacks, ideias e melhorias através das [Issues do GitHub](https://github.com/Kauerc10/VioWeb/issues).
+* Para apoiar voluntariamente os custos de infraestrutura do projeto, acesse a [página de apoio](https://vioweb.vercel.app/apoiar).
 
 ---
 

@@ -130,6 +130,7 @@ def generate_sitemap_xml() -> str:
     urls = [
         ("https://vioweb.vercel.app/", "1.0"),
         ("https://vioweb.vercel.app/documentos", "0.9"),
+        ("https://vioweb.vercel.app/privacidade", "0.9"),
         ("https://vioweb.vercel.app/validar-crlv", "0.9"),
         ("https://vioweb.vercel.app/validar-cnh", "0.9"),
         ("https://vioweb.vercel.app/validar-atpv", "0.9"),
@@ -149,15 +150,37 @@ def generate_sitemap_xml() -> str:
     )
 
 
+def _safe_clean_dir(path: Path) -> None:
+    if not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
+        return
+    import time
+
+    for item in list(path.iterdir()):
+        try:
+            if item.is_dir():
+                shutil.rmtree(item, ignore_errors=True)
+            else:
+                item.unlink(missing_ok=True)
+        except Exception:
+            time.sleep(0.1)
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+                else:
+                    item.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
 def build(output_dir: Path | str = "dist") -> Path:
     out = Path(output_dir).resolve()
-    if out.exists():
-        shutil.rmtree(out)
+    _safe_clean_dir(out)
     out.mkdir(parents=True, exist_ok=True)
 
     # 1. Copia static
     dist_static = out / "static"
-    shutil.copytree(STATIC_DIR, dist_static)
+    shutil.copytree(STATIC_DIR, dist_static, dirs_exist_ok=True)
 
     # 2. Gera templates-data.json
     tpl_data = get_templates_catalog_data()

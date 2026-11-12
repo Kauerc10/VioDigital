@@ -186,12 +186,12 @@ async def sitemap_xml():
     urls = [
         ("https://vioweb.vercel.app/", "1.0"),
         ("https://vioweb.vercel.app/documentos", "0.9"),
+        ("https://vioweb.vercel.app/privacidade", "0.9"),
         ("https://vioweb.vercel.app/validar-crlv", "0.9"),
         ("https://vioweb.vercel.app/validar-cnh", "0.9"),
         ("https://vioweb.vercel.app/validar-atpv", "0.9"),
         ("https://vioweb.vercel.app/validar-cin", "0.8"),
         ("https://vioweb.vercel.app/validar-tie-marinha", "0.8"),
-        ("https://vioweb.vercel.app/api-comercial", "0.8"),
         ("https://vioweb.vercel.app/apoiar", "0.7"),
     ]
     items = "\n".join(
@@ -335,10 +335,10 @@ async def page_apoiar():
     raise HTTPException(status_code=404)
 
 
-@app.get("/api-comercial")
-async def page_api_comercial():
+@app.get("/privacidade")
+async def page_privacidade():
     for base in (WEB_DIR, SRC_WEB_DIR):
-        page = base / "api.html"
+        page = base / "privacidade.html"
         if page.exists():
             return FileResponse(page)
     raise HTTPException(status_code=404)

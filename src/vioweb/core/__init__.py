@@ -1,17 +1,17 @@
-"""Digital Document Checker.
+"""VioWeb Core.
 
-Biblioteca modular para *parsing*, verificação e validação de documentos
-digitais brasileiros codificados em QRCode: o padrão SERPRO/VIO (CNH, DNI,
-RG Digital) e a CIN — Carteira de Identidade Nacional, cujo QRCode é um JWT
-assinado (ES512) pelo MJSP.
+Biblioteca modular para parsing, verificação e validação de documentos
+digitais oficiais brasileiros codificados em QRCode: o padrão SERPRO/VIO
+(CRLV-e, CNH, ATPV-e, DNI, RG Digital e +160 templates) e a CIN — Carteira de
+Identidade Nacional (token JWS assinado ES512).
 
 Uso rápido::
 
-    from digital_document_checker import DigitalDocumentChecker
+    from vioweb.core import DigitalDocumentChecker
 
     checker = DigitalDocumentChecker()
-    result = checker.parse_pdf("cnh.pdf")
-    print(result.document_type, result.is_authentic, result.is_expired)
+    result = checker.parse_bytes(qr_bytes)
+    print(result.document_type, result.is_authentic, result.is_valid)
     print(result.fields)
 """
 
