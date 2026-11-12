@@ -18,11 +18,15 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from vioweb.core.registry import default_templates
-
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+SRC_DIR = ROOT_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 WEB_DIR = Path(__file__).resolve().parent / "web"
 STATIC_DIR = WEB_DIR / "static"
+
+from vioweb.core.registry import default_templates
 
 SEO_DOC_PAGES: Dict[str, Dict[str, str]] = {
     "crlv": {
@@ -191,6 +195,17 @@ def build_wheel(wheels_dir: Path) -> Path | None:
     return built[0] if built else None
 
 
+def _download_file(url: str, dest: Path) -> None:
+    import urllib.request
+
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 VioWeb-Builder"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp, open(dest, "wb") as f:
+        shutil.copyfileobj(resp, f)
+
+
 def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
     vendor_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = ROOT_DIR / ".vendor_cache"
@@ -226,9 +241,7 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
         cached_file = pyodide_cache / fname
         if not cached_file.exists() and download:
             try:
-                import urllib.request
-
-                urllib.request.urlretrieve(pyodide_base + fname, cached_file)
+                _download_file(pyodide_base + fname, cached_file)
             except Exception as e:
                 print(f"Aviso: Não foi possível baixar {fname}: {e}")
         if cached_file.exists():
@@ -242,9 +255,7 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
         cached_file = zxing_cache / fname
         if not cached_file.exists() and download:
             try:
-                import urllib.request
-
-                urllib.request.urlretrieve(url, cached_file)
+                _download_file(url, cached_file)
             except Exception as e:
                 print(f"Aviso: Não foi possível baixar {fname}: {e}")
         if cached_file.exists():
@@ -258,9 +269,7 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
         cached_file = pdfjs_cache / fname
         if not cached_file.exists() and download:
             try:
-                import urllib.request
-
-                urllib.request.urlretrieve(url, cached_file)
+                _download_file(url, cached_file)
             except Exception as e:
                 print(f"Aviso: Não foi possível baixar {fname}: {e}")
         if cached_file.exists():

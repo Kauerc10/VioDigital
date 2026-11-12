@@ -1,8 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "python3 src/vioweb/build_static.py",
+  "installCommand": "python3 -m pip install build cryptography",
+  "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
-  "outputDirectory": "dist",
   "headers": [
     {
       "source": "/(.*)",
