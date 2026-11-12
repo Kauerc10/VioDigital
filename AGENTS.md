@@ -1,6 +1,6 @@
-# VioWeb: Diretrizes de Desenvolvimento e Contexto do Repositório
+# VioDigital: Diretrizes de Desenvolvimento e Contexto do Repositório
 
-Bem-vindo ao repositório do **VioWeb**, o verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, Placas Mercosul) baseado na tecnologia Serpro/Vio, projetado para uso em computadores e navegadores em ambientes de cartório e corporativos.
+Bem-vindo ao repositório do **VioDigital**, o verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, Placas Mercosul) baseado na tecnologia Serpro/Vio, projetado para uso em computadores e navegadores em ambientes de cartório e corporativos.
 
 ---
 
@@ -22,7 +22,7 @@ Estrutura de contexto único (`CONTEXT.md` na raiz e `docs/adr/` para decisões 
 
 ## 1. Visão Geral do Projeto
 
-O objetivo do VioWeb é permitir que colaboradores de cartórios e empresas confiram a autenticidade e extraiam automaticamente os dados de documentos veiculares (CRLV-e) e habilitações (CNH) diretamente em seus computadores:
+O objetivo do VioDigital é permitir que colaboradores de cartórios e empresas confiram a autenticidade e extraiam automaticamente os dados de documentos veiculares (CRLV-e) e habilitações (CNH) diretamente em seus computadores:
 * **Entradas:** Arraste de arquivos PDF, imagens escaneadas ou colagem de captura de tela (`Ctrl+V`).
 * **Processamento:** Extração do QR Code em alta resolução (300 DPI), desempacotamento do envelope binário VIO, decodificação dos campos (6-bit, 7-bit, BasE91) e verificação criptográfica offline da assinatura digital (ECDSA/RSA) contra certificados oficiais do SERPRO/SENATRAN.
 * **Saída:** Interface web elegante e instantânea com selo de autenticidade, campos formatados (Placa, Renavam, Chassi, Proprietário, Categoria, Validade) e botões de cópia rápida para o sistema notarial.

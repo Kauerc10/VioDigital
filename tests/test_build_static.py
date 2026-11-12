@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from vioweb.build_static import SEO_DOC_PAGES, build
+from viodigital.build_static import SEO_DOC_PAGES, build
 
 
 def test_build_static_generates_all_assets(tmp_path: Path):

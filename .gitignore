@@ -35,6 +35,8 @@ htmlcov/
 .vendor_cache/
 src/vioweb/web/static/vendor/
 src/vioweb/web/static/wheels/
+src/viodigital/web/static/vendor/
+src/viodigital/web/static/wheels/
 
 # Environment & IDE
 .env

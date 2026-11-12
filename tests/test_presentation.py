@@ -3,14 +3,14 @@ from __future__ import annotations
 import base64
 from datetime import datetime, timezone
 
-from vioweb.core.documents.atpv import ATPVData
-from vioweb.core.documents.cin import CINData
-from vioweb.core.documents.cnh import CNHData
-from vioweb.core.documents.crlv import CRLVData
-from vioweb.core.documents.dni import DNIData
-from vioweb.core.documents.rg import RGData
-from vioweb.core.models import DocumentResult, Photo, SignatureInfo
-from vioweb.core.presentation import format_generic_fields, mask_cpf_cnpj, present
+from viodigital.core.documents.atpv import ATPVData
+from viodigital.core.documents.cin import CINData
+from viodigital.core.documents.cnh import CNHData
+from viodigital.core.documents.crlv import CRLVData
+from viodigital.core.documents.dni import DNIData
+from viodigital.core.documents.rg import RGData
+from viodigital.core.models import DocumentResult, Photo, SignatureInfo
+from viodigital.core.presentation import format_generic_fields, mask_cpf_cnpj, present
 
 
 def test_mask_cpf_cnpj():

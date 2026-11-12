@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "python3 src/vioweb/build_static.py",
+  "buildCommand": "python3 src/viodigital/build_static.py",
   "installCommand": "echo 'No installation step required'",
   "outputDirectory": "dist",
   "cleanUrls": true,

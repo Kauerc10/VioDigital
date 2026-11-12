@@ -1,0 +1,9 @@
+__version__ = "0.2.0"
+__title__ = "viodigital"
+__service__ = "VioDigital"
+__description__ = "Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO)"
+__url__ = "https://github.com/Kauerc10/VioDigital"
+__build__ = 0x000200
+__author__ = "Kauê (@Kauerc10)"
+__license__ = "MIT"
+__copyright__ = "Copyright (c) 2026 Kauê (@Kauerc10) & Helvio Junior"

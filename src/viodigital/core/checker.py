@@ -1,0 +1,505 @@
+"""Orquestrador principal: parsing + verificação + validação.
+
+Princípios (conforme requisitos do projeto):
+
+* O **parsing ocorre sempre**, independente de validade ou autenticidade.
+* O retorno traz **todos os dados disponíveis** mais os campos de estado
+  (``is_parsed``, ``is_authentic``, ``is_valid``, ``is_expired`` ...).
+* Erros de assinatura/expiração **não** interrompem o parsing — são reportados
+  em ``errors`` / ``warnings``.
+"""
+
+from __future__ import annotations
+
+import base64
+from datetime import datetime, timezone
+from typing import Optional
+
+from . import crypto
+from .documents import find_handler
+from .documents.cin import EXPECTED_ISSUER, CINHandler
+from .exceptions import ParseError
+from .formats import get_format, parse_envelope
+from .formats.envelope import looks_like_external_qr
+from .formats.jws import looks_like_compact_jws, parse_compact_jws
+from .images import make_photo
+from .models import DocumentResult, SignatureInfo
+from .registry import (
+    CertificateStore,
+    CINKeyStore,
+    TemplateStore,
+    default_certificates,
+    default_cin_keys,
+    default_templates,
+)
+
+
+class DigitalDocumentChecker:
+    """Ponto de entrada da biblioteca."""
+
+    def __init__(
+        self,
+        certificates: Optional[CertificateStore] = None,
+        templates: Optional[TemplateStore] = None,
+        *,
+        verify_signature: bool = True,
+        cin_keys: Optional[CINKeyStore] = None,
+        cin_environment: Optional[str] = None,
+    ) -> None:
+        self.certificates = certificates or default_certificates()
+        self.templates = templates or default_templates()
+        self.verify_signature = verify_signature
+        self.cin_keys = cin_keys or default_cin_keys()
+        #: ambiente da CIN (``"PROD"`` como no app; ``"*"`` testa todos).
+        self.cin_environment = cin_environment
+
+    # ------------------------------------------------------------------ #
+    # Entradas
+    # ------------------------------------------------------------------ #
+    def parse_bytes(
+        self, data: bytes, *, now: Optional[datetime] = None
+    ) -> DocumentResult:
+        """Interpreta os bytes brutos de um QRCode."""
+        return self._process(data, now=now)
+
+    def parse_base64(self, b64: str, *, now: Optional[datetime] = None) -> DocumentResult:
+        return self._process(base64.b64decode(b64), now=now)
+
+    def parse_qr_text(self, text: str, *, now: Optional[datetime] = None) -> DocumentResult:
+        """Interpreta o texto lido de um QRCode (Latin-1/UTF-8)."""
+        try:
+            data = text.encode("utf-8").decode("utf-8").encode("latin-1")
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            data = text.encode("latin-1", errors="strict")
+        return self._process(data, now=now)
+
+    def parse_image(self, source, *, now: Optional[datetime] = None) -> DocumentResult:
+        from .qr import read_qr_from_image
+
+        return self._process(read_qr_from_image(source), now=now)
+
+    def parse_pdf(
+        self, source: str | bytes, *, dpi: int = 300, now: Optional[datetime] = None
+    ) -> DocumentResult:
+        from .qr import read_qr_from_pdf
+
+        return self._process(read_qr_from_pdf(source, dpi=dpi), now=now)
+
+    def parse_file(
+        self, source: str | bytes, *, now: Optional[datetime] = None
+    ) -> DocumentResult:
+        """Detecta PDF vs imagem pelo conteúdo ou caminho e faz o parsing."""
+        if isinstance(source, (bytes, bytearray)):
+            if source.startswith(b"%PDF"):
+                return self.parse_pdf(source, now=now)
+            return self.parse_image(source, now=now)
+
+        with open(source, "rb") as handle:
+            head = handle.read(5)
+        if head.startswith(b"%PDF"):
+            return self.parse_pdf(source, now=now)
+        return self.parse_image(source, now=now)
+
+    # ------------------------------------------------------------------ #
+    # Núcleo
+    # ------------------------------------------------------------------ #
+    def _process(self, data: bytes, *, now: Optional[datetime]) -> DocumentResult:
+        now = now or datetime.now(timezone.utc)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+
+        result = DocumentResult(raw=bytes(data))
+
+        # 0) CIN — o QRCode é um JWT, não o envelope binário do padrão VIO.
+        if looks_like_compact_jws(data):
+            return self._process_cin(data, result, now=now)
+
+        # 0.1) QRCode externo (URL http/https, Selo Digital TJ, e-Notariado, PIX)
+        if looks_like_external_qr(data):
+            return self._process_external_qr(data, result)
+
+        # 1) Envelope
+        try:
+            envelope = parse_envelope(data)
+        except ParseError as exc:
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
+            result.add_error(f"envelope inválido: {exc}")
+            return result
+
+        result.qr_version = envelope.version
+        result.header_format = envelope.header_format
+        result.issued_at = envelope.issued_at
+
+        # 2) Formato específico da versão
+        fmt = get_format(envelope.version)
+        if fmt is None:
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
+            result.add_error(f"versão de envelope não suportada: {envelope.version}")
+            return result
+
+        try:
+            payload = fmt.parse(envelope)
+        except ParseError as exc:
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
+            result.add_error(f"falha no parsing do payload (v{envelope.version}): {exc}")
+            return result
+        except Exception as exc:  # noqa: BLE001
+            if _looks_like_printable_text(data):
+                return self._process_external_qr(data, result)
+            result.add_error(f"erro inesperado no parsing (v{envelope.version}): {exc}")
+            return result
+
+        for warning in payload.warnings:
+            result.add_warning(warning)
+
+        result.is_parsed = True
+        result.template_id = payload.template_id
+        result.fields_raw_string = payload.fields_raw
+        result.raw_fields = list(payload.field_values)
+        result.signed_data = payload.signed_data
+        result.photo = make_photo(payload.photo)
+        if payload.extra:
+            result.extra = payload.extra
+
+        # 3) Template / tipo de documento
+        template = self.templates.get(payload.template_id)
+        result.template = template
+        result.is_known_template = template is not None
+        if template is not None:
+            result.template_name = template.name
+            result.template_owner = template.owner
+            result.document_name = template.name
+            result.is_sandbox = template.sandbox
+            if template.valid_until is not None:
+                result.expires_on = template.valid_until
+
+        handler = find_handler(payload.template_id, template)
+        result.document_type = handler.type_name
+        if result.document_name is None:
+            result.document_name = handler.display_name
+
+        try:
+            data_obj = handler.build(payload, template)
+            result.data = data_obj
+            result.fields = dict(data_obj.fields)
+        except Exception as exc:  # noqa: BLE001
+            result.add_warning(f"falha ao estruturar campos: {exc}")
+            result.fields = {}
+
+        # 4) Assinatura digital
+        self._verify(result, payload, template, envelope, now)
+
+        # 5) Expiração (data de validade do próprio documento, quando presente)
+        self._check_expiration(result, now)
+
+        # 6) Estado final
+        result.is_valid = bool(
+            result.is_parsed
+            and result.is_authentic
+            and result.is_expired is not True
+        )
+        return result
+
+    # ------------------------------------------------------------------ #
+    # QRCode Externo (URLs de Selo Digital TJ, e-Notariado, Detran, PIX)
+    # ------------------------------------------------------------------ #
+    def _process_external_qr(
+        self, data: bytes, result: DocumentResult
+    ) -> DocumentResult:
+        """Processa QR Codes não-VIO (URLs, Selo Digital TJ, e-Notariado, PIX)
+        sem quebrar a aplicação, retornando campos estruturados e diagnóstico claro.
+        """
+        from urllib.parse import parse_qs, urlparse
+
+        try:
+            text = data.decode("utf-8").strip()
+        except UnicodeDecodeError:
+            text = data.decode("latin-1", errors="replace").strip()
+
+        result.is_parsed = True
+        result.is_authentic = False
+        result.is_valid = False
+        result.document_type = "external_qr"
+        result.header_format = "external"
+        result.fields_raw_string = text
+        result.raw_fields = [text]
+
+        fields: dict[str, str] = {"conteudo_qr": text}
+        lower = text.lower()
+
+        if lower.startswith(("http://", "https://", "www.")):
+            url_str = text if not lower.startswith("www.") else f"https://{text}"
+            parsed = urlparse(url_str)
+            host = (parsed.netloc or "").lower()
+            fields["url_verificacao"] = url_str
+            if host:
+                fields["dominio"] = host
+            if parsed.path and parsed.path != "/":
+                fields["caminho_recurso"] = parsed.path
+
+            for k, vals in parse_qs(parsed.query).items():
+                if vals:
+                    fields[f"param_{k}"] = ", ".join(vals)
+
+            if "tjsc" in host or "selo" in host or "tj" in host:
+                result.document_name = "QR Code de Selo Digital / TJ"
+                fields["tipo_qr_detectado"] = "Selo Digital de Fiscalização Judiciária"
+            elif "notariado" in host or "cenad" in host:
+                result.document_name = "QR Code e-Notariado"
+                fields["tipo_qr_detectado"] = "Validação Externa e-Notariado"
+            elif "senatran" in host or "detran" in host or "serpro" in host or "gov.br" in host:
+                result.document_name = "QR Code de Link Gov.br / Detran"
+                fields["tipo_qr_detectado"] = "Link de Consulta Online (Não-VIO)"
+            else:
+                result.document_name = "QR Code de Link Externo (URL)"
+                fields["tipo_qr_detectado"] = "URL Externa"
+
+            result.add_warning(
+                "O QR Code lido contém um link web externo (URL), e não um envelope criptográfico offline Serpro/VIO. "
+                "Caso a imagem possua dois QR Codes (ex.: QR Code do Selo Cartorário e QR Code VIO do CRLV-e/ATPV-e), "
+                "recorte ou dê zoom apenas no QR Code principal do documento veicular para validar a assinatura VIO."
+            )
+        elif "br.gov.bcb.pix" in lower or text.startswith("000201"):
+            result.document_name = "QR Code PIX (Pagamento)"
+            fields["tipo_qr_detectado"] = "BR Code / PIX (Banco Central)"
+            result.add_warning(
+                "Foi detectado um QR Code de pagamento PIX (DUA/ Taxa Detran), e não o QR Code VIO de autenticidade do documento. "
+                "Se o documento possuir outro QR Code maior (VIO/Serpro), envie um recorte focado nele."
+            )
+        else:
+            result.document_name = "QR Code de Texto / Padrão Externo"
+            fields["tipo_qr_detectado"] = "Texto plano (Sem envelope criptográfico VIO)"
+            result.add_warning(
+                "O QR Code lido contém texto simples sem envelope criptográfico Serpro/VIO."
+            )
+
+        result.fields = fields
+        return result
+
+    # ------------------------------------------------------------------ #
+    # CIN — Carteira de Identidade Nacional (QRCode = JWT assinado)
+    # ------------------------------------------------------------------ #
+    def _process_cin(self, data: bytes, result: DocumentResult, *, now: datetime) -> DocumentResult:
+        """Interpreta o QRCode do verso da CIN.
+
+        Reproduz ``processQrCode`` do app ``identidade-nacional``: decodifica o
+        JWT, confere ``cpf``/``iss``/``url``, valida a assinatura ES512 e extrai
+        o ``uuid`` do fim da ``url``. Diferente do app, nada interrompe o
+        parsing — cada checagem reprovada vira um item em ``errors``.
+        """
+        handler = CINHandler()
+        result.document_type = handler.type_name
+        result.document_name = handler.display_name
+        result.header_format = "jws"
+
+        try:
+            jws = parse_compact_jws(data)
+        except ParseError as exc:
+            result.add_error(f"JWT inválido: {exc}")
+            return result
+
+        result.is_parsed = True
+        result.signed_data = jws.signing_input
+        result.fields_raw_string = jws.raw
+
+        claims = jws.claims
+        cin = handler.build_from_claims(claims)
+        result.data = cin
+        result.fields = dict(cin.fields)
+        result.raw_fields = list(cin.raw_fields)
+
+        issued_at = _claim_datetime(claims.get("iat"))
+        if issued_at is not None:
+            result.issued_at = issued_at
+
+        # Checagens de conteúdo do app (nesta ordem).
+        if not cin.cpf:
+            result.add_error("QRCode sem o campo 'cpf'")
+        if cin.iss != EXPECTED_ISSUER:
+            result.add_error(
+                f"emissor inesperado: {cin.iss!r} (esperado {EXPECTED_ISSUER!r})"
+            )
+        if not isinstance(cin.url, str):
+            result.add_error("QRCode sem o campo 'url'")
+        elif cin.uuid is None:
+            result.add_error("a 'url' do QRCode não termina com um UUID")
+
+        self._verify_cin(result, jws, now)
+        self._check_cin_expiration(result, cin, claims, now)
+
+        result.is_valid = bool(
+            result.is_parsed
+            and result.is_authentic
+            and not result.errors
+            and result.is_expired is not True
+        )
+        return result
+
+    def _verify_cin(self, result: DocumentResult, jws, now: datetime) -> None:
+        info = SignatureInfo(signature=jws.signature)
+        result.signature = info
+
+        if not self.verify_signature:
+            info.reason = "verificação de assinatura desabilitada"
+            return
+        if not jws.signature:
+            info.reason = "JWT sem assinatura"
+            result.add_error(info.reason)
+            return
+        if not crypto.is_available():
+            info.reason = "dependência 'cryptography' ausente"
+            result.add_warning(info.reason)
+            return
+
+        candidates = self.cin_keys.candidates(self.cin_environment)
+        info.checked = True
+        info.candidates_tried = len(candidates)
+
+        if not candidates:
+            info.reason = f"nenhuma chave da CIN para o ambiente {self.cin_environment!r}"
+            result.add_error(info.reason)
+            return
+
+        reasons: list[str] = []
+        for key in candidates:
+            ok, detail = crypto.verify_jws(
+                jws.signing_input, jws.signature, key.jwk, jws.algorithm
+            )
+            if ok:
+                info.is_authentic = True
+                info.algorithm = detail
+                info.certificate_id = key.id
+                info.certificate_group = key.id
+                break
+            reasons.append(f"{key.id}: {detail}")
+        else:
+            info.reason = "assinatura não confere (" + "; ".join(reasons) + ")"
+            result.add_error(info.reason)
+
+        result.is_authentic = info.is_authentic
+        result.is_signature_checked = info.checked
+
+    def _check_cin_expiration(
+        self, result: DocumentResult, cin, claims: dict, now: datetime
+    ) -> None:
+        """Expiração pela claim ``dvd`` (validade do cartão) ou pelo ``exp`` do JWT."""
+        validade = _parse_br_date(cin.data_validade)
+        if validade is not None:
+            result.expires_on = validade
+            result.is_expired = now.date() > validade.date()
+            if result.is_expired:
+                result.add_warning(f"documento vencido em {cin.data_validade}")
+            return
+
+        expires_on = _claim_datetime(claims.get("exp"))
+        if expires_on is None:
+            return
+        result.expires_on = expires_on
+        result.is_expired = now > expires_on
+        if result.is_expired:
+            result.add_warning(f"JWT expirado em {expires_on.isoformat()}")
+
+    # ------------------------------------------------------------------ #
+    def _verify(self, result, payload, template, envelope, now) -> None:
+        info = SignatureInfo(signature=payload.signature)
+        result.signature = info
+
+        if not self.verify_signature:
+            info.reason = "verificação de assinatura desabilitada"
+            return
+        if not payload.signature:
+            info.reason = "documento sem bloco de assinatura"
+            result.add_warning(info.reason)
+            return
+        if not crypto.is_available():
+            info.reason = "dependência 'cryptography' ausente"
+            result.add_warning(info.reason)
+            return
+
+        group_id = template.certificate_group if template else None
+        info.certificate_group = group_id
+        issued_at = envelope.issued_at
+        candidates = self.certificates.candidates(group_id, issued_at)
+
+        info.checked = True
+        info.candidates_tried = len(candidates)
+
+        if not candidates:
+            info.reason = "nenhum certificado válido para a data de emissão"
+            result.add_error(info.reason)
+            return
+
+        for cert in candidates:
+            ok, detail = crypto.verify(
+                payload.signed_data, payload.signature, cert.public_key_b64
+            )
+            if ok:
+                info.is_authentic = True
+                info.algorithm = detail
+                info.certificate_id = cert.id
+                if cert.is_revoked_at(issued_at):
+                    result.add_warning(
+                        f"certificado {cert.id} estava revogado na emissão"
+                    )
+                break
+        else:
+            info.reason = "assinatura não confere com nenhum certificado do grupo"
+            result.add_error(info.reason)
+
+        result.is_authentic = info.is_authentic
+        result.is_signature_checked = info.checked
+
+    # ------------------------------------------------------------------ #
+    def _check_expiration(self, result, now) -> None:
+        """Deriva expiração a partir do campo de validade do documento."""
+        validade = None
+        if isinstance(result.fields, dict):
+            validade = (
+                result.fields.get("data_validade")
+                or result.fields.get("validade")
+            )
+        parsed = _parse_br_date(validade) if validade else None
+        if parsed is not None:
+            result.expires_on = parsed
+            result.is_expired = now.date() > parsed.date()
+        elif result.expires_on is not None:
+            result.is_expired = now > result.expires_on
+
+
+def _claim_datetime(value) -> Optional[datetime]:
+    """Converte uma claim ``NumericDate`` (segundos desde a época) em ``datetime``."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        return datetime.fromtimestamp(value, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _parse_br_date(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    value = value.strip()
+    for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+    return None
+
+
+def _looks_like_printable_text(data: bytes) -> bool:
+    """Retorna True se ``data`` for texto UTF-8/ASCII legível sem bytes nulos de envelope binário."""
+    if not data or len(data) < 8 or b"\x00" in data:
+        return False
+    if looks_like_external_qr(data):
+        return True
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    printable = sum(1 for ch in text if ch.isprintable() or ch in "\r\n\t")
+    return (printable / len(text)) >= 0.95

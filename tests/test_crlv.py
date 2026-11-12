@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from vioweb.core import DigitalDocumentChecker
-from vioweb.core.documents.crlv import CRLVData, CRLVHandler
+from viodigital.core import DigitalDocumentChecker
+from viodigital.core.documents.crlv import CRLVData, CRLVHandler
 from tests.conftest import build_multiblock_qr
 
 # Vetor com campos do CRLV Digital (Template 70)
@@ -210,8 +210,8 @@ def test_crlv_template_24_renave_alias_normalization(rsa_material, cert_store):
 
 def test_atpv_template_43_parse_and_authenticate(rsa_material, cert_store):
     """Garante que o Template 43 (ATPVe) é interpretado pelo ATPVHandler com todos os 26 campos."""
-    from vioweb.core.documents.atpv import ATPVData, ATPVHandler
-    from vioweb.core.registry import default_templates
+    from viodigital.core.documents.atpv import ATPVData, ATPVHandler
+    from viodigital.core.registry import default_templates
 
     handler = ATPVHandler()
     assert handler.matches(43, None)

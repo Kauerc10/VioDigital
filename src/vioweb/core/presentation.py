@@ -11,13 +11,13 @@ import base64
 import re
 from typing import Any, Dict
 
-from vioweb.core.documents.atpv import ATPVData
-from vioweb.core.documents.cin import CINData
-from vioweb.core.documents.cnh import CNHData
-from vioweb.core.documents.crlv import CRLVData
-from vioweb.core.documents.dni import DNIData
-from vioweb.core.documents.rg import RGData
-from vioweb.core.models import DocumentResult
+from .documents.atpv import ATPVData
+from .documents.cin import CINData
+from .documents.cnh import CNHData
+from .documents.crlv import CRLVData
+from .documents.dni import DNIData
+from .documents.rg import RGData
+from .models import DocumentResult
 
 
 def mask_cpf_cnpj(val: str) -> str:

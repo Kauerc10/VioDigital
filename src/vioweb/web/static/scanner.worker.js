@@ -99,19 +99,23 @@ async function initEngine() {
       }
       await self.pyodide.loadPackage('cryptography');
 
-      // 4. VioWeb Wheel
+      // 4. VioDigital Wheel
       if (isWarmed) {
-        postStatus('loading_vioweb', 92, 'Restaurando esquemas oficiais e 161 templates da memória...', '⚡ CACHE 3/3');
+        postStatus('loading_viodigital', 92, 'Restaurando esquemas oficiais e 161 templates da memória...', '⚡ CACHE 3/3');
       } else {
-        postStatus('loading_vioweb', 90, 'Motor VioWeb e base de 161 templates...', '4/4');
+        postStatus('loading_viodigital', 90, 'Motor VioDigital e base de 161 templates...', '4/4');
       }
-      const wheelUrl = resolveAssetUrl('wheels/vioweb-0.2.0-py3-none-any.whl');
-      const wheelResp = await fetch(wheelUrl);
+      let wheelUrl = resolveAssetUrl('wheels/viodigital-0.2.0-py3-none-any.whl');
+      let wheelResp = await fetch(wheelUrl);
       if (!wheelResp.ok) {
-        throw new Error(`Falha ao obter wheel do VioWeb (${wheelResp.status})`);
+        wheelUrl = resolveAssetUrl('wheels/vioweb-0.2.0-py3-none-any.whl');
+        wheelResp = await fetch(wheelUrl);
+      }
+      if (!wheelResp.ok) {
+        throw new Error(`Falha ao obter wheel do VioDigital (${wheelResp.status})`);
       }
       const wheelBuf = await wheelResp.arrayBuffer();
-      self.pyodide.FS.writeFile('/tmp/vioweb.whl', new Uint8Array(wheelBuf));
+      self.pyodide.FS.writeFile('/tmp/viodigital.whl', new Uint8Array(wheelBuf));
 
       await self.pyodide.runPythonAsync(`
 import sys
@@ -119,14 +123,21 @@ import zipfile
 import json
 
 # Extrai a wheel pura diretamente para site-packages do Pyodide
-with zipfile.ZipFile('/tmp/vioweb.whl', 'r') as z:
+with zipfile.ZipFile('/tmp/viodigital.whl', 'r') as z:
     z.extractall('/lib/python3.12/site-packages')
 
-import vioweb
-from vioweb.core import DigitalDocumentChecker, present
-from vioweb.core.formats.envelope import is_vio_or_cin_qr, looks_like_external_qr
-from vioweb.core.exceptions import DigitalDocumentError, ParseError
-from vioweb.core.qr import _decode_qr_bytes, _decode_qr_bytes_candidates
+try:
+    import viodigital
+    from viodigital.core import DigitalDocumentChecker, present
+    from viodigital.core.formats.envelope import is_vio_or_cin_qr, looks_like_external_qr
+    from viodigital.core.exceptions import DigitalDocumentError, ParseError
+    from viodigital.core.qr import _decode_qr_bytes, _decode_qr_bytes_candidates
+except ImportError:
+    import vioweb as viodigital
+    from vioweb.core import DigitalDocumentChecker, present
+    from vioweb.core.formats.envelope import is_vio_or_cin_qr, looks_like_external_qr
+    from vioweb.core.exceptions import DigitalDocumentError, ParseError
+    from vioweb.core.qr import _decode_qr_bytes, _decode_qr_bytes_candidates
 
 _checker = DigitalDocumentChecker()
 

@@ -10,7 +10,7 @@ import pytest
 playwright = pytest.importorskip("playwright", reason="playwright não está instalado")
 from playwright.sync_api import sync_playwright
 
-from vioweb.build_static import build
+from viodigital.build_static import build
 
 
 class CSPStaticHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):

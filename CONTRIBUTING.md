@@ -1,17 +1,17 @@
-# Contribuindo com o VioWeb
+# Contribuindo com o VioDigital
 
-Muito obrigado pelo interesse em contribuir com o **VioWeb**! Este projeto nasceu dentro de um cartório para oferecer à comunidade brasileira uma alternativa **100% gratuita, aberta e respeitosa à LGPD** para validação e conferência de documentos oficiais baseados no padrão **Serpro/VIO** e **CIN**.
+Muito obrigado pelo interesse em contribuir com o **VioDigital**! Este projeto nasceu dentro de um cartório para oferecer à comunidade brasileira uma alternativa **100% gratuita, aberta e respeitosa à LGPD** para validação e conferência de documentos oficiais baseados no padrão **Serpro/VIO** e **CIN**.
 
 ---
 
 ## Como você pode ajudar?
 
 1. **Novos Handlers de Documentos (`DocumentHandler`):**
-   O catálogo em `src/vioweb/core/data/templates.json` possui **161 templates oficiais** do Serpro (como **TIE da Marinha**, **CRAF / Guia de Tráfego do Exército**, **Placas Mercosul**, **Carteiras do CREA, CRA, CREF, CREFITO, Ministério Público, Defensoria**, etc.). Atualmente, qualquer template sem handler dedicado é lido pelo `GenericHandler`, mas você pode criar um handler tipado em `src/vioweb/core/documents/` para dar formatação e máscaras específicas a uma nova categoria de documento!
+   O catálogo em `src/viodigital/core/data/templates.json` possui **161 templates oficiais** do Serpro (como **TIE da Marinha**, **CRAF / Guia de Tráfego do Exército**, **Placas Mercosul**, **Carteiras do CREA, CRA, CREF, CREFITO, Ministério Público, Defensoria**, etc.). Atualmente, qualquer template sem handler dedicado é lido pelo `GenericHandler`, mas você pode criar um handler tipado em `src/viodigital/core/documents/` para dar formatação e máscaras específicas a uma nova categoria de documento!
 2. **Melhorias na Detecção Óptica de QR Code:**
-   Aprimoramentos de pré-processamento em `src/vioweb/core/qr.py` para leitura de impressões desgastadas, fotos com reflexo ou câmeras de baixa resolução.
+   Aprimoramentos de pré-processamento em `src/viodigital/core/qr.py` para leitura de impressões desgastadas, fotos com reflexo ou câmeras de baixa resolução.
 3. **Usabilidade para Cartórios e Despachantes:**
-   Atalhos de teclado, modelos de exportação/cópia para sistemas notariais e melhorias de acessibilidade em `src/vioweb/web/`.
+   Atalhos de teclado, modelos de exportação/cópia para sistemas notariais e melhorias de acessibilidade em `src/viodigital/web/`.
 
 ---
 
@@ -20,7 +20,7 @@ Muito obrigado pelo interesse em contribuir com o **VioWeb**! Este projeto nasce
 * **NUNCA envie documentos reais de terceiros em commits, PRs ou Issues.**
   Se você estiver testando um documento real (PDF ou imagem com CPF, placa, chassi ou foto de uma pessoa real), coloque-o apenas na pasta local `test_samples/` (que é ignorada pelo `.gitignore`).
 * **Nos testes automatizados (`tests/`):** utilize sempre vetores sintéticos gerados com dados fictícios e chaves de teste (veja `tests/test_crlv.py` e `tests/test_cnh.py` como referência).
-* **Zero dependência de rede na validação:** o motor `src/vioweb/core/` não deve realizar chamadas HTTP externas durante a validação de documentos.
+* **Zero dependência de rede na validação:** o motor `src/viodigital/core/` não deve realizar chamadas HTTP externas durante a validação de documentos.
 
 ---
 
@@ -28,8 +28,8 @@ Muito obrigado pelo interesse em contribuir com o **VioWeb**! Este projeto nasce
 
 1. Faça um **Fork** do repositório e clone localmente:
    ```bash
-   git clone https://github.com/<seu-usuario>/VioWeb.git
-   cd VioWeb
+   git clone https://github.com/<seu-usuario>/VioDigital.git
+   cd VioDigital
    ```
 2. Instale em modo editável:
    ```bash

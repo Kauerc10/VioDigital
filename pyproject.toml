@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vioweb"
+name = "viodigital"
 version = "0.2.0"
 description = "Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO)"
 authors = [
@@ -16,6 +16,10 @@ requires-python = ">=3.12"
 dependencies = [
     "cryptography>=42.0.0",
 ]
+
+[project.scripts]
+viodigital = "viodigital.core.cli:main"
+vioweb = "viodigital.core.cli:main"
 
 [project.optional-dependencies]
 server = [
@@ -36,14 +40,16 @@ dev = [
     "ruff>=0.4.0",
     "playwright>=1.40.0",
     "build>=1.0.0",
-    "vioweb[server]",
-    "vioweb[vision]",
+    "viodigital[server]",
+    "viodigital[vision]",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["viodigital*", "vioweb*"]
 
 [tool.setuptools.package-data]
+viodigital = ["**/*.json", "**/*.html", "**/*.css", "**/*.js"]
 vioweb = ["**/*.json", "**/*.html", "**/*.css", "**/*.js"]
 
 [tool.pytest.ini_options]

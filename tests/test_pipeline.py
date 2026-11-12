@@ -4,9 +4,9 @@ import pytest
 import qrcode
 from PIL import Image
 
-from vioweb.core import DigitalDocumentChecker
-from vioweb.core.documents.crlv import CRLVData
-from vioweb.core.exceptions import QRCodeNotFoundError
+from viodigital.core import DigitalDocumentChecker
+from viodigital.core.documents.crlv import CRLVData
+from viodigital.core.exceptions import QRCodeNotFoundError
 from tests.conftest import build_multiblock_qr
 from tests.test_crlv import CRLV_FIELDS, TIMESTAMP
 
@@ -187,7 +187,7 @@ def test_pipeline_external_qr_fallback():
 
 def test_qr_shift_jis_recovery():
     """Garante que bytes binários interpretados como Shift-JIS pelo libzbar sejam recuperados."""
-    from vioweb.core.qr import _decode_qr_bytes_candidates
+    from viodigital.core.qr import _decode_qr_bytes_candidates
 
     # Sequência binária com par Shift-JIS válido (0x82 0xA0 = 'あ' em cp932)
     original_binary = b"d\xb5\x8d\xc3\x02\x00\x04\x82\xa0\x83\x41test"
@@ -200,7 +200,7 @@ def test_qr_shift_jis_recovery():
 
 def test_qr_transport_latin1_utf8_recovery():
     """Garante que bytes binários transportados como Latin-1 em UTF-8 sejam recuperados via _decode_qr_bytes."""
-    from vioweb.core.qr import _decode_qr_bytes, _decode_qr_bytes_candidates
+    from viodigital.core.qr import _decode_qr_bytes, _decode_qr_bytes_candidates
 
     # Envelope VIO válido com bytes > 0x7F (cabeçalho binário v4/v5 Serpro)
     original_envelope = b"d\xb5\x8d\xc3\x02\x00\x04\x90\xaa\xbb\xcc\xdd"
