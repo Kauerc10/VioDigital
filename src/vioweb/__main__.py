@@ -1,4 +1,3 @@
-import sys
 import webbrowser
 import uvicorn
 
@@ -7,12 +6,12 @@ def main():
     port = 8000
     host = "127.0.0.1"
     url = f"http://{host}:{port}"
-    print(f"\n=======================================================")
-    print(f"  VioWeb: Verificador Notarial de CRLV-e e CNH")
-    print(f"  100% Offline | Serpro VIO Decodificador Local")
-    print(f"=======================================================")
+    print("\n=======================================================")
+    print("  VioWeb: Verificador Notarial de CRLV-e e CNH")
+    print("  100% Offline | Serpro VIO Decodificador Local")
+    print("=======================================================")
     print(f"  Acesse no navegador: {url}")
-    print(f"  Pressione Ctrl+C para encerrar o servidor.\n")
+    print("  Pressione Ctrl+C para encerrar o servidor.\n")
 
     # Tenta abrir o navegador automaticamente
     try:

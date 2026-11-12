@@ -342,19 +342,19 @@ def _not_found_message(image) -> str:
 def read_qr_from_pdf(source: Union[str, Path, bytes, bytearray], *, dpi: int = 300) -> bytes:
     """Lê o QRCode principal de um PDF (caminho ou bytes), priorizando envelopes VIO/CIN."""
     try:
-        import fitz  # PyMuPDF
+        import pymupdf
     except ImportError:
-        fitz = None
+        pymupdf = None
 
     fallback_non_vio: Optional[bytes] = None
 
-    if fitz is not None:
+    if pymupdf is not None:
         from PIL import Image
 
         if isinstance(source, (bytes, bytearray)):
-            doc = fitz.open(stream=source, filetype="pdf")
+            doc = pymupdf.open(stream=source, filetype="pdf")
         else:
-            doc = fitz.open(str(source))
+            doc = pymupdf.open(str(source))
 
         try:
             # 1) Tenta primeiro extrair imagens embutidas diretamente nas páginas (muito rápido e sem perda)
@@ -377,7 +377,7 @@ def read_qr_from_pdf(source: Union[str, Path, bytes, bytearray], *, dpi: int = 3
             # 2) Renderiza cada página em alta resolução (300 DPI e 600 DPI)
             for render_dpi in (dpi, dpi * 2):
                 zoom = render_dpi / 72
-                matrix = fitz.Matrix(zoom, zoom)
+                matrix = pymupdf.Matrix(zoom, zoom)
                 for page in doc:
                     pixmap = page.get_pixmap(matrix=matrix, alpha=False)
                     image = Image.frombytes(

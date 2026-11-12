@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import base64
-import json
 import pytest
 
 from vioweb.core.codecs import base91
 from vioweb.core.codecs.text import encode_6bit, encode_7bit
 from vioweb.core.models import Certificate
-from vioweb.core.registry import CertificateStore, CINKeyStore, TemplateStore
+from vioweb.core.registry import CertificateStore, TemplateStore
 
 
 def build_v2_qr(fields_text: str, *, template_id: int, timestamp: int, sign) -> bytes:

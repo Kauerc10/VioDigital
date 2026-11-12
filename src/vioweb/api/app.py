@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from vioweb.core import DigitalDocumentChecker
+from vioweb.core.__meta__ import __version__
 from vioweb.core.documents.atpv import ATPVData
 from vioweb.core.documents.crlv import CRLVData
 from vioweb.core.documents.cnh import CNHData
@@ -20,7 +21,7 @@ from vioweb.core.exceptions import DigitalDocumentError, QRCodeNotFoundError
 app = FastAPI(
     title="VioWeb API",
     description="Verificador e decodificador offline de CRLV-e, CNH, ATPV-e, CIN e +160 documentos oficiais Serpro/VIO",
-    version="0.2.0",
+    version=__version__,
 )
 
 app.add_middleware(
@@ -236,7 +237,7 @@ def _format_result(res) -> Dict[str, Any]:
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "VioWeb", "version": "0.1.0"}
+    return {"status": "ok", "service": "VioWeb", "version": __version__}
 
 
 @app.get("/api/templates")

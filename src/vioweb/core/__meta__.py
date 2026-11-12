@@ -1,9 +1,8 @@
-__version__ = '0.1.0'
-__title__ = "digital-document-checker"
-__description__ = "Parsing, verificação e validação de documentos digitais brasileiros (CNH e outros) via QRCode."
-__url__ = "https://github.com/helviojunior/digital-document-checker"
-__build__ = 0x000000
-__author__ = "Helvio Junior  (M4v3r1ck)"
-__author_email__ = "helvio_junior@hotmail.com"
+__version__ = "0.2.0"
+__title__ = "vioweb"
+__description__ = "Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO)"
+__url__ = "https://github.com/Kauerc10/VioWeb"
+__build__ = 0x000200
+__author__ = "Kauê (@Kauerc10)"
 __license__ = "MIT"
-__copyright__ = "Copyright Helvio Junior"
+__copyright__ = "Copyright (c) 2026 Kauê (@Kauerc10) & Helvio Junior"

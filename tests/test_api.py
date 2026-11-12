@@ -13,7 +13,7 @@ client = TestClient(app)
 def test_api_health():
     res = client.get("/api/health")
     assert res.status_code == 200
-    assert res.json() == {"status": "ok", "service": "VioWeb", "version": "0.1.0"}
+    assert res.json() == {"status": "ok", "service": "VioWeb", "version": "0.2.0"}
 
 
 def test_api_root_serves_html():
@@ -75,7 +75,6 @@ def test_api_verify_no_qr_found():
 
 
 def test_api_verify_document_with_photo(rsa_material, cert_store, monkeypatch):
-    from vioweb.core import DigitalDocumentChecker
     from vioweb.core.models import Photo, DocumentResult
     from vioweb.core.documents.cnh import CNHData
     from vioweb.api import app as api_module

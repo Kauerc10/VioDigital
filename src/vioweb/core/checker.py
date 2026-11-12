@@ -199,7 +199,7 @@ class DigitalDocumentChecker:
         result.is_valid = bool(
             result.is_parsed
             and result.is_authentic
-            and not (result.is_expired is True)
+            and result.is_expired is not True
         )
         return result
 
@@ -334,7 +334,7 @@ class DigitalDocumentChecker:
             result.is_parsed
             and result.is_authentic
             and not result.errors
-            and not (result.is_expired is True)
+            and result.is_expired is not True
         )
         return result
 
