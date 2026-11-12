@@ -22,6 +22,7 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     assert any((dist / "static" / "wheels").glob("vioweb-*.whl"))
     assert (dist / "static" / "vendor" / "pyodide" / "pyodide.js").exists()
     assert (dist / "static" / "vendor" / "zxing" / "zxing_reader.js").exists()
+    assert (dist / "static" / "vendor" / "pdfjs" / "pdf.min.js").exists()
 
     # Verifica templates-data.json
     tpl_json = dist / "static" / "templates-data.json"

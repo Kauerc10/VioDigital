@@ -254,6 +254,56 @@ async function processRawBytes(rawBytes) {
   return JSON.parse(resJson);
 }
 
+// Processa ImageData (usado na rasterização de PDFs e quadros de câmera)
+async function processImageData(imageData) {
+  await initEngine();
+
+  let barcodes = await decodeBarcodesFromImageData(imageData);
+
+  if (barcodes.length === 0) {
+    return {
+      foundVio: false,
+      result: {
+        is_parsed: false,
+        is_authentic: false,
+        is_valid: false,
+        is_expired: false,
+        document_type: 'unknown',
+        document_name: 'Nenhum QR Code detectado',
+        errors: ['Nenhum QR Code foi detectado nesta página do documento.'],
+        warnings: [],
+        message: 'Nenhum QR Code foi detectado nesta página do documento.',
+      },
+    };
+  }
+
+  // Priorização Multi-QR: seleciona o QR oficial VIO/CIN se presente
+  const pyIsVio = self.pyodide.globals.get('_py_is_vio');
+  let selected = null;
+  let isVioFound = false;
+
+  for (const b of barcodes) {
+    if (b.bytes && b.bytes.length > 0) {
+      if (pyIsVio(b.bytes)) {
+        selected = b;
+        isVioFound = true;
+        break;
+      }
+    }
+  }
+
+  if (!selected) {
+    selected = barcodes[0];
+  }
+
+  const pyValidate = self.pyodide.globals.get('_py_validate_bytes');
+  const resJson = pyValidate(selected.bytes);
+  return {
+    foundVio: isVioFound,
+    result: JSON.parse(resJson),
+  };
+}
+
 self.onmessage = async (e) => {
   const msg = e.data || {};
   const { type, id } = msg;
@@ -314,5 +364,40 @@ self.onmessage = async (e) => {
         },
       });
     }
+    return;
+  }
+
+  if (type === 'verify_imagedata') {
+    try {
+      const { foundVio, result } = await processImageData(msg.imageData);
+      self.postMessage({
+        type: 'verify_imagedata_result',
+        id,
+        pageIndex: msg.pageIndex,
+        totalPages: msg.totalPages,
+        foundVio,
+        data: result,
+      });
+    } catch (err) {
+      self.postMessage({
+        type: 'verify_imagedata_result',
+        id,
+        pageIndex: msg.pageIndex,
+        totalPages: msg.totalPages,
+        foundVio: false,
+        data: {
+          is_parsed: false,
+          is_authentic: false,
+          is_valid: false,
+          is_expired: false,
+          document_type: 'unknown',
+          document_name: 'Erro ao processar página',
+          errors: [err.message || String(err)],
+          warnings: [],
+          message: `Erro ao processar página do documento: ${err.message || err}`,
+        },
+      });
+    }
+    return;
   }
 };

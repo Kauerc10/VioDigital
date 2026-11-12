@@ -183,13 +183,17 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
     cache_dir = ROOT_DIR / ".vendor_cache"
     pyodide_cache = cache_dir / "pyodide"
     zxing_cache = cache_dir / "zxing"
+    pdfjs_cache = cache_dir / "pdfjs"
     pyodide_cache.mkdir(parents=True, exist_ok=True)
     zxing_cache.mkdir(parents=True, exist_ok=True)
+    pdfjs_cache.mkdir(parents=True, exist_ok=True)
 
     pyodide_target = vendor_dir / "pyodide"
     zxing_target = vendor_dir / "zxing"
+    pdfjs_target = vendor_dir / "pdfjs"
     pyodide_target.mkdir(parents=True, exist_ok=True)
     zxing_target.mkdir(parents=True, exist_ok=True)
+    pdfjs_target.mkdir(parents=True, exist_ok=True)
 
     pyodide_base = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
     pyodide_files = [
@@ -231,6 +235,22 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
                 print(f"Aviso: Não foi possível baixar {fname}: {e}")
         if cached_file.exists():
             shutil.copy2(cached_file, zxing_target / fname)
+
+    pdfjs_files = {
+        "pdf.min.js": "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",
+        "pdf.worker.min.js": "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js",
+    }
+    for fname, url in pdfjs_files.items():
+        cached_file = pdfjs_cache / fname
+        if not cached_file.exists() and download:
+            try:
+                import urllib.request
+
+                urllib.request.urlretrieve(url, cached_file)
+            except Exception as e:
+                print(f"Aviso: Não foi possível baixar {fname}: {e}")
+        if cached_file.exists():
+            shutil.copy2(cached_file, pdfjs_target / fname)
 
 
 def _safe_clean_dir(path: Path) -> None:

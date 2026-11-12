@@ -504,6 +504,90 @@ document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------------------------ //
   // Upload & Document Verification
   // ------------------------------------------------------------------ //
+  async function processPdfFile(file) {
+    if (!window.pdfjsLib) {
+      throw new Error('Biblioteca PDF.js não carregada.');
+    }
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
+
+    const loadingH3 = loadingState.querySelector('h3');
+    const loadingP = loadingState.querySelector('p');
+    if (loadingH3) loadingH3.textContent = 'Rasterizando PDF no navegador (offline)...';
+    if (loadingP) loadingP.textContent = 'Processando páginas em alta resolução (300 DPI) para leitura do QR Code';
+
+    const buffer = await file.arrayBuffer();
+    const loadingTask = window.pdfjsLib.getDocument({ data: buffer });
+    const pdfDoc = await loadingTask.promise;
+    const numPages = pdfDoc.numPages;
+    const maxPages = Math.min(numPages, 2);
+
+    if (numPages > 2) {
+      showToast(`Documento com ${numPages} páginas: analisando as 2 primeiras.`);
+    }
+
+    let lastResult = null;
+
+    for (let p = 1; p <= maxPages; p++) {
+      if (loadingP) {
+        loadingP.textContent = `Analisando página ${p} de ${maxPages} em alta resolução...`;
+      }
+
+      const page = await pdfDoc.getPage(p);
+      const viewport = page.getViewport({ scale: 3.5 });
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = viewport.width;
+      pageCanvas.height = viewport.height;
+      const pageCtx = pageCanvas.getContext('2d');
+      await page.render({ canvasContext: pageCtx, viewport: viewport }).promise;
+
+      const imgData = pageCtx.getImageData(0, 0, viewport.width, viewport.height);
+
+      const pageRes = await new Promise((resolve) => {
+        const reqId = Date.now() + Math.random();
+        const handler = (e) => {
+          const msg = e.data || {};
+          if (msg.type === 'verify_imagedata_result' && msg.id === reqId) {
+            scannerWorker.removeEventListener('message', handler);
+            resolve(msg);
+          }
+        };
+        scannerWorker.addEventListener('message', handler);
+        scannerWorker.postMessage({
+          type: 'verify_imagedata',
+          id: reqId,
+          imageData: imgData,
+          pageIndex: p,
+          totalPages: numPages,
+        });
+      });
+
+      lastResult = pageRes.data;
+
+      // Se encontrou o QR oficial VIO na página, encerra e exibe com prioridade máxima
+      if (pageRes.foundVio && lastResult && lastResult.is_parsed) {
+        loadingState.style.display = 'none';
+        currentResult = lastResult;
+        renderResult(lastResult);
+        return;
+      }
+    }
+
+    loadingState.style.display = 'none';
+
+    if (lastResult && lastResult.is_parsed) {
+      currentResult = lastResult;
+      renderResult(lastResult);
+      return;
+    }
+
+    dropzone.style.display = 'flex';
+    showError(
+      numPages > 2
+        ? `Nenhum QR Code oficial detectado nas primeiras 2 páginas (documento possui ${numPages} páginas).`
+        : 'Nenhum QR Code foi detectado no arquivo PDF enviado.'
+    );
+  }
+
   async function processFile(file) {
     errorBanner.style.display = 'none';
     dropzone.style.display = 'none';
@@ -512,6 +596,19 @@ document.addEventListener('DOMContentLoaded', () => {
     resultSection.style.display = 'none';
 
     const isImage = (file.type && file.type.startsWith('image/')) || /\.(png|jpe?g|webp|bmp)$/i.test(file.name || '');
+    const isPdf = (file.type === 'application/pdf') || /\.pdf$/i.test(file.name || '');
+
+    // Se for PDF e o motor local estiver disponível, rasteriza e valida localmente
+    if (isPdf && scannerWorker && window.pdfjsLib) {
+      try {
+        await processPdfFile(file);
+      } catch (err) {
+        loadingState.style.display = 'none';
+        dropzone.style.display = 'flex';
+        showError(`Erro ao processar PDF no navegador: ${err.message}`);
+      }
+      return;
+    }
 
     // Se for imagem e o worker estiver disponível, processa 100% no navegador (sem tráfego de rede)
     if (isImage && scannerWorker) {
