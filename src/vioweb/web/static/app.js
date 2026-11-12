@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const brandSecurityPill = document.getElementById('brand-security-pill');
   const engineReadyActions = document.getElementById('engine-ready-actions');
   const engineBarClose = document.getElementById('engine-bar-close');
-  const privacyBadge = document.getElementById('privacy-badge');
 
   // Detecção de motor em cache na sessão
   const isWarmed = !!sessionStorage.getItem('vioweb_engine_warmed');

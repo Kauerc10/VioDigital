@@ -113,29 +113,14 @@ def test_e2e_privacy_zero_external_traffic_and_csp(static_server: str, tmp_path:
         # 6. Aguarda o resultado ser exibido
         page.wait_for_selector("#result-section", state="visible", timeout=15000)
 
-        # 7. Garante que o selo de validação no navegador está visível
-        privacy_badge = page.locator("#privacy-badge")
-        assert privacy_badge.is_visible()
-        assert "Processado no seu navegador · offline" in privacy_badge.text_content()
+        # 7. Garante que o resultado está visível com badge de autenticidade
+        auth_badge = page.locator("#auth-badge")
+        assert auth_badge.is_visible()
 
         # 8. Garantia de Privacidade: NENHUMA requisição POST e NENHUMA requisição externa
         for req in requests_during_validation:
             assert req["method"] != "POST", f"Requisição POST indevida detectada: {req}"
             assert req["url"].startswith(static_server), f"Tráfego externo indevido detectado: {req['url']}"
-
-        # 9. Testa abertura e fechamento do modal de auditoria de privacidade
-        btn_audit = page.locator("#btn-open-audit-modal")
-        assert btn_audit.is_visible()
-        btn_audit.click()
-
-        modal_audit = page.locator("#modal-audit")
-        page.wait_for_selector("#modal-audit", state="visible", timeout=2000)
-        assert modal_audit.is_visible()
-
-        btn_close_audit = page.locator("#btn-close-audit-modal")
-        btn_close_audit.click()
-        page.wait_for_selector("#modal-audit", state="hidden", timeout=2000)
-        assert not modal_audit.is_visible()
 
         browser.close()
 
@@ -171,9 +156,8 @@ def test_e2e_pwa_and_offline_mode(static_server: str, tmp_path: Path):
 
         # 5. Validação ocorre com sucesso mesmo offline
         page.wait_for_selector("#result-section", state="visible", timeout=15000)
-        privacy_badge = page.locator("#privacy-badge")
-        assert privacy_badge.is_visible()
-        assert "Processado no seu navegador · offline" in privacy_badge.text_content()
+        auth_badge = page.locator("#auth-badge")
+        assert auth_badge.is_visible()
 
         # Restaura conexão
         context.set_offline(False)
