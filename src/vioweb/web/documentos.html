@@ -138,13 +138,27 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const tbody = document.getElementById('templates-tbody');
       const searchInput = document.getElementById('template-search');
-      let allTemplates = [];
+      let allTemplates = window.__TEMPLATES_DATA__ || [];
 
-      try {
-        const res = await fetch('/api/templates');
-        const data = await res.json();
-        allTemplates = data.templates || [];
-      } catch (_) {}
+      if (!allTemplates.length) {
+        try {
+          const res = await fetch('/static/templates-data.json');
+          if (res.ok) {
+            const data = await res.json();
+            allTemplates = data.templates || [];
+          }
+        } catch (_) {}
+      }
+
+      if (!allTemplates.length) {
+        try {
+          const res = await fetch('/api/templates');
+          if (res.ok) {
+            const data = await res.json();
+            allTemplates = data.templates || [];
+          }
+        } catch (_) {}
+      }
 
       function renderRows(filterText = '') {
         const q = filterText.toLowerCase().trim();

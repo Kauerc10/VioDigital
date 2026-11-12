@@ -32,7 +32,10 @@ app.add_middleware(
 MAX_UPLOAD_SIZE = 15 * 1024 * 1024  # 15 MB
 
 _checker = DigitalDocumentChecker()
-WEB_DIR = Path(__file__).parent.parent / "web"
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+SRC_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+DIST_DIR = ROOT_DIR / "dist"
+WEB_DIR = DIST_DIR if (DIST_DIR / "index.html").exists() else SRC_WEB_DIR
 
 SEO_DOC_PAGES: Dict[str, Dict[str, str]] = {
     "crlv": {
@@ -334,9 +337,10 @@ async def page_apoiar():
 
 @app.get("/api-comercial")
 async def page_api_comercial():
-    page = WEB_DIR / "api.html"
-    if page.exists():
-        return FileResponse(page)
+    for base in (WEB_DIR, SRC_WEB_DIR):
+        page = base / "api.html"
+        if page.exists():
+            return FileResponse(page)
     raise HTTPException(status_code=404)
 
 
