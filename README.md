@@ -138,9 +138,25 @@ O espírito do Open Source é construir sobre o trabalho incrível da comunidade
 O **VioWeb** foi criado para continuar sendo **gratuito, aberto e acessível** para qualquer escrevente, cartório, despachante ou cidadão brasileiro, sem cobrar por documento verificado.
 
 Se esta ferramenta economiza tempo e dinheiro no seu dia a dia, considere apoiar a manutenção do projeto:
-* Deixe uma **Estrela (Star)** neste repositório no GitHub e compartilhe com colegas de outros cartórios e escritórios!
-* Acompanhe e envie feedbacks, ideias e melhorias através das [Issues do GitHub](https://github.com/Kauerc10/VioWeb/issues).
-* Para apoiar voluntariamente os custos de infraestrutura do projeto, acesse a [página de apoio](https://vioweb.vercel.app/apoiar).
+* ⭐ Deixe uma **Estrela (Star)** neste repositório no GitHub e compartilhe com colegas de outros cartórios e escritórios!
+* 💬 Acompanhe e envie feedbacks, ideias e melhorias através das [Issues do GitHub](https://github.com/Kauerc10/VioWeb/issues).
+* ☕ **Apoie voluntariamente via PIX:**
+
+<div align="center">
+  <img src="src/vioweb/web/static/pix-qrcode.png" width="180" alt="QR Code PIX de Apoio ao VioWeb"><br>
+  <strong>Chave Aleatória:</strong> <code>84afcca1-eea6-4a15-9adf-581b37fb5897</code><br>
+  <em>Beneficiário: Kaue Ruon Cardoso · Cidade: São Paulo</em>
+</div>
+
+<details>
+<summary>📋 Clique aqui para ver o código <strong>Pix Copia e Cola</strong></summary>
+
+```text
+00020126720014br.gov.bcb.pix013684afcca1-eea6-4a15-9adf-581b37fb58970210VIODIGITAL5204000053039865802BR5917KAUE RUON CARDOSO6009Sao Paulo62260522ApoioProjetoVioDigital6304383F
+```
+</details>
+
+Ou acesse a [página de apoio no VioWeb](https://vioweb.vercel.app/apoiar).
 
 ---
 

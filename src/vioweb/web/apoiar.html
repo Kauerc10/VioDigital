@@ -40,7 +40,7 @@
       <nav class="header-nav">
         <a href="/" class="nav-link-btn">VALIDAR DOCUMENTO</a>
         <a href="/documentos" class="nav-link-btn">DOCUMENTOS (161)</a>
-        <a href="/api-comercial" class="nav-link-btn">API PARA SISTEMAS</a>
+        <a href="/privacidade" class="nav-link-btn">PRIVACIDADE (LGPD)</a>
         <a href="/apoiar" class="nav-link-btn nav-link-highlight active">APOIAR PROJETO</a>
         <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="nav-github-link" title="Projeto Open Source no GitHub">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -64,28 +64,29 @@
         <div class="pix-box" style="margin: 1.5rem 0;">
           <div class="pix-qr-placeholder" id="pix-qr-container" style="width:160px; height:160px;">
             <img src="/static/pix-qrcode.png" alt="QR Code PIX de Doação" id="pix-qr-img" onerror="this.style.display='none'; document.getElementById('pix-qr-fallback').style.display='flex';">
-            <div class="pix-qr-fallback" id="pix-qr-fallback">
+            <div class="pix-qr-fallback" id="pix-qr-fallback" style="display:none;">
               <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
               </svg>
-              <span>QR Code PIX em configuração</span>
+              <span>QR Code PIX</span>
             </div>
           </div>
           <div class="pix-details">
-            <span class="field-label">CHAVE PIX PARA APOIO VOLUNTÁRIO AO PROJETO</span>
-            <code class="pix-key-code" id="pix-key-value">Em breve (acompanhe em github.com/Kauerc10/VioWeb)</code>
+            <span class="field-label">CHAVE PIX ALEATÓRIA (BENEFICIÁRIO: KAUE RUON CARDOSO)</span>
+            <code class="pix-key-code" id="pix-key-value">84afcca1-eea6-4a15-9adf-581b37fb5897</code>
+            <textarea id="pix-payload-value" style="display:none;" readonly>00020126720014br.gov.bcb.pix013684afcca1-eea6-4a15-9adf-581b37fb58970210VIODIGITAL5204000053039865802BR5917KAUE RUON CARDOSO6009Sao Paulo62260522ApoioProjetoVioDigital6304383F</textarea>
             <p style="font-size:0.82rem; color:var(--text-secondary); margin:0.25rem 0;">
-              Qualquer valor ajuda a manter o servidor online, rápido e 100% gratuito para cartórios, despachantes e cidadãos de todo o Brasil.
+              Qualquer valor ajuda a manter o servidor e o projeto 100% gratuito e atualizado para cartórios, despachantes e cidadãos de todo o Brasil.
             </p>
-            <div class="pix-actions">
-              <button type="button" class="btn btn-primary" id="btn-copy-pix">
+            <div class="pix-actions" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.6rem;">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-copy-pix">
                 COPIAR CHAVE PIX
               </button>
-              <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-                DAR ESTRELA NO GITHUB
-              </a>
-              <a href="/" class="btn btn-ghost">
-                VOLTAR AO VALIDADOR
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-payload">
+                COPIAR PIX COPIA E COLA
+              </button>
+              <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">
+                DAR ESTRELA NO GITHUB ⭐
               </a>
             </div>
           </div>
@@ -125,12 +126,24 @@
 
   <div class="toast" id="toast">Chave PIX copiada para a área de transferência</div>
   <script>
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
     document.getElementById('btn-copy-pix').addEventListener('click', () => {
       const val = document.getElementById('pix-key-value').textContent.trim();
       navigator.clipboard.writeText(val).then(() => {
-        const toast = document.getElementById('toast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2600);
+        showToast('Chave PIX copiada com sucesso!');
+      });
+    });
+
+    document.getElementById('btn-copy-payload').addEventListener('click', () => {
+      const val = document.getElementById('pix-payload-value').value.trim();
+      navigator.clipboard.writeText(val).then(() => {
+        showToast('Código Pix Copia e Cola copiado com sucesso!');
       });
     });
   </script>
