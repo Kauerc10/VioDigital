@@ -35,12 +35,14 @@ from .models import (
     SignatureInfo,
     Template,
 )
+from .presentation import present
 from .registry import CertificateStore, CINKeyStore, TemplateStore
 from .__meta__ import __version__
 
 __all__ = [
     "DigitalDocumentChecker",
     "DocumentResult",
+    "present",
     "SignatureInfo",
     "Photo",
     "Certificate",
