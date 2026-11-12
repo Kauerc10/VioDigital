@@ -212,6 +212,8 @@ def _build_wheel_pure_python(wheels_dir: Path) -> Path:
 
 def build_wheel(wheels_dir: Path) -> Path | None:
     wheels_dir.mkdir(parents=True, exist_ok=True)
+    ret: Path | None = None
+
     # Reutiliza wheel em cache se já existir e não for a pasta de destino
     default_dist_wheels = ROOT_DIR / "dist" / "static" / "wheels"
     if default_dist_wheels.exists() and wheels_dir != default_dist_wheels:
@@ -219,39 +221,43 @@ def build_wheel(wheels_dir: Path) -> Path | None:
         if cached:
             target = wheels_dir / cached[0].name
             shutil.copy2(cached[0], target)
-            return target
+            ret = target
 
-    src_wheels = STATIC_DIR / "wheels"
-    if src_wheels.exists() and wheels_dir != src_wheels:
-        cached = list(src_wheels.glob("viodigital-*.whl"))
-        if cached:
-            target = wheels_dir / cached[0].name
-            shutil.copy2(cached[0], target)
-            return target
+    if not ret:
+        src_wheels = STATIC_DIR / "wheels"
+        if src_wheels.exists() and wheels_dir != src_wheels:
+            cached = list(src_wheels.glob("viodigital-*.whl"))
+            if cached:
+                target = wheels_dir / cached[0].name
+                shutil.copy2(cached[0], target)
+                ret = target
 
-    uv_bin = shutil.which("uv")
-    commands_to_try = []
-    if uv_bin:
-        commands_to_try.append([uv_bin, "build", "--wheel", "--out-dir", str(wheels_dir)])
-    commands_to_try.append([sys.executable, "-m", "build", "--wheel", "--out-dir", str(wheels_dir)])
-    commands_to_try.append([sys.executable, "-m", "pip", "wheel", "--no-deps", "-w", str(wheels_dir), str(ROOT_DIR)])
+    if not ret:
+        uv_bin = shutil.which("uv")
+        commands_to_try = []
+        if uv_bin:
+            commands_to_try.append([uv_bin, "build", "--wheel", "--out-dir", str(wheels_dir)])
+        commands_to_try.append([sys.executable, "-m", "build", "--wheel", "--out-dir", str(wheels_dir)])
+        commands_to_try.append([sys.executable, "-m", "pip", "wheel", "--no-deps", "-w", str(wheels_dir), str(ROOT_DIR)])
 
-    for cmd in commands_to_try:
+        for cmd in commands_to_try:
+            try:
+                res = subprocess.run(cmd, cwd=ROOT_DIR, check=False, capture_output=True, text=True)
+                if res.returncode == 0:
+                    built = list(wheels_dir.glob("viodigital-*.whl"))
+                    if built:
+                        ret = built[0]
+                        break
+            except Exception:
+                continue
+
+    if not ret:
+        # Fallback autossuficiente caso nenhum comando de build do sistema tenha sucedido
         try:
-            res = subprocess.run(cmd, cwd=ROOT_DIR, check=False, capture_output=True, text=True)
-            if res.returncode == 0:
-                built = list(wheels_dir.glob("viodigital-*.whl"))
-                if built:
-                    return built[0]
+            ret = _build_wheel_pure_python(wheels_dir)
         except Exception:
-            continue
-
-    # Fallback autossuficiente caso nenhum comando de build do sistema tenha sucedido
-    try:
-        ret = _build_wheel_pure_python(wheels_dir)
-    except Exception:
-        built = list(wheels_dir.glob("viodigital-*.whl"))
-        ret = built[0] if built else None
+            built = list(wheels_dir.glob("viodigital-*.whl"))
+            ret = built[0] if built else None
 
     if ret:
         legacy_alias = wheels_dir / "vioweb-0.2.0-py3-none-any.whl"
