@@ -1,5 +1,5 @@
 /**
- * sw.js - Service Worker do VioWeb para operação 100% offline (PWA).
+ * sw.js - Service Worker do VioDigital para operação 100% offline (PWA).
  *
  * Estratégia de Cache:
  * - Cache-first para ativos estáticos, WebAssembly, wheels e modelos.
@@ -7,7 +7,7 @@
  * - Limpeza automática de caches antigos no evento 'activate'.
  */
 
-const CACHE_NAME = 'vioweb-cache-v0.2.0';
+const CACHE_NAME = 'viodigital-cache-v0.2.0';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -26,7 +26,7 @@ const PRECACHE_ASSETS = [
   '/static/bpgdec8.js',
   '/static/scanner.worker.js',
   '/static/templates-data.json',
-  '/static/wheels/vioweb-0.2.0-py3-none-any.whl',
+  '/static/wheels/viodigital-0.2.0-py3-none-any.whl',
   '/static/vendor/pdfjs/pdf.min.js',
   '/static/vendor/pdfjs/pdf.worker.min.js',
   '/static/vendor/zxing/zxing_reader.js',

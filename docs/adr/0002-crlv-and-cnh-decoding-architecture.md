@@ -13,7 +13,7 @@ Adotar uma arquitetura dividida em três camadas desacopladas:
    * Processar os formatos v2, v4, v5 e v6 com decodificadores específicos (6-bit, 7-bit, BasE91).
    * Validar assinatura ECDSA/RSA sobre o bloco assinado com certificados do catálogo.
    * Mapear os campos aos esquemas dos templates oficiais (Templates 10, 12, 62, 70 para CRLV; 2, 4, 83 para CNH).
-3. **Interface de Usuário (VioWeb):**
+3. **Interface de Usuário (VioDigital):**
    * Interface web moderna e responsiva (HTML5 / CSS / Vanilla JS ou React leve), servida localmente por FastAPI.
    * Suporte nativo a arraste de PDF/imagem, seleção de arquivo e evento de colagem do clipboard (`Ctrl+V`).
    * Visualização organizada dos campos com indicação de autenticidade (selo verde) e botão de cópia de dados.

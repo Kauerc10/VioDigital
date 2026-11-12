@@ -1,4 +1,4 @@
-// src/vioweb/core/bpg_converter.js
+// src/viodigital/core/bpg_converter.js
 // Converte imagens BPG para buffer RGBA puro via bpgdec8.js (Emscripten / libbpg)
 const fs = require('fs');
 const path = require('path');

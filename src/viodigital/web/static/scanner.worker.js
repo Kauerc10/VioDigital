@@ -3,8 +3,8 @@
  *
  * Arquitetura de Privacidade e Zero Network:
  * 1. ZXing C++ compilado para WebAssembly (zxing-wasm): decodifica o QR Code em nível de bits/bytes.
- * 2. Pyodide (Python 3.12 WebAssembly): executa o motor vioweb.core e a biblioteca cryptography.
- * 3. vioweb.core.checker.DigitalDocumentChecker + vioweb.core.presentation.present:
+ * 2. Pyodide (Python 3.12 WebAssembly): executa o motor viodigital.core e a biblioteca cryptography.
+ * 3. viodigital.core.checker.DigitalDocumentChecker + viodigital.core.presentation.present:
  *    valida assinatura digital e formata os dados diretamente na memória do navegador.
  *
  * Nenhum dado, documento, imagem ou QR Code é transmitido para servidores externos ou backend.

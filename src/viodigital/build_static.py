@@ -90,6 +90,16 @@ def render_seo_page(index_html: str, slug: str, meta: Dict[str, str]) -> str:
         f'<meta property="og:url" content="{canonical_url}">',
         html,
     )
+    html = re.sub(
+        r'<meta name="twitter:title" content=".*?">',
+        f'<meta name="twitter:title" content="{meta["title"]}">',
+        html,
+    )
+    html = re.sub(
+        r'<meta name="twitter:description" content=".*?">',
+        f'<meta name="twitter:description" content="{meta["description"]}">',
+        html,
+    )
     html = html.replace(
         '<h2 id="hero-title">Validação de Documentos Oficiais</h2>',
         f'<h2 id="hero-title">{meta["hero_title"]}</h2>',
@@ -131,6 +141,21 @@ def generate_robots_txt() -> str:
     )
 
 
+def generate_llms_txt() -> str:
+    llms_file = WEB_DIR / "llms.txt"
+    if llms_file.exists():
+        return llms_file.read_text(encoding="utf-8")
+    return (
+        "# VioDigital\n\n"
+        "> Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO).\n\n"
+        "## Links\n"
+        "- Site: https://viodigital.com.br/\n"
+        "- Documentos: https://viodigital.com.br/documentos\n"
+        "- Privacidade (LGPD): https://viodigital.com.br/privacidade\n"
+        "- Repositório: https://github.com/Kauerc10/VioDigital\n"
+    )
+
+
 def generate_sitemap_xml() -> str:
     urls = [
         ("https://viodigital.com.br/", "1.0"),
@@ -156,13 +181,13 @@ def generate_sitemap_xml() -> str:
 
 
 def _build_wheel_pure_python(wheels_dir: Path) -> Path:
-    """Fallback puro Python para gerar a wheel do vioweb sem depender de ferramentas externas."""
+    """Fallback puro Python para gerar a wheel do viodigital sem depender de ferramentas externas."""
     import zipfile
 
     wheels_dir.mkdir(parents=True, exist_ok=True)
     target_whl = wheels_dir / "viodigital-0.2.0-py3-none-any.whl"
     src_pkg = ROOT_DIR / "src" / "viodigital"
-    dist_info = "vioweb-0.2.0.dist-info"
+    dist_info = "viodigital-0.2.0.dist-info"
 
     with zipfile.ZipFile(target_whl, "w", compression=zipfile.ZIP_DEFLATED) as z:
         for p in src_pkg.rglob("*"):
@@ -325,7 +350,7 @@ def ensure_runtime_assets(target_web_dir: Path, download: bool = True) -> None:
     wheels_dir = static_dir / "wheels"
     vendor_dir = static_dir / "vendor"
 
-    # 1. Garante a wheel do vioweb
+    # 1. Garante a wheel do viodigital
     has_wheel = wheels_dir.exists() and bool(list(wheels_dir.glob("viodigital-*.whl")))
     if not has_wheel:
         build_wheel(wheels_dir)
@@ -366,7 +391,7 @@ def build(output_dir: Path | str = "dist") -> Path:
     dist_static = out / "static"
     shutil.copytree(STATIC_DIR, dist_static, dirs_exist_ok=True)
 
-    # 2. Compila wheel do vioweb e disponibiliza em static/wheels/
+    # 2. Compila wheel do viodigital e disponibiliza em static/wheels/
     wheel_path = build_wheel(dist_static / "wheels")
     if wheel_path and out == ROOT_DIR / "dist":
         src_wheels = STATIC_DIR / "wheels"
@@ -446,9 +471,13 @@ def build(output_dir: Path | str = "dist") -> Path:
     if favicon_file.exists():
         shutil.copy2(favicon_file, out / "favicon.ico")
 
-    # 6. robots.txt e sitemap.xml
+    # 6. robots.txt, sitemap.xml, llms.txt e 404.html
     (out / "robots.txt").write_text(generate_robots_txt(), encoding="utf-8")
     (out / "sitemap.xml").write_text(generate_sitemap_xml(), encoding="utf-8")
+    (out / "llms.txt").write_text(generate_llms_txt(), encoding="utf-8")
+    file_404 = WEB_DIR / "404.html"
+    if file_404.exists():
+        (out / "404.html").write_text(file_404.read_text(encoding="utf-8"), encoding="utf-8")
 
     print(f"Build estático concluído com sucesso em: {out}")
     return out

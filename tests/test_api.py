@@ -330,14 +330,34 @@ def test_api_seo_endpoints_and_metadata():
     robots = client.get("/robots.txt")
     assert robots.status_code == 200
     assert "Sitemap: https://viodigital.com.br/sitemap.xml" in robots.text
+    robots_head = client.head("/robots.txt")
+    assert robots_head.status_code == 200
 
     sitemap = client.get("/sitemap.xml")
     assert sitemap.status_code == 200
     assert "<loc>https://viodigital.com.br/</loc>" in sitemap.text
+    sitemap_head = client.head("/sitemap.xml")
+    assert sitemap_head.status_code == 200
+
+    llms = client.get("/llms.txt")
+    assert llms.status_code == 200
+    assert "VioDigital" in llms.text
+    llms_head = client.head("/llms.txt")
+    assert llms_head.status_code == 200
+
+    # Custom 404 handler
+    not_found_html = client.get("/non-existent-page-url")
+    assert not_found_html.status_code == 404
+    assert "404" in not_found_html.text
+
+    not_found_api = client.get("/api/non-existent-endpoint")
+    assert not_found_api.status_code == 404
+    assert not_found_api.json()["error"] == "NOT_FOUND"
 
     root = client.get("/")
     assert root.status_code == 200
     assert 'property="og:title"' in root.text
+    assert 'name="twitter:card"' in root.text
     assert 'application/ld+json' in root.text
     assert 'id="seo-faq-section"' in root.text
 

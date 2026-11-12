@@ -37,7 +37,7 @@ jobs:
 
       - name: Build static site
         run: |
-          python src/vioweb/build_static.py
+          python src/viodigital/build_static.py
 
       - name: Run test suite with pytest
         run: |

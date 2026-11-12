@@ -6,11 +6,12 @@ import re
 from pathlib import Path
 from typing import Dict, Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from viodigital.core import DigitalDocumentChecker, present
 from viodigital.core.__meta__ import __version__
@@ -192,7 +193,7 @@ async def list_supported_templates():
     }
 
 
-@app.get("/robots.txt")
+@app.api_route("/robots.txt", methods=["GET", "HEAD"])
 async def robots_txt():
     content = (
         "User-agent: *\n"
@@ -203,7 +204,7 @@ async def robots_txt():
     return PlainTextResponse(content=content, status_code=200)
 
 
-@app.get("/sitemap.xml")
+@app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
 async def sitemap_xml():
     urls = [
         ("https://viodigital.com.br/", "1.0"),
@@ -227,6 +228,46 @@ async def sitemap_xml():
         "</urlset>\n"
     )
     return Response(content=xml, media_type="application/xml", status_code=200)
+
+
+@app.api_route("/llms.txt", methods=["GET", "HEAD"])
+async def llms_txt():
+    llms_file = WEB_DIR / "llms.txt"
+    if llms_file.exists():
+        content = llms_file.read_text(encoding="utf-8")
+    else:
+        content = (
+            "# VioDigital\n\n"
+            "> Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO).\n\n"
+            "## Links\n"
+            "- Site: https://viodigital.com.br/\n"
+            "- Documentos: https://viodigital.com.br/documentos\n"
+            "- Privacidade (LGPD): https://viodigital.com.br/privacidade\n"
+            "- Repositório: https://github.com/Kauerc10/VioDigital\n"
+        )
+    return PlainTextResponse(content=content, status_code=200)
+
+
+@app.get("/404")
+@app.get("/404.html")
+async def not_found_page():
+    html_404_file = WEB_DIR / "404.html"
+    if html_404_file.exists():
+        return HTMLResponse(content=html_404_file.read_text(encoding="utf-8"), status_code=404)
+    return HTMLResponse(content="<h1>404 — Página Não Encontrada</h1>", status_code=404)
+
+
+@app.exception_handler(404)
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        if request.url.path.startswith("/api/"):
+            return JSONResponse(status_code=404, content={"error": "NOT_FOUND", "message": "Endpoint não encontrado."})
+        html_404_file = WEB_DIR / "404.html"
+        if html_404_file.exists():
+            return HTMLResponse(content=html_404_file.read_text(encoding="utf-8"), status_code=404)
+        return HTMLResponse(content="<h1>404 — Página Não Encontrada</h1><p><a href='/'>Ir para o início</a></p>", status_code=404)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 @app.get("/favicon.ico")

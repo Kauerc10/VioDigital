@@ -1,0 +1,30 @@
+# VioDigital
+
+> Verificador e decodificador criptográfico 100% offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO).
+
+## Visão Geral
+O VioDigital é uma aplicação de conferência e validação notarial de documentos oficiais brasileiros. Permite que cidadãos, cartórios, despachantes e empresas verifiquem a autenticidade e extraiam dados de QR Codes oficiais emitidos pelo SERPRO, SENATRAN e ICP-Brasil sem depender de conexão com a internet (zero network dependency).
+
+## Documentos Suportados
+- **CRLV-e Digital / CRV-e:** Templates 10, 12, 62, 70 e RENAVE (24).
+- **CNH Digital e Física:** Templates 2, 4 e 83, com decodificação de fotografia biométrica 3x4 no formato BPG.
+- **ATPV-e:** Autorização para Transferência de Propriedade de Veículo (Template 43).
+- **CIN:** Carteira de Identidade Nacional / Novo RG (assinatura ICP-Brasil ES512).
+- **DNI:** Documento Nacional de Identidade.
+- **TIE / CHA Marinha:** Título de Inscrição de Embarcação (Templates 116 e 118) e Carteira de Habilitação de Amador e Motonauta.
+- **+160 Outros Documentos Oficiais:** CRAF do Exército, Conselhos Profissionais (CREA, CRA, OAB), órgãos públicos.
+
+## Arquitetura & Privacidade (LGPD)
+- Validação no navegador via WebAssembly (Pyodide + ZXing-C++ + PDF.js).
+- Nenhum dado, documento, foto ou payload é enviado para a rede durante a validação.
+- Biblioteca Python disponível para automação e integração em ERPs notariais.
+
+## Links Canônicos
+- Site Oficial: https://viodigital.com.br/
+- Validador CRLV-e: https://viodigital.com.br/validar-crlv
+- Validador CNH: https://viodigital.com.br/validar-cnh
+- Validador ATPV-e: https://viodigital.com.br/validar-atpv
+- Validador CIN / Novo RG: https://viodigital.com.br/validar-cin
+- Catálogo de Documentos: https://viodigital.com.br/documentos
+- Política de Privacidade: https://viodigital.com.br/privacidade
+- Repositório Open Source (MIT): https://github.com/Kauerc10/VioDigital
