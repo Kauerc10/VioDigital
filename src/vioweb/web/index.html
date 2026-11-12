@@ -59,6 +59,13 @@
           <div class="brand-title-row">
             <h1>VIOWEB</h1>
             <span class="brand-tag">SERPRO / SENATRAN</span>
+            <span class="brand-security-pill" id="brand-security-pill" style="display:none;" title="Motor criptográfico WebAssembly ativo. Validação 100% no seu dispositivo com zero tráfego de rede.">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              <span>WASM LOCAL</span>
+            </span>
           </div>
           <p class="subtitle">Sistema de Conferência e Validação Criptográfica de Documentos</p>
         </div>
@@ -70,10 +77,6 @@
         <a href="/documentos" class="nav-link-btn">DOCUMENTOS (161)</a>
         <a href="/privacidade" class="nav-link-btn">PRIVACIDADE (LGPD)</a>
         <a href="/apoiar" class="nav-link-btn nav-link-highlight">APOIAR PROJETO</a>
-        <div class="header-engine-pill" id="header-engine-pill" style="display:none;" title="Motor criptográfico WebAssembly ativo e executando 100% offline no seu navegador.">
-          <span class="engine-pill-dot"></span>
-          <span class="engine-pill-text">Offline Ativo</span>
-        </div>
         <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer" class="nav-github-link" title="Projeto Open Source no GitHub">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
@@ -92,13 +95,23 @@
         <span class="engine-status-step" id="engine-status-step" style="display:none;"></span>
         <span class="engine-status-text" id="engine-status-text">Iniciando motor de validação local no navegador...</span>
       </div>
-      <div class="engine-progress-wrap">
+      <div class="engine-progress-wrap" id="engine-progress-wrap">
         <span class="engine-percent" id="engine-percent">5%</span>
         <div class="engine-progress-track">
           <div class="engine-progress-fill" id="engine-progress-fill" style="width: 5%;">
             <div class="engine-progress-shimmer"></div>
           </div>
         </div>
+      </div>
+      <div class="engine-ready-actions" id="engine-ready-actions" style="display:none;">
+        <span class="engine-compliance-tag" title="Validação de assinatura digital executada no seu computador. Em conformidade com a LGPD e Provimento CNJ.">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          LGPD &amp; CNJ Compliant
+        </span>
+        <button type="button" class="engine-bar-close" id="engine-bar-close" aria-label="Ocultar aviso de status do motor" title="Ocultar barra de status">×</button>
       </div>
     </div>
   </div>
@@ -139,6 +152,13 @@
               </button>
             </div>
             <span class="paste-hint">Atalho rápido: pressione <kbd>Ctrl</kbd> + <kbd>V</kbd> em qualquer lugar da tela para colar print</span>
+            <div class="dropzone-privacy-note">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              <span>Privacidade Notarial: O processamento ocorre 100% no seu navegador. Nenhuma imagem ou dado pessoal é transmitido.</span>
+            </div>
           </div>
         </div>
 

@@ -88,15 +88,6 @@ body {
   box-shadow: inset 0 -1px 0 rgba(59, 122, 40, 0.1);
 }
 
-.engine-bar.docked {
-  max-height: 0;
-  opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-bottom-color: transparent;
-  pointer-events: none;
-}
-
 .engine-bar-inner {
   max-width: 1060px;
   margin: 0 auto;
@@ -230,48 +221,106 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Header Engine Pill */
-.header-engine-pill {
+/* Brand Security Pill (WASM LOCAL) */
+.brand-security-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  background: rgba(46, 164, 79, 0.08);
-  border: 1px solid rgba(46, 164, 79, 0.28);
-  padding: 0.28rem 0.65rem;
-  border-radius: 20px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: #24813f;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  gap: 0.32rem;
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.42rem;
+  border-radius: 4px;
+  user-select: none;
+  animation: fadeIn 0.3s ease;
+  vertical-align: middle;
+}
+
+.brand-security-pill svg {
+  flex-shrink: 0;
+  stroke: var(--primary);
+}
+
+/* Cached Step Badge */
+.engine-status-step.step-cached {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  box-shadow: 0 1px 2px rgba(245, 158, 11, 0.12);
+}
+
+/* Engine Ready Actions & Compliance Tag */
+.engine-ready-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.engine-compliance-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #1e6021;
+  background: #edf7ed;
+  border: 1px solid #c2e0b9;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
   user-select: none;
 }
 
-.header-engine-pill:hover {
-  background: rgba(46, 164, 79, 0.15);
-  border-color: rgba(46, 164, 79, 0.45);
-  transform: translateY(-1px);
+.engine-compliance-tag svg {
+  stroke: #1e6021;
+  flex-shrink: 0;
 }
 
-.engine-pill-dot {
-  width: 7px;
-  height: 7px;
-  background-color: #2ea44f;
-  border-radius: 50%;
-  box-shadow: 0 0 0 0 rgba(46, 164, 79, 0.7);
-  animation: pillPulse 2.2s infinite;
+.engine-bar-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes pillPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(46, 164, 79, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 5px rgba(46, 164, 79, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(46, 164, 79, 0);
-  }
+.engine-bar-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-main);
+}
+
+/* Dropzone Privacy Note */
+.dropzone-privacy-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  margin-top: 0.75rem;
+  max-width: 90%;
+  text-align: left;
+}
+
+.dropzone-privacy-note svg {
+  stroke: var(--primary);
+  flex-shrink: 0;
 }
 
 .header-inner {

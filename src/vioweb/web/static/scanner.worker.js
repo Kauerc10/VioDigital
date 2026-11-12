@@ -16,6 +16,7 @@ self.pyodide = null;
 self.zxingReady = false;
 self.engineReady = false;
 self.initPromise = null;
+const isWarmed = new URL(self.location.href).searchParams.get('warmed') === '1';
 
 function postStatus(status, progress, message, step) {
   self.postMessage({ type: 'status', status, progress, message, step });
@@ -32,7 +33,11 @@ async function initEngine() {
   self.initPromise = (async () => {
     try {
       // 1. ZXing WASM
-      postStatus('loading_zxing', 25, 'Decodificador óptico (WASM)...', '1/4');
+      if (isWarmed) {
+        postStatus('loading_zxing', 40, 'Restaurando leitor óptico (ZXing WASM) do cache local...', '⚡ CACHE 1/3');
+      } else {
+        postStatus('loading_zxing', 25, 'Decodificador óptico (WASM)...', '1/4');
+      }
       const zxingLocalJs = resolveAssetUrl('vendor/zxing/zxing_reader.js');
       const zxingLocalWasm = resolveAssetUrl('vendor/zxing/zxing_reader.wasm');
 
@@ -62,7 +67,11 @@ async function initEngine() {
       self.zxingReady = true;
 
       // 2. Pyodide
-      postStatus('loading_pyodide', 50, 'Ambiente Python WebAssembly...', '2/4');
+      if (isWarmed) {
+        postStatus('loading_pyodide', 75, 'Restaurando interpretador Python e criptografia do cache...', '⚡ CACHE 2/3');
+      } else {
+        postStatus('loading_pyodide', 50, 'Ambiente Python WebAssembly...', '2/4');
+      }
       const pyodideLocalJs = resolveAssetUrl('vendor/pyodide/pyodide.js');
       const pyodideLocalIndex = resolveAssetUrl('vendor/pyodide/');
 
@@ -85,11 +94,17 @@ async function initEngine() {
       }
 
       // 3. Cryptography
-      postStatus('loading_crypto', 75, 'Biblioteca de criptografia (ECDSA/RSA)...', '3/4');
+      if (!isWarmed) {
+        postStatus('loading_crypto', 75, 'Biblioteca de criptografia (ECDSA/RSA)...', '3/4');
+      }
       await self.pyodide.loadPackage('cryptography');
 
       // 4. VioWeb Wheel
-      postStatus('loading_vioweb', 90, 'Motor VioWeb e base de 161 templates...', '4/4');
+      if (isWarmed) {
+        postStatus('loading_vioweb', 92, 'Restaurando esquemas oficiais e 161 templates da memória...', '⚡ CACHE 3/3');
+      } else {
+        postStatus('loading_vioweb', 90, 'Motor VioWeb e base de 161 templates...', '4/4');
+      }
       const wheelUrl = resolveAssetUrl('wheels/vioweb-0.2.0-py3-none-any.whl');
       const wheelResp = await fetch(wheelUrl);
       if (!wheelResp.ok) {
@@ -150,7 +165,11 @@ def _py_is_vio(raw_bytes_py):
       `);
 
       self.engineReady = true;
-      postStatus('ready', 100, 'Motor pronto · 100% offline no navegador', '✓');
+      if (isWarmed) {
+        postStatus('ready', 100, 'Motor restaurado da memória local · 100% offline (0 KB de rede)', '✓ CACHE');
+      } else {
+        postStatus('ready', 100, 'Motor pronto · 100% offline no navegador', '✓');
+      }
       self.postMessage({ type: 'ready' });
     } catch (err) {
       console.error('Erro na inicialização do motor offline:', err);

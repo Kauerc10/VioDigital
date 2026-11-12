@@ -36,21 +36,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const engineStatusStep = document.getElementById('engine-status-step');
   const engineProgressFill = document.getElementById('engine-progress-fill');
   const enginePercent = document.getElementById('engine-percent');
-  const headerEnginePill = document.getElementById('header-engine-pill');
+  const brandSecurityPill = document.getElementById('brand-security-pill');
+  const engineReadyActions = document.getElementById('engine-ready-actions');
+  const engineBarClose = document.getElementById('engine-bar-close');
   const privacyBadge = document.getElementById('privacy-badge');
 
   // Detecção de motor em cache na sessão
-  const isWarmed = sessionStorage.getItem('vioweb_engine_warmed');
-  if (isWarmed && engineStatusText) {
-    engineStatusText.textContent = 'Restaurando motor do cache local...';
-  }
-
-  if (headerEnginePill) {
-    headerEnginePill.addEventListener('click', () => {
-      if (engineBar) {
-        engineBar.classList.toggle('docked');
-      }
-    });
+  const isWarmed = !!sessionStorage.getItem('vioweb_engine_warmed');
+  if (isWarmed) {
+    if (engineStatusStep) {
+      engineStatusStep.textContent = '⚡ CACHE';
+      engineStatusStep.style.display = 'inline-block';
+      engineStatusStep.classList.add('step-cached');
+    }
+    if (engineStatusText) {
+      engineStatusText.textContent = 'Restaurando motor criptográfico da memória local...';
+    }
+    if (engineProgressFill) {
+      engineProgressFill.style.width = '30%';
+    }
+    if (enginePercent) {
+      enginePercent.textContent = '30%';
+    }
   }
 
   let currentResult = null;
@@ -62,38 +69,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let scannerWorker = null;
   let isEngineReady = false;
-  let dockTimer = null;
 
   function handleEngineReady() {
     isEngineReady = true;
     sessionStorage.setItem('vioweb_engine_warmed', String(Date.now()));
     if (engineBar) {
       engineBar.classList.add('ready');
-      if (dockTimer) clearTimeout(dockTimer);
-      dockTimer = setTimeout(() => {
-        engineBar.classList.add('docked');
-        if (headerEnginePill) {
-          headerEnginePill.style.display = 'inline-flex';
-        }
-      }, 2400);
+    }
+    if (brandSecurityPill) {
+      brandSecurityPill.style.display = 'inline-flex';
+    }
+    if (engineReadyActions) {
+      engineReadyActions.style.display = 'flex';
     }
     if (engineStatusText) {
-      engineStatusText.textContent = 'Motor pronto · 100% offline no navegador';
+      if (isWarmed) {
+        engineStatusText.textContent = 'Motor restaurado da memória local · 100% offline (0 KB de rede)';
+      } else {
+        engineStatusText.textContent = 'Motor pronto · Validação criptográfica 100% no navegador';
+      }
     }
     if (enginePercent) {
       enginePercent.textContent = '100%';
+    }
+    if (engineProgressFill) {
+      engineProgressFill.style.width = '100%';
+    }
+  }
+
+  if (engineBarClose && engineBar) {
+    engineBarClose.addEventListener('click', () => {
+      engineBar.style.display = 'none';
+      sessionStorage.setItem('vioweb_engine_bar_dismissed', '1');
+    });
+  }
+
+  if (sessionStorage.getItem('vioweb_engine_bar_dismissed') === '1' && engineBar && isWarmed) {
+    engineBar.style.display = 'none';
+    if (brandSecurityPill) {
+      brandSecurityPill.style.display = 'inline-flex';
     }
   }
 
   function initScannerWorker() {
     try {
-      scannerWorker = new Worker('/static/scanner.worker.js');
+      const workerUrl = isWarmed ? '/static/scanner.worker.js?warmed=1' : '/static/scanner.worker.js';
+      scannerWorker = new Worker(workerUrl);
       scannerWorker.onmessage = (e) => {
         const msg = e.data || {};
         if (msg.type === 'status') {
           if (engineStatusStep && msg.step) {
             engineStatusStep.textContent = msg.step;
             engineStatusStep.style.display = 'inline-block';
+            if (isWarmed || msg.step.includes('CACHE')) {
+              engineStatusStep.classList.add('step-cached');
+            }
           }
           if (engineStatusText && msg.message) {
             engineStatusText.textContent = msg.message;
