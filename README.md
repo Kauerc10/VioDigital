@@ -84,6 +84,10 @@ python -m viodigital
 
 Abra o navegador em **`http://127.0.0.1:8000`** e pronto!
 
+#### Auto-Atualização Local e Cache Inteligente (100% Offline)
+* **Recompilação Automática do Motor WASM:** Ao iniciar o servidor (`python -m viodigital`), o sistema verifica o hash SHA-256 local do núcleo (`src/viodigital/core`) contra `.wheel_hash`. Havendo alteração no código, a wheel WebAssembly (`viodigital-*.whl`) é atualizada automaticamente em milissegundos, sem depender de rede.
+* **Service Worker Híbrido (`sw.js`):** Os runtimes pesados (`Pyodide`, `ZXing`, `PDF.js`) permanecem em **Cache-First** para abertura instantânea e uso offline, enquanto o motor `.whl`, JS, CSS e HTML utilizam **Network-First com fallback offline** e invalidação automática por hash de build (`/api/version`). Assim, nenhuma alteração fica presa em cache antigo.
+
 ### 3. Executando os Testes Automatizados
 ```bash
 pytest

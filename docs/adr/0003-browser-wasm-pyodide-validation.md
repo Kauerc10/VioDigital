@@ -1,7 +1,7 @@
 # ADR 0003: Validação Criptográfica 100% no Navegador via Pyodide/WebAssembly
 
 ## Contexto
-O VioDigital se apresentava como um validador offline, mas no ambiente de hospedagem web pública (`vioweb.vercel.app`), cada documento — PDF, imagem ou print colado via `Ctrl+V` — era transmitido via requisição HTTP `POST` para processamento no servidor backend.
+O VioDigital se apresentava como um validador offline, mas no ambiente de hospedagem web pública (`viodigital.com.br`), cada documento — PDF, imagem ou print colado via `Ctrl+V` — era transmitido via requisição HTTP `POST` para processamento no servidor backend.
 Para o usuário comum ou escrevente de cartório utilizando a versão pública, isso representava um risco de exposição de dados pessoais e veiculares (LGPD).
 Além disso, manter um backend serverless processando decodificações de imagens e computação criptográfica gerava custos operacionais, riscos de indisponibilidade e contradição com o posicionamento open source de "zero dados enviados a servidores".
 
@@ -21,6 +21,14 @@ Reescrever todo o motor criptográfico e os parsers de 161 templates de Python p
 
 3. **Papel Preservado do FastAPI:**
    * O servidor FastAPI permanece no repositório exclusivamente para cenários de **self-hosting em rede local/intranet de cartórios** e para automações headless via API HTTP interna.
+   * Em execução local a partir do código-fonte, o servidor prioriza diretamente `src/viodigital/web` e expõe `/api/version` e `/sw.js` dinâmico com cabeçalhos `Cache-Control: no-cache, no-store, must-revalidate`.
+
+4. **Auto-Atualização Determinística e Cache Offline Híbrido:**
+   * **Invalidação da Wheel Python (`.wheel_hash`):** `build_static.py` calcula hashes SHA-256 determinísticos do código-fonte (`compute_core_hash()` e `compute_engine_hash()`). Sempre que `ensure_runtime_assets` ou `build()` detecta mudança em `src/viodigital/core`, a wheel `viodigital-*.whl` é recompilada automaticamente offline em milissegundos, evitando carregamento de código obsoleto no Pyodide.
+   * **Service Worker Híbrido (`sw.js`):**
+     * **Cache-First** para ativos imutáveis e pesados (`/static/vendor/` — Pyodide, ZXing WASM, PDF.js e ícones), preservando inicialização instantânea offline.
+     * **Network-First com Fallback Offline** para o motor (`.whl`), scripts JS/CSS e páginas HTML, garantindo aplicação imediata de alterações quando o servidor local está ativo e funcionamento pleno sem rede quando offline.
+   * **Atualização Transparente no Navegador:** `sw.js` recebe o `build_hash` em seu `CACHE_NAME` (`viodigital-cache-v0.2.0-<hash>`), é registrado com `{ updateViaCache: 'none' }` em `app.js` e remove caches antigos no evento `activate`, disparando atualização limpa via `controllerchange` apenas quando há versão nova.
 
 ## Consequências
 * **Positivas:**
