@@ -220,11 +220,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnFooterApi = document.getElementById('btn-footer-api');
   const btnCloseApiModal = document.getElementById('btn-close-api-modal');
 
+  const modalAudit = document.getElementById('modal-audit');
+  const btnOpenAuditModal = document.getElementById('btn-open-audit-modal');
+  const btnCloseAuditModal = document.getElementById('btn-close-audit-modal');
+
   function openModal(modalEl) {
     if (modalEl) modalEl.style.display = 'flex';
   }
   function closeModal(modalEl) {
     if (modalEl) modalEl.style.display = 'none';
+  }
+
+  if (btnOpenAuditModal) {
+    btnOpenAuditModal.addEventListener('click', () => openModal(modalAudit));
+  }
+  if (btnCloseAuditModal) {
+    btnCloseAuditModal.addEventListener('click', () => closeModal(modalAudit));
+  }
+  if (modalAudit) {
+    modalAudit.addEventListener('click', (e) => {
+      if (e.target === modalAudit) closeModal(modalAudit);
+    });
   }
 
   [btnHeaderPix, btnOpenPixModal, btnFooterPix].forEach(btn => {
@@ -260,6 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (modalApi && modalApi.style.display !== 'none') {
         closeModal(modalApi);
+        return;
+      }
+      if (modalAudit && modalAudit.style.display !== 'none') {
+        closeModal(modalAudit);
         return;
       }
     }
@@ -685,32 +705,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('/api/documents/verify', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-      loadingState.style.display = 'none';
-
-      if (!response.ok || !data.is_parsed) {
-        const errDetail = data.message || (Array.isArray(data.errors) && data.errors.length ? data.errors.join(' | ') : 'Falha ao decodificar documento.');
-        showError(errDetail);
-        dropzone.style.display = 'flex';
-        return;
-      }
-
-      currentResult = data;
-      renderResult(data);
-    } catch (err) {
-      loadingState.style.display = 'none';
-      dropzone.style.display = 'flex';
-      showError(`Erro de comunicação com o servidor: ${err.message}`);
-    }
+    loadingState.style.display = 'none';
+    dropzone.style.display = 'flex';
+    showError(
+      'Formato de arquivo não suportado. Por favor, envie um arquivo PDF, imagem (PNG, JPG, WebP) ou cole uma captura de tela com Ctrl + V.'
+    );
   }
 
   function showError(msg) {

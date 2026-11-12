@@ -787,6 +787,25 @@ kbd {
   font-size: 0.85rem;
 }
 
+.btn-privacy-audit {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-privacy-audit:hover {
+  color: var(--primary-hover);
+  background-color: var(--primary-soft);
+}
+
 .result-actions {
   display: flex;
   align-items: center;

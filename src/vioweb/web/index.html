@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';">
   <title>VioWeb — Validador Oficial Gratuito de QR Code VIO (CRLV-e, CNH, ATPV-e, CIN e TIE)</title>
   <meta name="description" content="Valide e decodifique gratuitamente documentos oficiais brasileiros com QR Code Serpro/VIO e CIN direto no computador: CRLV-e, CNH Digital e Física (com foto), ATPV-e, CIN/Novo RG, TIE Marinha e +160 documentos. Leitura por PDF, Ctrl+V ou Webcam.">
   <meta name="keywords" content="validar qr code crlv no pc, ler qr code cnh computador, validar atpv-e cartorio gratis, leitor vio serpro web, validar cin novo rg, validar tie marinha qr code, conferencia notarial crlv cnh, decodificador vio open source">
@@ -208,6 +209,9 @@
                 <span class="privacy-icon">🔒</span>
                 <span>Processado no seu navegador · offline</span>
               </div>
+              <button type="button" class="btn-privacy-audit" id="btn-open-audit-modal" title="Como auditar a privacidade e o tráfego de rede">
+                Como auditar a privacidade ↗
+              </button>
             </div>
             <div class="result-actions">
               <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-all">
@@ -302,6 +306,31 @@
         <a href="https://github.com/Kauerc10/VioWeb" target="_blank" rel="noopener noreferrer">Código Aberto (MIT)</a>
       </p>
     </footer>
+  </div>
+
+  <!-- Modal Auditoria de Privacidade -->
+  <div class="modal-backdrop" id="modal-audit" style="display:none">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="community-pill" style="margin-bottom:0.35rem; display:inline-block;">GARANTIA DE PRIVACIDADE</span>
+          <h3>Como Auditar o Tráfego no seu Navegador</h3>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-close-audit-modal" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>No <strong>VioWeb</strong>, a validação ocorre 100% no seu navegador através de WebAssembly (WASM). Você pode auditar o tráfego de rede pessoalmente em 4 passos:</p>
+        <ol style="margin-left:1.35rem; line-height:1.65; font-size:0.86rem;">
+          <li>Pressione <kbd>F12</kbd> (ou clique com botão direito e escolha <em>Inspecionar</em>).</li>
+          <li>Clique na aba <strong>Rede (Network)</strong> nas ferramentas de desenvolvedor.</li>
+          <li>Arraste um PDF ou imagem, ou cole um print com <kbd>Ctrl</kbd> + <kbd>V</kbd>.</li>
+          <li>Verifique que <strong>nenhuma requisição POST nem tráfego com o documento</strong> é gerado para qualquer servidor.</li>
+        </ol>
+        <div class="notary-disclaimer" style="border-left-color:var(--primary); background-color:var(--primary-soft); margin-top:0.5rem;">
+          <strong>Blindagem Técnica por CSP:</strong> O site impõe a diretiva <code>connect-src 'self'</code>, impedindo tecnicamente que qualquer script envie dados para fora desta origem.
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast">Copiado para a área de transferência</div>
