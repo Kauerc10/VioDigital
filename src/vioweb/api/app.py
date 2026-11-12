@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,28 +11,44 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from vioweb.core import DigitalDocumentChecker
-from vioweb.core.documents.atpv import ATPVData
-from vioweb.core.documents.crlv import CRLVData
-from vioweb.core.documents.cnh import CNHData
+from vioweb.core import DigitalDocumentChecker, present
+from vioweb.core.__meta__ import __version__
 from vioweb.core.exceptions import DigitalDocumentError, QRCodeNotFoundError
 
 app = FastAPI(
     title="VioWeb API",
     description="Verificador e decodificador offline de CRLV-e, CNH, ATPV-e, CIN e +160 documentos oficiais Serpro/VIO",
-    version="0.2.0",
+    version=__version__,
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';"
+    )
+    response.headers["Permissions-Policy"] = "camera=(self)"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+MAX_UPLOAD_SIZE = 15 * 1024 * 1024  # 15 MB
+
 _checker = DigitalDocumentChecker()
-WEB_DIR = Path(__file__).parent.parent / "web"
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+SRC_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+DIST_DIR = ROOT_DIR / "dist"
+WEB_DIR = DIST_DIR if (DIST_DIR / "index.html").exists() else SRC_WEB_DIR
 
 SEO_DOC_PAGES: Dict[str, Dict[str, str]] = {
     "crlv": {
@@ -73,170 +89,12 @@ class VerifyBase64Request(BaseModel):
     filename: Optional[str] = None
 
 
-def _mask_cpf_cnpj(val: str) -> str:
-    digits = re.sub(r"\D", "", val or "")
-    if len(digits) == 11:
-        return f"{digits[:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:]}"
-    if len(digits) == 14:
-        return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}"
-    return val
-
-
-def _format_generic_fields(fields: Dict[str, Any]) -> Dict[str, Any]:
-    out: Dict[str, Any] = {}
-    for k, v in fields.items():
-        if not isinstance(v, str) or not v.strip():
-            out[k] = v
-            continue
-        key_lower = k.lower()
-        val_clean = v.strip()
-        if any(tok in key_lower for tok in ("cpf", "cnpj", "documento_proprietario", "documento_vendedor", "documento_comprador")):
-            out[k] = _mask_cpf_cnpj(val_clean)
-        elif "placa" in key_lower and len(re.sub(r"[^A-Za-z0-9]", "", val_clean)) == 7:
-            out[k] = re.sub(r"[^A-Za-z0-9]", "", val_clean).upper()
-        elif "renavam" in key_lower and re.sub(r"\D", "", val_clean):
-            digits = re.sub(r"\D", "", val_clean)
-            out[k] = digits.zfill(11) if len(digits) <= 11 else val_clean
-        else:
-            out[k] = val_clean
-    return out
-
-
-def _format_result(res) -> Dict[str, Any]:
-    formatted: Dict[str, Any] = {}
-    data_obj = res.data
-
-    if isinstance(data_obj, CRLVData):
-        formatted = {
-            "placa_formatada": data_obj.placa_formatada,
-            "cpf_cnpj_formatado": data_obj.cpf_cnpj_formatado,
-            "renavam_formatado": data_obj.renavam_formatado,
-            "ano_fabricacao_modelo": data_obj.ano_fabricacao_modelo,
-            "proprietario": data_obj.proprietario,
-            "chassi": data_obj.chassi,
-            "marca_modelo": data_obj.marca_modelo,
-            "exercicio": data_obj.exercicio,
-            "uf": data_obj.uf,
-            "municipio": data_obj.local,
-            "combustivel": data_obj.combustivel,
-            "cor": data_obj.cor,
-            "categoria": data_obj.categoria,
-            "especie": data_obj.especie,
-            "tipo": data_obj.tipo,
-            "carroceria": data_obj.carroceria,
-            "potencia": data_obj.potencia,
-            "cilindradas": data_obj.cilindradas,
-            "motor": data_obj.motor,
-            "capacidade_maxima_carga": data_obj.capacidade_maxima_carga,
-            "pbt": data_obj.pbt,
-            "cmt": data_obj.cmt,
-            "lotacao": data_obj.lotacao,
-            "eixos": data_obj.eixos,
-            "rntrc": data_obj.rntrc,
-            "codigo_seguranca_cla": data_obj.codigo_seguranca_cla,
-            "numero_crv": data_obj.numero_crv,
-            "data_emissao": data_obj.data,
-            "observacoes": data_obj.observacoes,
-        }
-    elif isinstance(data_obj, CNHData):
-        formatted = {
-            "nome": data_obj.nome,
-            "nome_civil": data_obj.nome_civil,
-            "cpf_formatado": data_obj.cpf_formatado,
-            "identidade": data_obj.identidade,
-            "data_nascimento": data_obj.data_nascimento,
-            "filiacao_mae": data_obj.filiacao_mae,
-            "filiacao_pai": data_obj.filiacao_pai,
-            "categoria": data_obj.categoria,
-            "numero_registro": data_obj.numero_registro,
-            "data_validade": data_obj.data_validade,
-            "data_primeira_habilitacao": data_obj.data_primeira_habilitacao,
-            "data_emissao": data_obj.data_emissao,
-            "local_emissao": data_obj.local_emissao,
-            "uf_emissao": data_obj.uf_emissao,
-            "numero_renach": data_obj.numero_renach,
-            "numero_validacao_cnh": data_obj.numero_validacao_cnh,
-            "permissao": data_obj.permissao,
-            "acc": data_obj.acc,
-            "observacoes": data_obj.observacoes,
-        }
-    elif isinstance(data_obj, ATPVData):
-        formatted = {
-            "numero_atpv": data_obj.numero_atpv,
-            "placa_formatada": data_obj.placa_formatada,
-            "renavam_formatado": data_obj.renavam_formatado,
-            "chassi": data_obj.chassi,
-            "valor_venda": data_obj.valor_venda,
-            "local_venda": data_obj.local_venda,
-            "data_venda": data_obj.data_venda,
-            "numero_crv": data_obj.numero_crv,
-            "codigo_seguranca_crv": data_obj.codigo_seguranca_crv,
-            "uf_emissao_crv": data_obj.uf_emissao_crv,
-            "data_emissao_crv": data_obj.data_emissao_crv,
-            "marca_modelo": data_obj.marca_modelo,
-            "cor": data_obj.cor,
-            "ano_fabricacao_modelo": data_obj.ano_fabricacao_modelo,
-            "kilometragem_hodometro": data_obj.kilometragem_hodometro,
-            "nome_vendedor": data_obj.nome_vendedor,
-            "documento_vendedor_formatado": data_obj.documento_vendedor_formatado,
-            "email_vendedor": data_obj.email_vendedor,
-            "municipio_vendedor": data_obj.municipio_vendedor,
-            "uf_vendedor": data_obj.uf_vendedor,
-            "nome_comprador": data_obj.nome_comprador,
-            "documento_comprador_formatado": data_obj.documento_comprador_formatado,
-            "email_comprador": data_obj.email_comprador,
-            "municipio_comprador": data_obj.municipio_comprador,
-            "uf_comprador": data_obj.uf_comprador,
-        }
-    elif isinstance(res.fields, dict) and res.fields:
-        formatted = _format_generic_fields(res.fields)
-
-    photo_b64 = None
-    photo_obj = getattr(res, "photo", None)
-    if photo_obj and getattr(photo_obj, "data", None):
-        try:
-            try:
-                png_bytes = photo_obj.to_png()
-                photo_b64 = f"data:image/png;base64,{base64.b64encode(png_bytes).decode('ascii')}"
-            except Exception:
-                fmt = (getattr(photo_obj, "format", None) or "jpeg").lower()
-                photo_b64 = f"data:image/{fmt};base64,{base64.b64encode(photo_obj.data).decode('ascii')}"
-        except Exception:
-            photo_b64 = None
-
-    message = None
-    if not res.is_parsed:
-        if res.errors:
-            message = "Falha ao decodificar documento: " + "; ".join(res.errors)
-        else:
-            message = "Não foi possível decodificar o envelope VIO deste QR Code."
-    elif res.warnings:
-        message = "; ".join(res.warnings)
-
-    return {
-        "is_parsed": bool(res.is_parsed),
-        "is_authentic": bool(res.is_authentic),
-        "is_valid": bool(res.is_valid),
-        "is_expired": bool(res.is_expired),
-        "document_type": res.document_type,
-        "document_name": res.document_name,
-        "template_id": res.template_id,
-        "template_name": res.template_name,
-        "issued_at": res.issued_at.isoformat() if res.issued_at else None,
-        "signature_algorithm": res.signature.algorithm if res.signature else None,
-        "fields": res.fields,
-        "formatted": formatted,
-        "photo_b64": photo_b64,
-        "photo_format": photo_obj.format if photo_obj else None,
-        "errors": res.errors,
-        "warnings": res.warnings,
-        "message": message,
-    }
+_format_result = present
 
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "VioWeb", "version": "0.1.0"}
+    return {"status": "ok", "service": "VioWeb", "version": __version__}
 
 
 @app.get("/api/templates")
@@ -254,7 +112,7 @@ async def list_supported_templates():
         })
 
     return {
-        "total_templates": max(len(templates_list), 161),
+        "total_templates": len(templates_list),
         "cin_supported": True,
         "templates": templates_list,
         "categories": [
@@ -341,12 +199,12 @@ async def sitemap_xml():
     urls = [
         ("https://vioweb.vercel.app/", "1.0"),
         ("https://vioweb.vercel.app/documentos", "0.9"),
+        ("https://vioweb.vercel.app/privacidade", "0.9"),
         ("https://vioweb.vercel.app/validar-crlv", "0.9"),
         ("https://vioweb.vercel.app/validar-cnh", "0.9"),
         ("https://vioweb.vercel.app/validar-atpv", "0.9"),
         ("https://vioweb.vercel.app/validar-cin", "0.8"),
         ("https://vioweb.vercel.app/validar-tie-marinha", "0.8"),
-        ("https://vioweb.vercel.app/api-comercial", "0.8"),
         ("https://vioweb.vercel.app/apoiar", "0.7"),
     ]
     items = "\n".join(
@@ -374,6 +232,16 @@ async def verify_document(file: UploadFile = File(...)):
         if not content:
             raise HTTPException(status_code=400, detail="Arquivo vazio.")
 
+        if len(content) > MAX_UPLOAD_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "is_parsed": False,
+                    "error": "PAYLOAD_TOO_LARGE",
+                    "message": f"Arquivo excede o tamanho máximo permitido de {MAX_UPLOAD_SIZE // (1024 * 1024)}MB.",
+                },
+            )
+
         result = _checker.parse_file(content)
         return JSONResponse(_format_result(result))
     except QRCodeNotFoundError as exc:
@@ -395,12 +263,15 @@ async def verify_document(file: UploadFile = File(...)):
             },
         )
     except Exception as exc:
+        import logging
+
+        logging.getLogger("vioweb.api").exception("Erro inesperado no processamento: %s", exc)
         return JSONResponse(
             status_code=500,
             content={
                 "is_parsed": False,
                 "error": "SERVER_ERROR",
-                "message": f"Erro inesperado no processamento: {exc}",
+                "message": "Erro interno ao processar documento. Tente novamente mais tarde.",
             },
         )
 
@@ -413,6 +284,16 @@ async def verify_document_base64(req: VerifyBase64Request):
             data_str = data_str.split(",", 1)[1]
 
         content = base64.b64decode(data_str)
+        if len(content) > MAX_UPLOAD_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "is_parsed": False,
+                    "error": "PAYLOAD_TOO_LARGE",
+                    "message": f"Arquivo excede o tamanho máximo permitido de {MAX_UPLOAD_SIZE // (1024 * 1024)}MB.",
+                },
+            )
+
         result = _checker.parse_file(content)
         return JSONResponse(_format_result(result))
     except QRCodeNotFoundError as exc:
@@ -425,12 +306,15 @@ async def verify_document_base64(req: VerifyBase64Request):
             },
         )
     except Exception as exc:
+        import logging
+
+        logging.getLogger("vioweb.api").exception("Erro inesperado no processamento base64: %s", exc)
         return JSONResponse(
-            status_code=400,
+            status_code=500,
             content={
                 "is_parsed": False,
                 "error": "PROCESSING_ERROR",
-                "message": str(exc),
+                "message": "Erro interno ao processar documento. Tente novamente mais tarde.",
             },
         )
 
@@ -464,11 +348,12 @@ async def page_apoiar():
     raise HTTPException(status_code=404)
 
 
-@app.get("/api-comercial")
-async def page_api_comercial():
-    page = WEB_DIR / "api.html"
-    if page.exists():
-        return FileResponse(page)
+@app.get("/privacidade")
+async def page_privacidade():
+    for base in (WEB_DIR, SRC_WEB_DIR):
+        page = base / "privacidade.html"
+        if page.exists():
+            return FileResponse(page)
     raise HTTPException(status_code=404)
 
 

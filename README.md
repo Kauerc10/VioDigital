@@ -2,6 +2,10 @@
 
 > Verificador e decodificador **100% gratuito e Open Source** de documentos oficiais brasileiros (**CRLV-e, CNH, ATPV-e, CIN / Novo RG, TIE Marinha, CRAF e +160 templates VIO**) projetado para **computadores de cartórios, despachantes, empresas e cidadãos**.
 
+> [!NOTE]
+> **Aviso Legal e Não-Afiliação Institucional:** O **VioWeb** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://vioweb.vercel.app/privacidade).
+
+[![CI](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
 [![Demo Online](https://img.shields.io/badge/Acessar_Sistema-vioweb.vercel.app-3b7a28)](https://vioweb.vercel.app)
@@ -71,8 +75,8 @@ O VioWeb pode ser usado diretamente pelo site [**vioweb.vercel.app**](https://vi
 git clone https://github.com/Kauerc10/VioWeb.git
 cd VioWeb
 
-# Instale as dependências do projeto
-pip install -e .
+# Instale as dependências com suporte a servidor local e visão computacional
+pip install -e ".[server,vision]"
 
 # Inicie o servidor local
 python -m vioweb
@@ -112,6 +116,8 @@ VioWeb/
 * [Engenharia Reversa e Especificação Técnica do Padrão VIO (`docs/vio-reverse-engineering.md`)](docs/vio-reverse-engineering.md)
 * [ADR 0001: Validação Criptográfica Offline Local](docs/adr/0001-offline-cryptographic-validation.md)
 * [ADR 0002: Arquitetura do Decodificador e Interface Web](docs/adr/0002-crlv-and-cnh-decoding-architecture.md)
+* [ADR 0003: Validação 100% no Navegador via WebAssembly (Pyodide)](docs/adr/0003-browser-wasm-pyodide-validation.md)
+* [Avisos e Licenças de Terceiros (`THIRD_PARTY_NOTICES.md`)](THIRD_PARTY_NOTICES.md)
 * [Guia de Contribuição (`CONTRIBUTING.md`)](CONTRIBUTING.md)
 
 ---
@@ -134,8 +140,25 @@ O espírito do Open Source é construir sobre o trabalho incrível da comunidade
 O **VioWeb** foi criado para continuar sendo **gratuito, aberto e acessível** para qualquer escrevente, cartório, despachante ou cidadão brasileiro, sem cobrar por documento verificado.
 
 Se esta ferramenta economiza tempo e dinheiro no seu dia a dia, considere apoiar a manutenção do projeto:
-* Deixe uma **Estrela (Star)** neste repositório no GitHub e compartilhe com colegas de outros cartórios e escritórios!
-* **Doação via PIX:** *(Chave PIX e QR Code de apoio serão disponibilizados aqui em breve)*.
+* ⭐ Deixe uma **Estrela (Star)** neste repositório no GitHub e compartilhe com colegas de outros cartórios e escritórios!
+* 💬 Acompanhe e envie feedbacks, ideias e melhorias através das [Issues do GitHub](https://github.com/Kauerc10/VioWeb/issues).
+* ☕ **Apoie voluntariamente via PIX:**
+
+<div align="center">
+  <img src="src/vioweb/web/static/pix-qrcode.png" width="180" alt="QR Code PIX de Apoio ao VioWeb"><br>
+  <strong>Chave Aleatória:</strong> <code>84afcca1-eea6-4a15-9adf-581b37fb5897</code><br>
+  <em>Beneficiário: Kaue Ruon Cardoso · Cidade: São Paulo</em>
+</div>
+
+<details>
+<summary>📋 Clique aqui para ver o código <strong>Pix Copia e Cola</strong></summary>
+
+```text
+00020126720014br.gov.bcb.pix013684afcca1-eea6-4a15-9adf-581b37fb58970210VIODIGITAL5204000053039865802BR5917KAUE RUON CARDOSO6009Sao Paulo62260522ApoioProjetoVioDigital6304383F
+```
+</details>
+
+Ou acesse a [página de apoio no VioWeb](https://vioweb.vercel.app/apoiar).
 
 ---
 

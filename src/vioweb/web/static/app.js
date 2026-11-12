@@ -31,12 +31,170 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnNewCheck = document.getElementById('btn-new-check');
   const toast = document.getElementById('toast');
 
+  const engineBar = document.getElementById('engine-bar');
+  const engineStatusText = document.getElementById('engine-status-text');
+  const engineStatusStep = document.getElementById('engine-status-step');
+  const engineProgressFill = document.getElementById('engine-progress-fill');
+  const enginePercent = document.getElementById('engine-percent');
+  const brandSecurityPill = document.getElementById('brand-security-pill');
+  const engineReadyActions = document.getElementById('engine-ready-actions');
+  const engineBarClose = document.getElementById('engine-bar-close');
+  const privacyBadge = document.getElementById('privacy-badge');
+
+  // Detecção de motor em cache na sessão
+  const isWarmed = !!sessionStorage.getItem('vioweb_engine_warmed');
+  if (isWarmed) {
+    if (engineStatusStep) {
+      engineStatusStep.textContent = '⚡ CACHE';
+      engineStatusStep.style.display = 'inline-block';
+      engineStatusStep.classList.add('step-cached');
+    }
+    if (engineStatusText) {
+      engineStatusText.textContent = 'Restaurando motor criptográfico da memória local...';
+    }
+    if (engineProgressFill) {
+      engineProgressFill.style.width = '30%';
+    }
+    if (enginePercent) {
+      enginePercent.textContent = '30%';
+    }
+  }
+
   let currentResult = null;
   let mediaStream = null;
   let scanIntervalId = null;
   let isScanningFrame = false;
   let scanAttemptCount = 0;
   let isMirrored = localStorage.getItem('vioweb_camera_mirrored') === '1';
+
+  let scannerWorker = null;
+  let isEngineReady = false;
+
+  function handleEngineReady() {
+    isEngineReady = true;
+    sessionStorage.setItem('vioweb_engine_warmed', String(Date.now()));
+    if (engineBar) {
+      engineBar.classList.add('ready');
+    }
+    if (brandSecurityPill) {
+      brandSecurityPill.style.display = 'inline-flex';
+    }
+    if (engineReadyActions) {
+      engineReadyActions.style.display = 'flex';
+    }
+    if (engineStatusText) {
+      if (isWarmed) {
+        engineStatusText.textContent = 'Motor restaurado da memória local · 100% offline (0 KB de rede)';
+      } else {
+        engineStatusText.textContent = 'Motor pronto · Validação criptográfica 100% no navegador';
+      }
+    }
+    if (enginePercent) {
+      enginePercent.textContent = '100%';
+    }
+    if (engineProgressFill) {
+      engineProgressFill.style.width = '100%';
+    }
+  }
+
+  if (engineBarClose && engineBar) {
+    engineBarClose.addEventListener('click', () => {
+      engineBar.style.display = 'none';
+      sessionStorage.setItem('vioweb_engine_bar_dismissed', '1');
+    });
+  }
+
+  if (sessionStorage.getItem('vioweb_engine_bar_dismissed') === '1' && engineBar && isWarmed) {
+    engineBar.style.display = 'none';
+    if (brandSecurityPill) {
+      brandSecurityPill.style.display = 'inline-flex';
+    }
+  }
+
+  function initScannerWorker() {
+    try {
+      const workerUrl = isWarmed ? '/static/scanner.worker.js?warmed=1' : '/static/scanner.worker.js';
+      scannerWorker = new Worker(workerUrl);
+      scannerWorker.onmessage = (e) => {
+        const msg = e.data || {};
+        if (msg.type === 'status') {
+          if (engineStatusStep && msg.step) {
+            engineStatusStep.textContent = msg.step;
+            engineStatusStep.style.display = 'inline-block';
+            if (isWarmed || msg.step.includes('CACHE')) {
+              engineStatusStep.classList.add('step-cached');
+            }
+          }
+          if (engineStatusText && msg.message) {
+            engineStatusText.textContent = msg.message;
+          }
+          if (engineProgressFill && typeof msg.progress === 'number') {
+            engineProgressFill.style.width = `${msg.progress}%`;
+          }
+          if (enginePercent && typeof msg.progress === 'number') {
+            enginePercent.textContent = `${msg.progress}%`;
+          }
+          if (msg.status === 'ready') {
+            handleEngineReady();
+          }
+        } else if (msg.type === 'ready') {
+          handleEngineReady();
+        } else if (msg.type === 'verify_result') {
+          loadingState.style.display = 'none';
+          const data = msg.data;
+          if (!data || !data.is_parsed) {
+            const errDetail =
+              (data && data.message) ||
+              (data && Array.isArray(data.errors) && data.errors.length
+                ? data.errors.join(' | ')
+                : 'Falha ao decodificar documento.');
+            showError(errDetail);
+            dropzone.style.display = 'flex';
+            return;
+          }
+          currentResult = data;
+          renderResult(data);
+        } else if (msg.type === 'error' || msg.type === 'init_error') {
+          console.warn('Motor offline alerta:', msg.error || msg.message);
+        }
+      };
+      scannerWorker.onerror = (err) => {
+        console.warn('Erro ao carregar worker local:', err);
+      };
+    } catch (err) {
+      console.warn('Web Workers não disponíveis:', err);
+    }
+  }
+
+  function checkBrowserCompatibility() {
+    const hasWasm = typeof WebAssembly === 'object' && typeof WebAssembly.instantiate === 'function';
+    const hasWorker = typeof Worker !== 'undefined';
+    if (!hasWasm || !hasWorker) {
+      const banner = document.createElement('div');
+      banner.className = 'notary-disclaimer';
+      banner.style.backgroundColor = 'var(--danger-bg)';
+      banner.style.color = 'var(--danger-text)';
+      banner.style.borderLeftColor = 'var(--detran-red)';
+      banner.style.margin = '1rem 0';
+      banner.innerHTML =
+        '<strong>Aviso de Compatibilidade:</strong> Seu navegador não suporta WebAssembly ou Web Workers modernos. Atualize para uma versão recente para validar documentos 100% offline no navegador.';
+      const main = document.querySelector('.main-content');
+      if (main) main.insertBefore(banner, main.firstChild);
+      return false;
+    }
+    return true;
+  }
+
+  checkBrowserCompatibility();
+  initScannerWorker();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('Registro do ServiceWorker:', err);
+      });
+    });
+  }
 
   const captureCanvas = document.createElement('canvas');
   const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
@@ -138,11 +296,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnFooterApi = document.getElementById('btn-footer-api');
   const btnCloseApiModal = document.getElementById('btn-close-api-modal');
 
+  const modalAudit = document.getElementById('modal-audit');
+  const btnOpenAuditModal = document.getElementById('btn-open-audit-modal');
+  const btnCloseAuditModal = document.getElementById('btn-close-audit-modal');
+
   function openModal(modalEl) {
     if (modalEl) modalEl.style.display = 'flex';
   }
   function closeModal(modalEl) {
     if (modalEl) modalEl.style.display = 'none';
+  }
+
+  if (btnOpenAuditModal) {
+    btnOpenAuditModal.addEventListener('click', () => openModal(modalAudit));
+  }
+  if (btnCloseAuditModal) {
+    btnCloseAuditModal.addEventListener('click', () => closeModal(modalAudit));
+  }
+  if (modalAudit) {
+    modalAudit.addEventListener('click', (e) => {
+      if (e.target === modalAudit) closeModal(modalAudit);
+    });
   }
 
   [btnHeaderPix, btnOpenPixModal, btnFooterPix].forEach(btn => {
@@ -178,6 +352,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (modalApi && modalApi.style.display !== 'none') {
         closeModal(modalApi);
+        return;
+      }
+      if (modalAudit && modalAudit.style.display !== 'none') {
+        closeModal(modalAudit);
         return;
       }
     }
@@ -384,6 +562,46 @@ document.addEventListener('DOMContentLoaded', () => {
         captureCtx.drawImage(cameraVideo, 0, 0, vw, vh);
       }
 
+      if (scannerWorker) {
+        const imgData = captureCtx.getImageData(0, 0, captureCanvas.width, captureCanvas.height);
+        const reqId = Date.now() + Math.random();
+        const pageRes = await new Promise((resolve) => {
+          const handler = (e) => {
+            const msg = e.data || {};
+            if (msg.type === 'verify_imagedata_result' && msg.id === reqId) {
+              scannerWorker.removeEventListener('message', handler);
+              resolve(msg);
+            }
+          };
+          scannerWorker.addEventListener('message', handler);
+          scannerWorker.postMessage({
+            type: 'verify_imagedata',
+            id: reqId,
+            imageData: imgData,
+            pageIndex: 1,
+            totalPages: 1,
+          });
+        });
+
+        const data = pageRes.data;
+        if (data && data.is_parsed) {
+          cameraStage.classList.add('scan-success');
+          playScanSuccessTone();
+          stopCamera();
+          currentResult = data;
+          renderResult(data);
+          showToast('Documento lido com sucesso pela câmera (offline)');
+          return;
+        }
+
+        if (isManual) {
+          cameraStatusText.textContent =
+            (data && data.message) ||
+            'Ainda não foi possível focar o QR Code. Aproxime ou incline levemente o documento para evitar reflexo.';
+        }
+        return;
+      }
+
       const blob = await new Promise(resolve => captureCanvas.toBlob(resolve, 'image/jpeg', 0.92));
       if (!blob || !mediaStream) {
         isScanningFrame = false;
@@ -442,6 +660,90 @@ document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------------------------ //
   // Upload & Document Verification
   // ------------------------------------------------------------------ //
+  async function processPdfFile(file) {
+    if (!window.pdfjsLib) {
+      throw new Error('Biblioteca PDF.js não carregada.');
+    }
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
+
+    const loadingH3 = loadingState.querySelector('h3');
+    const loadingP = loadingState.querySelector('p');
+    if (loadingH3) loadingH3.textContent = 'Rasterizando PDF no navegador (offline)...';
+    if (loadingP) loadingP.textContent = 'Processando páginas em alta resolução (300 DPI) para leitura do QR Code';
+
+    const buffer = await file.arrayBuffer();
+    const loadingTask = window.pdfjsLib.getDocument({ data: buffer });
+    const pdfDoc = await loadingTask.promise;
+    const numPages = pdfDoc.numPages;
+    const maxPages = Math.min(numPages, 2);
+
+    if (numPages > 2) {
+      showToast(`Documento com ${numPages} páginas: analisando as 2 primeiras.`);
+    }
+
+    let lastResult = null;
+
+    for (let p = 1; p <= maxPages; p++) {
+      if (loadingP) {
+        loadingP.textContent = `Analisando página ${p} de ${maxPages} em alta resolução...`;
+      }
+
+      const page = await pdfDoc.getPage(p);
+      const viewport = page.getViewport({ scale: 3.5 });
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = viewport.width;
+      pageCanvas.height = viewport.height;
+      const pageCtx = pageCanvas.getContext('2d');
+      await page.render({ canvasContext: pageCtx, viewport: viewport }).promise;
+
+      const imgData = pageCtx.getImageData(0, 0, viewport.width, viewport.height);
+
+      const pageRes = await new Promise((resolve) => {
+        const reqId = Date.now() + Math.random();
+        const handler = (e) => {
+          const msg = e.data || {};
+          if (msg.type === 'verify_imagedata_result' && msg.id === reqId) {
+            scannerWorker.removeEventListener('message', handler);
+            resolve(msg);
+          }
+        };
+        scannerWorker.addEventListener('message', handler);
+        scannerWorker.postMessage({
+          type: 'verify_imagedata',
+          id: reqId,
+          imageData: imgData,
+          pageIndex: p,
+          totalPages: numPages,
+        });
+      });
+
+      lastResult = pageRes.data;
+
+      // Se encontrou o QR oficial VIO na página, encerra e exibe com prioridade máxima
+      if (pageRes.foundVio && lastResult && lastResult.is_parsed) {
+        loadingState.style.display = 'none';
+        currentResult = lastResult;
+        renderResult(lastResult);
+        return;
+      }
+    }
+
+    loadingState.style.display = 'none';
+
+    if (lastResult && lastResult.is_parsed) {
+      currentResult = lastResult;
+      renderResult(lastResult);
+      return;
+    }
+
+    dropzone.style.display = 'flex';
+    showError(
+      numPages > 2
+        ? `Nenhum QR Code oficial detectado nas primeiras 2 páginas (documento possui ${numPages} páginas).`
+        : 'Nenhum QR Code foi detectado no arquivo PDF enviado.'
+    );
+  }
+
   async function processFile(file) {
     errorBanner.style.display = 'none';
     dropzone.style.display = 'none';
@@ -449,32 +751,41 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingState.style.display = 'flex';
     resultSection.style.display = 'none';
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const isImage = (file.type && file.type.startsWith('image/')) || /\.(png|jpe?g|webp|bmp)$/i.test(file.name || '');
+    const isPdf = (file.type === 'application/pdf') || /\.pdf$/i.test(file.name || '');
 
-    try {
-      const response = await fetch('/api/documents/verify', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-      loadingState.style.display = 'none';
-
-      if (!response.ok || !data.is_parsed) {
-        const errDetail = data.message || (Array.isArray(data.errors) && data.errors.length ? data.errors.join(' | ') : 'Falha ao decodificar documento.');
-        showError(errDetail);
+    // Se for PDF e o motor local estiver disponível, rasteriza e valida localmente
+    if (isPdf && scannerWorker && window.pdfjsLib) {
+      try {
+        await processPdfFile(file);
+      } catch (err) {
+        loadingState.style.display = 'none';
         dropzone.style.display = 'flex';
-        return;
+        showError(`Erro ao processar PDF no navegador: ${err.message}`);
       }
-
-      currentResult = data;
-      renderResult(data);
-    } catch (err) {
-      loadingState.style.display = 'none';
-      dropzone.style.display = 'flex';
-      showError(`Erro de comunicação com o servidor: ${err.message}`);
+      return;
     }
+
+    // Se for imagem e o worker estiver disponível, processa 100% no navegador (sem tráfego de rede)
+    if (isImage && scannerWorker) {
+      const loadingH3 = loadingState.querySelector('h3');
+      const loadingP = loadingState.querySelector('p');
+      if (loadingH3) loadingH3.textContent = 'Validando no seu navegador (offline)...';
+      if (loadingP) loadingP.textContent = 'Decodificando envelope binário Serpro/VIO e checando assinatura digital localmente';
+
+      scannerWorker.postMessage({
+        type: 'verify_image',
+        file: file,
+        id: Date.now(),
+      });
+      return;
+    }
+
+    loadingState.style.display = 'none';
+    dropzone.style.display = 'flex';
+    showError(
+      'Formato de arquivo não suportado. Por favor, envie um arquivo PDF, imagem (PNG, JPG, WebP) ou cole uma captura de tela com Ctrl + V.'
+    );
   }
 
   function showError(msg) {
@@ -963,10 +1274,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (rendered) {
         wrapper.appendChild(canvas);
       } else {
-        const img = document.createElement('img');
-        img.src = photoB64;
-        img.alt = 'Fotografia CNH';
-        wrapper.appendChild(img);
+        const placeholder = document.createElement('div');
+        placeholder.className = 'photo-placeholder-error';
+        placeholder.style.padding = '1rem';
+        placeholder.style.color = 'var(--text-muted, #666)';
+        placeholder.style.fontSize = '0.85rem';
+        placeholder.style.textAlign = 'center';
+        placeholder.textContent = 'Não foi possível renderizar a fotografia biométrica';
+        wrapper.appendChild(placeholder);
       }
     } else {
       const img = document.createElement('img');
@@ -1002,6 +1317,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function decodeBPGToCanvas(base64Bpg, canvas) {
     try {
+      if (typeof window.BPGDecoder === 'undefined') {
+        return false;
+      }
       const base64Data = base64Bpg.replace(/^data:image\/[a-z0-9_-]+;base64,/, '');
       const bin = atob(base64Data);
       const u8 = new Uint8Array(bin.length);
@@ -1011,6 +1329,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const ctx = canvas.getContext('2d');
       const dec = new window.BPGDecoder(ctx);
+
+      // 1. Tenta decodificação direta via C API (idêntico ao bpg_converter.js)
+      try {
+        const img = dec.bpg_decoder_open();
+        if (img) {
+          const ret = dec.bpg_decoder_decode(img, u8, u8.length);
+          if (ret >= 0) {
+            const img_info_buf = dec.malloc(20);
+            dec.bpg_decoder_get_info(img, img_info_buf);
+            const heap8 = (window.Module && window.Module.HEAPU8) || dec.HEAPU8;
+            const heap32 = (window.Module && window.Module.HEAPU32) || dec.HEAPU32;
+            if (heap8 && heap32) {
+              const w = heap32[img_info_buf >> 2];
+              const h = heap32[(img_info_buf + 4) >> 2];
+              if (w > 0 && h > 0) {
+                const w4 = w * 4;
+                const rgba_line = dec.malloc(w4);
+                if (dec.bpg_decoder_start(img, 1) >= 0) {
+                  canvas.width = w;
+                  canvas.height = h;
+                  const imgData = ctx.createImageData(w, h);
+                  const dst = imgData.data;
+                  let p0 = 0;
+                  for (let y = 0; y < h; y++) {
+                    dec.bpg_decoder_get_line(img, rgba_line);
+                    for (let i = 0; i < w4; i++) {
+                      dst[p0++] = heap8[rgba_line + i];
+                    }
+                  }
+                  ctx.putImageData(imgData, 0, 0);
+                  dec.free(rgba_line);
+                  dec.free(img_info_buf);
+                  dec.bpg_decoder_close(img);
+                  return true;
+                }
+                dec.free(rgba_line);
+              }
+            }
+            dec.free(img_info_buf);
+          }
+          dec.bpg_decoder_close(img);
+        }
+      } catch (directErr) {
+        console.warn('Falha na decodificação direta BPG, tentando fallback _onload:', directErr);
+      }
+
+      // 2. Fallback via dec._onload
       let ok = false;
       dec.onload = function () {
         const imageData = this.imageData || (this.frames && this.frames[0] && this.frames[0].img);
@@ -1023,9 +1388,6 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       if (typeof dec._onload === 'function') {
         dec._onload({ response: u8.buffer }, null);
-      } else {
-        dec.load(base64Bpg);
-        ok = true;
       }
       return ok;
     } catch (err) {

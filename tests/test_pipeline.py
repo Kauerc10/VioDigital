@@ -1,5 +1,5 @@
 import io
-import fitz
+import pymupdf
 import pytest
 import qrcode
 from PIL import Image
@@ -26,7 +26,7 @@ def _create_qr_image(payload: bytes) -> Image.Image:
 
 
 def _create_crlv_pdf(qr_image: Image.Image) -> bytes:
-    doc = fitz.open()
+    doc = pymupdf.open()
     page = doc.new_page(width=595, height=842)  # A4
 
     # Salva imagem do QR em buffer e insere na página
@@ -35,7 +35,7 @@ def _create_crlv_pdf(qr_image: Image.Image) -> bytes:
     img_bytes = img_buf.getvalue()
 
     # Retângulo no topo/centro
-    rect = fitz.Rect(100, 100, 300, 300)
+    rect = pymupdf.Rect(100, 100, 300, 300)
     page.insert_image(rect, stream=img_bytes)
     page.insert_text((100, 350), "CERTIFICADO DE REGISTRO E LICENCIAMENTO DE VEICULO - ELETRONICO", fontsize=12)
 

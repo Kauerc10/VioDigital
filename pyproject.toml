@@ -4,24 +4,40 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vioweb"
-version = "0.1.0"
+version = "0.2.0"
 description = "Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO)"
 authors = [
     { name = "Kauê (@Kauerc10)" },
     { name = "Helvio Junior (M4v3r1ck)", email = "helvio_junior@hotmail.com" },
 ]
-license = { text = "MIT" }
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "cryptography>=42.0.0",
+]
+
+[project.optional-dependencies]
+server = [
     "fastapi>=0.110.0",
     "uvicorn>=0.28.0",
     "python-multipart>=0.0.9",
+]
+vision = [
     "pillow>=10.0.0",
     "pymupdf>=1.24.0",
     "opencv-python-headless>=4.9.0",
     "zxing-cpp>=2.2.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+    "qrcode>=7.4.2",
+    "ruff>=0.4.0",
+    "playwright>=1.40.0",
+    "build>=1.0.0",
+    "vioweb[server]",
+    "vioweb[vision]",
 ]
 
 [tool.setuptools.packages.find]
@@ -30,9 +46,14 @@ where = ["src"]
 [tool.setuptools.package-data]
 vioweb = ["**/*.json", "**/*.html", "**/*.css", "**/*.js"]
 
-[tool.vercel]
-entrypoint = "app:app"
-
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501", "E402"]

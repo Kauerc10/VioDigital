@@ -32,6 +32,9 @@ ddc_temp/
 .pytest_cache/
 .coverage
 htmlcov/
+.vendor_cache/
+src/vioweb/web/static/vendor/
+src/vioweb/web/static/wheels/
 
 # Environment & IDE
 .env
@@ -40,6 +43,7 @@ htmlcov/
 .idea/
 *.swp
 *.swo
+uv.lock
 
 # OS files
 Thumbs.db
