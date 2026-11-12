@@ -136,3 +136,43 @@ def test_e2e_privacy_zero_external_traffic_and_csp(static_server: str, tmp_path:
         assert not modal_audit.is_visible()
 
         browser.close()
+
+
+def test_e2e_pwa_and_offline_mode(static_server: str, tmp_path: Path):
+    """Valida a instalação PWA e a execução completa com rede offline."""
+    import qrcode
+
+    qr_img = qrcode.make("https://cartorio.exemplo.com.br/selo-digital/offline-test")
+    sample_qr_path = tmp_path / "sample_qr_offline.png"
+    qr_img.save(str(sample_qr_path))
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+        page = context.new_page()
+
+        # 1. Carrega a página e aguarda motor e Service Worker
+        page.goto(static_server, wait_until="networkidle")
+        page.wait_for_selector(".engine-bar.ready", timeout=25000)
+
+        # 2. Verifica manifesto PWA
+        manifest_link = page.locator('link[rel="manifest"]')
+        assert manifest_link.count() > 0
+        assert manifest_link.get_attribute("href") == "/manifest.json"
+
+        # 3. Simula rede completamente offline
+        context.set_offline(True)
+
+        # 4. Inicia nova consulta em modo desconectado
+        page.click("#btn-browse")  # Garante que controles continuam responsivos
+        page.set_input_files("#file-input", str(sample_qr_path))
+
+        # 5. Validação ocorre com sucesso mesmo offline
+        page.wait_for_selector("#result-section", state="visible", timeout=15000)
+        privacy_badge = page.locator("#privacy-badge")
+        assert privacy_badge.is_visible()
+        assert "Processado no seu navegador · offline" in privacy_badge.text_content()
+
+        # Restaura conexão
+        context.set_offline(False)
+        browser.close()

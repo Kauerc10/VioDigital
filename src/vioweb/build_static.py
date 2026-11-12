@@ -354,7 +354,15 @@ def build(output_dir: Path | str = "dist") -> Path:
         slug_dir.mkdir(exist_ok=True)
         (slug_dir / "index.html").write_text(seo_html, encoding="utf-8")
 
-    # 5. robots.txt e sitemap.xml
+    # 5. PWA: sw.js e manifest.json
+    sw_file = WEB_DIR / "sw.js"
+    if sw_file.exists():
+        (out / "sw.js").write_text(sw_file.read_text(encoding="utf-8"), encoding="utf-8")
+    manifest_file = WEB_DIR / "manifest.json"
+    if manifest_file.exists():
+        (out / "manifest.json").write_text(manifest_file.read_text(encoding="utf-8"), encoding="utf-8")
+
+    # 6. robots.txt e sitemap.xml
     (out / "robots.txt").write_text(generate_robots_txt(), encoding="utf-8")
     (out / "sitemap.xml").write_text(generate_sitemap_xml(), encoding="utf-8")
 

@@ -120,6 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
   checkBrowserCompatibility();
   initScannerWorker();
 
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('Registro do ServiceWorker:', err);
+      });
+    });
+  }
+
   const captureCanvas = document.createElement('canvas');
   const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
 

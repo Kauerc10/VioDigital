@@ -13,6 +13,8 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     assert (dist / "documentos.html").exists()
     assert (dist / "apoiar.html").exists()
     assert (dist / "privacidade.html").exists()
+    assert (dist / "sw.js").exists()
+    assert (dist / "manifest.json").exists()
     assert (dist / "robots.txt").exists()
     assert (dist / "sitemap.xml").exists()
     assert (dist / "static" / "style.css").exists()
