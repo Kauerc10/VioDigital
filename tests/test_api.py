@@ -431,10 +431,11 @@ def test_backwards_compatible_vioweb_shim():
     import vioweb
     from vioweb.core import DigitalDocumentChecker as LegacyChecker, present as legacy_present
     from vioweb.api.app import app as legacy_app
-    from viodigital.core import DigitalDocumentChecker as ModernChecker
+    from viodigital.core import DigitalDocumentChecker as ModernChecker, present as modern_present
     from viodigital.api.app import app as modern_app
 
     assert LegacyChecker is ModernChecker
+    assert legacy_present is modern_present
     assert legacy_app is modern_app
     assert hasattr(vioweb, "__version__")
     checker = LegacyChecker()
