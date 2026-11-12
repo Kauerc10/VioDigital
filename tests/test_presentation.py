@@ -4,8 +4,11 @@ import base64
 from datetime import datetime, timezone
 
 from vioweb.core.documents.atpv import ATPVData
+from vioweb.core.documents.cin import CINData
 from vioweb.core.documents.cnh import CNHData
 from vioweb.core.documents.crlv import CRLVData
+from vioweb.core.documents.dni import DNIData
+from vioweb.core.documents.rg import RGData
 from vioweb.core.models import DocumentResult, Photo, SignatureInfo
 from vioweb.core.presentation import format_generic_fields, mask_cpf_cnpj, present
 
@@ -139,3 +142,96 @@ def test_present_unparsed_with_errors():
     assert dto["is_authentic"] is False
     assert "Assinatura inválida" in dto["message"]
     assert "Assinatura inválida" in dto["errors"]
+
+
+def test_present_cin():
+    res = DocumentResult(raw=b"test_cin_jwt")
+    res.is_parsed = True
+    res.is_authentic = True
+    res.is_valid = True
+    res.document_type = "cin"
+    res.document_name = "Carteira de Identidade Nacional"
+
+    cin_data = CINData(
+        iss="MJSP",
+        cpf="11122233344",
+        data_nascimento="15/08/1992",
+        data_validade="15/08/2032",
+        url="https://validar.iti.gov.br/c5d1e2f3-1234-5678-9abc-def012345678",
+        uuid="c5d1e2f3-1234-5678-9abc-def012345678",
+    )
+    res.data = cin_data
+    res.fields = cin_data.fields
+
+    dto = present(res)
+    assert dto["is_parsed"] is True
+    assert dto["document_type"] == "cin"
+    assert dto["formatted"]["cpf_formatado"] == "111.222.333-44"
+    assert dto["formatted"]["data_nascimento"] == "15/08/1992"
+    assert dto["formatted"]["orgao_emissor"] == "MJSP"
+    assert dto["formatted"]["uuid"] == "c5d1e2f3-1234-5678-9abc-def012345678"
+
+
+def test_present_dni_with_photo():
+    res = DocumentResult(raw=b"test_dni_raw")
+    res.is_parsed = True
+    res.is_authentic = True
+    res.is_valid = True
+    res.document_type = "dni"
+    res.document_name = "Documento Nacional de Identificação"
+    res.template_id = 73
+
+    dni_data = DNIData(
+        numero_icn="123456789012345",
+        nome="LUCAS ELEITOR",
+        cpf="00100200304",
+        data_nascimento="10/10/1995",
+        naturalidade="SAO PAULO",
+        uf="SP",
+        titulo_eleitor="123456780123",
+        orgao_expedidor="TSE",
+    )
+    res.data = dni_data
+    res.fields = dni_data.fields
+    res.photo = Photo(data=b"BPG\xfbphoto_dni", format="BPG")
+
+    dto = present(res)
+    assert dto["is_parsed"] is True
+    assert dto["document_type"] == "dni"
+    assert dto["formatted"]["cpf_formatado"] == "001.002.003-04"
+    assert dto["formatted"]["nome"] == "LUCAS ELEITOR"
+    assert dto["formatted"]["numero_icn"] == "123456789012345"
+    assert dto["photo_format"] == "BPG"
+    assert dto["photo_b64"].startswith("data:image/bpg;base64,")
+
+
+def test_present_rg_digital():
+    res = DocumentResult(raw=b"test_rg_raw")
+    res.is_parsed = True
+    res.is_authentic = True
+    res.is_valid = True
+    res.document_type = "rg"
+    res.document_name = "RG Digital"
+    res.template_id = 91
+
+    rg_data = RGData(
+        nome="FERNANDA SILVA",
+        nome_social="FERNANDA SOCIAL",
+        cpf="55544433322",
+        data_nascimento="20/05/1990",
+        sexo="F",
+        nacionalidade="BRASILEIRA",
+        naturalidade="CURITIBA",
+        orgao_expedidor="SESP/PR",
+    )
+    res.data = rg_data
+    res.fields = rg_data.fields
+    res.photo = Photo(data=b"fake_jpeg", format="JPEG")
+
+    dto = present(res)
+    assert dto["is_parsed"] is True
+    assert dto["document_type"] == "rg"
+    assert dto["formatted"]["cpf_formatado"] == "555.444.333-22"
+    assert dto["formatted"]["nome"] == "FERNANDA SILVA"
+    assert dto["photo_format"] == "JPEG"
+    assert dto["photo_b64"].startswith("data:image/jpeg;base64,")

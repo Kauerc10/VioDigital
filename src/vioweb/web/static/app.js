@@ -822,6 +822,9 @@ document.addEventListener('DOMContentLoaded', () => {
       cnh: 'CNH Digital',
       atpv: 'ATPV-e (Intenção de Venda)',
       cin: 'Carteira de Identidade Nacional (CIN)',
+      dni: 'DNI — Documento Nacional de Identidade (TSE)',
+      rg: 'RG Digital (Gov.br / ICP-Brasil)',
+      generic: 'Documento Oficial Serpro/VIO',
       external_qr: 'QR Code Externo',
     };
     docTypeBadge.textContent = data.document_name || typeLabels[data.document_type] || 'Documento Digital';
@@ -863,6 +866,12 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCrlvLayout(data, documentContent);
     } else if (data.document_type === 'atpv') {
       renderAtpvLayout(data, documentContent);
+    } else if (data.document_type === 'cin') {
+      renderCinLayout(data, documentContent);
+    } else if (data.document_type === 'dni') {
+      renderDniLayout(data, documentContent);
+    } else if (data.document_type === 'rg') {
+      renderRgLayout(data, documentContent);
     } else if (data.document_type === 'external_qr') {
       renderExternalQrLayout(data, documentContent);
     } else {
@@ -881,7 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
     heroLayout.className = 'cnh-hero-layout';
 
     if (data.photo_b64) {
-      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format);
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format, 'Biometria CNH (Serpro)');
       heroLayout.appendChild(photoShowcase);
     }
 
@@ -965,6 +974,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const fmt = data.formatted || {};
     const f = data.fields || {};
 
+    if (data.photo_b64) {
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format, 'Fotografia do Documento');
+      container.appendChild(photoShowcase);
+    }
+
     const veicSection = createDocSection('Identificação Oficial do Veículo');
     const veicGrid = document.createElement('div');
     veicGrid.className = 'fields-grid';
@@ -979,6 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { label: 'Combustível', val: fmt.combustivel || f.combustivel },
       { label: 'Categoria', val: fmt.categoria || f.categoria },
       { label: 'Espécie / Tipo / Carroceria', val: [fmt.especie || f.especie, fmt.tipo || f.tipo, fmt.carroceria || f.carroceria].filter(Boolean).join(' / ') },
+      { label: 'Placa Anterior / UF', val: fmt.placa_anterior_uf || f.placa_anterior_uf },
     ];
 
     veicCards.forEach(c => {
@@ -1046,6 +1061,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderAtpvLayout(data, container) {
     const fmt = data.formatted || {};
     const f = data.fields || {};
+
+    if (data.photo_b64) {
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format, 'Fotografia do Documento');
+      container.appendChild(photoShowcase);
+    }
 
     const veicSection = createDocSection('Identificação do Veículo e ATPV-e');
     const veicGrid = document.createElement('div');
@@ -1171,17 +1191,27 @@ document.addEventListener('DOMContentLoaded', () => {
     identidade: 'Documento de Identidade',
     data_nascimento: 'Data de Nascimento',
     dn: 'Data de Nascimento',
+    dt_nascimento: 'Data de Nascimento',
     data_emissao: 'Data de Emissão',
     data_validade: 'Data de Validade',
     validade: 'Validade',
     filiacao_mae: 'Filiação (Mãe)',
     filiacao_pai: 'Filiação (Pai)',
+    filiacao_1: 'Filiação 1',
+    filiacao_2: 'Filiação 2',
+    nome_mae: 'Nome da Mãe',
+    nome_pai: 'Nome do Pai',
     naturalidade: 'Naturalidade',
+    naturalidade_uf: 'UF de Naturalidade',
+    uf_naturalidade: 'UF de Naturalidade',
     nacionalidade: 'Nacionalidade',
     orgao_expedidor: 'Órgão Expedidor',
+    uf_rg: 'UF do RG',
+    emissor_rg: 'Órgão Emissor do RG',
     uf: 'UF',
     municipio: 'Município',
     placa: 'Placa Mercosul / Veículo',
+    placa_anterior_uf: 'Placa Anterior / UF',
     renavam: 'Código RENAVAM',
     chassi: 'Chassi',
     nome_embarcacao: 'Nome da Embarcação',
@@ -1194,11 +1224,34 @@ document.addEventListener('DOMContentLoaded', () => {
     numero_registro: 'Número de Registro',
     inscricao: 'Número de Inscrição',
     matricula: 'Matrícula Funcional',
+    matricula_siape: 'Matrícula SIAPE',
     cargo: 'Cargo / Função',
     funcao: 'Função',
     lotacao: 'Lotação',
     conselho: 'Conselho / Órgão Emissor',
     titulo_profissional: 'Título Profissional',
+    titulacao: 'Titulação',
+    titulo_adicional: 'Título Adicional',
+    tipo_sanguineo: 'Tipo Sanguíneo',
+    tipo_sangue: 'Tipo Sanguíneo',
+    fator_rh: 'Fator RH',
+    data_admissao: 'Data de Admissão',
+    local_expedicao: 'Local de Expedição',
+    regime_juridico: 'Regime Jurídico',
+    orgao_origem_nome: 'Órgão de Origem',
+    orgao_origem_cnpj: 'CNPJ do Órgão de Origem',
+    orgao_exercicio_nome: 'Órgão de Exercício',
+    orgao_exercicio_cnpj: 'CNPJ do Órgão de Exercício',
+    iss: 'Órgão Emissor',
+    dvd: 'Data de Validade',
+    dns: 'Data de Nascimento',
+    uuid: 'Identificador Único (UUID)',
+    url_validacao: 'URL de Validação',
+    numero_icn: 'Número ICN (Identificação Civil Nacional)',
+    matricula_nascimento: 'Matrícula da Certidão de Nascimento',
+    certidao: 'Certidão',
+    situacao_registro: 'Situação do Registro',
+    data_ultima_atualizacao: 'Última Atualização',
     sigma: 'Nº SIGMA (Exército)',
     especie_arma: 'Espécie da Arma',
     marca_arma: 'Marca da Arma',
@@ -1212,6 +1265,203 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(key || '')
       .replace(/_/g, ' ')
       .replace(/\b\w/g, ch => ch.toUpperCase());
+  }
+
+  function renderCinLayout(data, container) {
+    const fmt = data.formatted || {};
+    const f = data.fields || {};
+
+    const heroLayout = document.createElement('div');
+    heroLayout.className = 'cnh-hero-layout';
+
+    if (data.photo_b64) {
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format, 'Identidade Nacional (MJSP)');
+      heroLayout.appendChild(photoShowcase);
+    }
+
+    const idSection = document.createElement('div');
+    idSection.style.display = 'flex';
+    idSection.style.flexDirection = 'column';
+    idSection.style.gap = '0.75rem';
+    idSection.style.flex = '1';
+
+    const idGrid = document.createElement('div');
+    idGrid.className = 'fields-grid';
+
+    const idCards = [
+      { label: 'Nome do Titular', val: fmt.nome || f.nome || fmt.nome_completo || f.nome_completo, highlight: true, span: 'span-2' },
+      { label: 'CPF (Número Único Nacional)', val: fmt.cpf_formatado || f.cpf, highlight: true },
+      { label: 'Data de Nascimento', val: fmt.data_nascimento || f.data_nascimento || fmt.dns || f.dns },
+      { label: 'Data de Validade', val: fmt.data_validade || f.data_validade || fmt.dvd || f.dvd },
+      { label: 'Órgão Emissor / ISS', val: fmt.orgao_emissor || f.orgao_emissor || fmt.iss || f.iss },
+      { label: 'UUID do Documento', val: fmt.uuid || f.uuid, span: 'span-2' },
+    ].filter(c => c.val && String(c.val).trim());
+
+    idCards.forEach(c => {
+      idGrid.appendChild(createFieldCard(c.label, String(c.val), c.highlight, c.span));
+    });
+    idSection.appendChild(idGrid);
+    heroLayout.appendChild(idSection);
+    container.appendChild(heroLayout);
+
+    // Outras claims / metadados Gov.br se existirem
+    const extraClaims = [];
+    const standardKeys = new Set(['cpf', 'cpf_formatado', 'data_nascimento', 'data_validade', 'orgao_emissor', 'uuid', 'url_validacao', 'nome', 'iss', 'dns', 'dvd']);
+    Object.entries(fmt).forEach(([k, v]) => {
+      if (!standardKeys.has(k) && v && String(v).trim()) {
+        extraClaims.push({ label: humanizeFieldKey(k), val: String(v) });
+      }
+    });
+    if (extraClaims.length > 0) {
+      const extraSec = createDocSection('Claims e Metadados Adicionais (ICP-Brasil)');
+      const extraGrid = document.createElement('div');
+      extraGrid.className = 'fields-grid';
+      extraClaims.forEach(c => {
+        extraGrid.appendChild(createFieldCard(c.label, c.val, false));
+      });
+      extraSec.appendChild(extraGrid);
+      container.appendChild(extraSec);
+    }
+
+    if (fmt.url_validacao || f.url_validacao) {
+      const urlVal = fmt.url_validacao || f.url_validacao;
+      const urlSec = createDocSection('Validação Oficial Gov.br');
+      const urlGrid = document.createElement('div');
+      urlGrid.className = 'fields-grid';
+      urlGrid.appendChild(createFieldCard('URL de Validação', urlVal, false, 'full-width'));
+      urlSec.appendChild(urlGrid);
+      container.appendChild(urlSec);
+    }
+
+    const legalBox = document.createElement('div');
+    legalBox.className = 'notary-disclaimer';
+    legalBox.style.marginTop = '1rem';
+    legalBox.innerHTML = `<strong>Validade Jurídica Nacional (Decreto nº 10.977/2022):</strong> A Carteira de Identidade Nacional (CIN) adota o CPF como número único de identificação nos bancos de dados públicos federais, estaduais e municipais, com fé pública e validade em todo o território nacional. Criptografia ES512 com chaves ICP-Brasil.`;
+    container.appendChild(legalBox);
+  }
+
+  function renderDniLayout(data, container) {
+    const fmt = data.formatted || {};
+    const f = data.fields || {};
+
+    const heroLayout = document.createElement('div');
+    heroLayout.className = 'cnh-hero-layout';
+
+    if (data.photo_b64) {
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format, 'Biometria TSE');
+      heroLayout.appendChild(photoShowcase);
+    }
+
+    const idSection = document.createElement('div');
+    idSection.style.display = 'flex';
+    idSection.style.flexDirection = 'column';
+    idSection.style.gap = '0.75rem';
+    idSection.style.flex = '1';
+
+    const idGrid = document.createElement('div');
+    idGrid.className = 'fields-grid';
+
+    const natUf = [fmt.naturalidade || f.naturalidade, fmt.uf || f.uf].filter(Boolean).join(' - ');
+
+    const idCards = [
+      { label: 'Nome do Cidadão', val: fmt.nome || f.nome, highlight: true, span: 'span-2' },
+      { label: 'CPF', val: fmt.cpf_formatado || f.cpf, highlight: true },
+      { label: 'Número ICN (Identificação Civil Nacional)', val: fmt.numero_icn || f.numero_icn, highlight: true },
+      { label: 'Data de Nascimento', val: fmt.data_nascimento || f.data_nascimento },
+      { label: 'Naturalidade / UF', val: natUf },
+      { label: 'Título de Eleitor', val: fmt.titulo_eleitor || f.titulo_eleitor },
+      { label: 'Órgão Expedidor', val: fmt.orgao_expedidor || f.orgao_expedidor },
+      { label: 'Data de Expedição', val: fmt.data_expedicao || f.data_expedicao },
+      { label: 'Situação do Registro', val: fmt.situacao_registro || f.situacao_registro },
+    ].filter(c => c.val && String(c.val).trim());
+
+    idCards.forEach(c => {
+      idGrid.appendChild(createFieldCard(c.label, String(c.val), c.highlight, c.span));
+    });
+    idSection.appendChild(idGrid);
+    heroLayout.appendChild(idSection);
+    container.appendChild(heroLayout);
+
+    const filiacaoCards = [
+      { label: 'Filiação (Mãe / Declarada 1)', val: fmt.filiacao_1 || f.filiacao_1, span: 'span-2' },
+      { label: 'Filiação (Pai / Declarada 2)', val: fmt.filiacao_2 || f.filiacao_2, span: 'span-2' },
+      { label: 'Matrícula da Certidão de Nascimento', val: fmt.matricula_nascimento || f.matricula_nascimento, span: 'span-2' },
+    ].filter(c => c.val && String(c.val).trim());
+
+    if (filiacaoCards.length > 0) {
+      const filiacaoSection = createDocSection('Filiação Declarada e Registro Civil');
+      const filGrid = document.createElement('div');
+      filGrid.className = 'fields-grid';
+      filiacaoCards.forEach(c => {
+        filGrid.appendChild(createFieldCard(c.label, String(c.val), false, c.span));
+      });
+      filiacaoSection.appendChild(filGrid);
+      container.appendChild(filiacaoSection);
+    }
+
+    const legalBox = document.createElement('div');
+    legalBox.className = 'notary-disclaimer';
+    legalBox.style.marginTop = '1rem';
+    legalBox.innerHTML = `<strong>Documento Nacional de Identidade (Lei nº 13.444/2017):</strong> Baseado na Identificação Civil Nacional (ICN) gerida pela Justiça Eleitoral (TSE), com validação biométrica e assinatura digital oficial.`;
+    container.appendChild(legalBox);
+  }
+
+  function renderRgLayout(data, container) {
+    const fmt = data.formatted || {};
+    const f = data.fields || {};
+
+    const heroLayout = document.createElement('div');
+    heroLayout.className = 'cnh-hero-layout';
+
+    if (data.photo_b64) {
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format, 'Biometria Civil');
+      heroLayout.appendChild(photoShowcase);
+    }
+
+    const idSection = document.createElement('div');
+    idSection.style.display = 'flex';
+    idSection.style.flexDirection = 'column';
+    idSection.style.gap = '0.75rem';
+    idSection.style.flex = '1';
+
+    const idGrid = document.createElement('div');
+    idGrid.className = 'fields-grid';
+
+    const idCards = [
+      { label: 'Nome do Titular', val: fmt.nome || f.nome, highlight: true, span: 'span-2' },
+      { label: 'Nome Social', val: fmt.nome_social || f.nome_social, span: 'span-2' },
+      { label: 'CPF', val: fmt.cpf_formatado || f.cpf, highlight: true },
+      { label: 'Sexo', val: fmt.sexo || f.sexo },
+      { label: 'Data de Nascimento', val: fmt.data_nascimento || f.data_nascimento },
+      { label: 'Nacionalidade / Naturalidade', val: [fmt.nacionalidade || f.nacionalidade, fmt.naturalidade || f.naturalidade].filter(Boolean).join(' / ') },
+      { label: 'Data de Validade', val: fmt.data_validade || f.data_validade },
+      { label: 'Órgão Expedidor / UF', val: `${fmt.orgao_expedidor || f.orgao_expedidor || ''} ${fmt.uf || f.uf || ''}`.trim() },
+      { label: 'Data de Expedição', val: fmt.data_expedicao || f.data_expedicao },
+    ].filter(c => c.val && String(c.val).trim());
+
+    idCards.forEach(c => {
+      idGrid.appendChild(createFieldCard(c.label, String(c.val), c.highlight, c.span));
+    });
+    idSection.appendChild(idGrid);
+    heroLayout.appendChild(idSection);
+    container.appendChild(heroLayout);
+
+    const filiacaoCards = [
+      { label: 'Filiação 1', val: fmt.filiacao_1 || f.filiacao_1, span: 'span-2' },
+      { label: 'Filiação 2', val: fmt.filiacao_2 || f.filiacao_2, span: 'span-2' },
+      { label: 'Certidão / Matrícula', val: fmt.certidao || f.certidao, span: 'span-2' },
+    ].filter(c => c.val && String(c.val).trim());
+
+    if (filiacaoCards.length > 0) {
+      const filiacaoSection = createDocSection('Filiação Declarada e Registro Civil');
+      const filGrid = document.createElement('div');
+      filGrid.className = 'fields-grid';
+      filiacaoCards.forEach(c => {
+        filGrid.appendChild(createFieldCard(c.label, String(c.val), false, c.span));
+      });
+      filiacaoSection.appendChild(filGrid);
+      container.appendChild(filiacaoSection);
+    }
   }
 
   function renderGenericLayout(data, container) {
@@ -1243,7 +1493,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const heroLayout = document.createElement('div');
       heroLayout.className = 'cnh-hero-layout';
 
-      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format);
+      const photoShowcase = createPhotoShowcase(data.photo_b64, data.photo_format, data.document_name || 'Biometria Oficial');
       heroLayout.appendChild(photoShowcase);
 
       const fieldsCol = document.createElement('div');
@@ -1258,21 +1508,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function createPhotoShowcase(photoB64, photoFormat) {
+  function createPhotoShowcase(photoB64, photoFormat, badgeText = 'Biometria Oficial') {
     const showcase = document.createElement('div');
     showcase.className = 'photo-showcase';
 
     const wrapper = document.createElement('div');
     wrapper.className = 'photo-wrapper';
 
-    const isBpg = photoB64.startsWith('data:image/bpg');
+    const fmtLower = String(photoFormat || '').toLowerCase();
+    const isBpg = fmtLower === 'bpg' || photoB64.startsWith('data:image/bpg');
 
-    if (isBpg && typeof window.BPGDecoder !== 'undefined') {
-      const canvas = document.createElement('canvas');
-      canvas.id = 'photo-canvas';
-      const rendered = decodeBPGToCanvas(photoB64, canvas);
-      if (rendered) {
-        wrapper.appendChild(canvas);
+    if (isBpg) {
+      if (typeof window.BPGDecoder !== 'undefined') {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'photo-canvas';
+        const rendered = decodeBPGToCanvas(photoB64, canvas);
+        if (rendered) {
+          wrapper.appendChild(canvas);
+        } else {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'photo-placeholder-error';
+          placeholder.style.padding = '1rem';
+          placeholder.style.color = 'var(--text-muted, #666)';
+          placeholder.style.fontSize = '0.85rem';
+          placeholder.style.textAlign = 'center';
+          placeholder.textContent = 'Não foi possível renderizar a fotografia biométrica BPG';
+          wrapper.appendChild(placeholder);
+        }
       } else {
         const placeholder = document.createElement('div');
         placeholder.className = 'photo-placeholder-error';
@@ -1280,13 +1542,13 @@ document.addEventListener('DOMContentLoaded', () => {
         placeholder.style.color = 'var(--text-muted, #666)';
         placeholder.style.fontSize = '0.85rem';
         placeholder.style.textAlign = 'center';
-        placeholder.textContent = 'Não foi possível renderizar a fotografia biométrica';
+        placeholder.textContent = 'Decodificador BPG em carregamento...';
         wrapper.appendChild(placeholder);
       }
     } else {
       const img = document.createElement('img');
       img.src = photoB64;
-      img.alt = 'Fotografia CNH';
+      img.alt = badgeText || 'Fotografia Oficial';
       wrapper.appendChild(img);
     }
 
@@ -1294,7 +1556,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const badge = document.createElement('div');
     badge.className = 'photo-badge';
-    badge.textContent = 'Biometria Serpro';
+    badge.textContent = badgeText || 'Biometria Oficial';
     showcase.appendChild(badge);
 
     const actions = document.createElement('div');
@@ -1409,17 +1671,26 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Não foi possível copiar a imagem diretamente');
           });
         }
-      });
-    } else if (img && img.src.startsWith('data:image/png')) {
-      fetch(img.src).then(res => res.blob()).then(blob => {
-        if (blob && navigator.clipboard && navigator.clipboard.write) {
-          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
-            showToast('Fotografia copiada para a área de transferência');
-          });
-        }
-      }).catch(() => {
+      }, 'image/png');
+    } else if (img) {
+      try {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.naturalWidth || img.width || 300;
+        tempCanvas.height = img.naturalHeight || img.height || 400;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+        tempCanvas.toBlob(blob => {
+          if (blob && navigator.clipboard && navigator.clipboard.write) {
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
+              showToast('Fotografia copiada para a área de transferência');
+            }).catch(() => {
+              showToast('Clique com o botão direito sobre a foto para copiar');
+            });
+          }
+        }, 'image/png');
+      } catch (err) {
         showToast('Clique com o botão direito sobre a foto para salvar');
-      });
+      }
     } else {
       showToast('Imagem pronta para uso notarial');
     }
@@ -1653,6 +1924,51 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fmt.filiacao_mae || f.filiacao_mae) lines.push(`MÃE: ${fmt.filiacao_mae || f.filiacao_mae}`);
       if (fmt.filiacao_pai || f.filiacao_pai) lines.push(`PAI: ${fmt.filiacao_pai || f.filiacao_pai}`);
       if (fmt.observacoes || f.observacoes) lines.push(`OBSERVAÇÕES/RESTRIÇÕES: ${fmt.observacoes || f.observacoes}`);
+      return lines.filter(Boolean).join('\n');
+    } else if (data.document_type === 'cin') {
+      const lines = [
+        `=== DADOS DA CARTEIRA DE IDENTIDADE NACIONAL (CIN / ICP-BRASIL) ===`,
+        `AUTENTICIDADE ICP-BRASIL: ${data.is_authentic ? 'AUTÊNTICO / ASSINATURA VÁLIDA' : 'NÃO CONFERE / INVÁLIDO'}`,
+        `TITULAR: ${fmt.nome || f.nome || ''}`,
+        `CPF: ${fmt.cpf_formatado || f.cpf || ''}`,
+        `NASCIMENTO: ${fmt.data_nascimento || f.data_nascimento || ''}`,
+        `VALIDADE: ${fmt.data_validade || f.data_validade || ''}`,
+        `ÓRGÃO EMISSOR: ${fmt.orgao_emissor || f.orgao_emissor || fmt.iss || ''}`,
+        `UUID: ${fmt.uuid || f.uuid || ''}`,
+        `URL DE VALIDAÇÃO: ${fmt.url_validacao || f.url_validacao || ''}`,
+      ];
+      return lines.filter(Boolean).join('\n');
+    } else if (data.document_type === 'dni') {
+      const lines = [
+        `=== DADOS DO DOCUMENTO NACIONAL DE IDENTIDADE (DNI / TSE) ===`,
+        `AUTENTICIDADE TSE: ${data.is_authentic ? 'AUTÊNTICO / ASSINATURA VÁLIDA' : 'NÃO CONFERE / INVÁLIDO'}`,
+        `CIDADÃO: ${fmt.nome || f.nome || ''}`,
+        `CPF: ${fmt.cpf_formatado || f.cpf || ''}`,
+        `ICN: ${fmt.numero_icn || f.numero_icn || ''}`,
+        `NASCIMENTO: ${fmt.data_nascimento || f.data_nascimento || ''}`,
+        `NATURALIDADE/UF: ${fmt.naturalidade || f.naturalidade || ''}/${fmt.uf || f.uf || ''}`,
+        `TÍTULO DE ELEITOR: ${fmt.titulo_eleitor || f.titulo_eleitor || ''}`,
+        `ÓRGÃO EXPEDIDOR: ${fmt.orgao_expedidor || f.orgao_expedidor || ''} | DATA: ${fmt.data_expedicao || f.data_expedicao || ''}`,
+      ];
+      if (fmt.filiacao_1 || f.filiacao_1) lines.push(`FILIAÇÃO 1: ${fmt.filiacao_1 || f.filiacao_1}`);
+      if (fmt.filiacao_2 || f.filiacao_2) lines.push(`FILIAÇÃO 2: ${fmt.filiacao_2 || f.filiacao_2}`);
+      return lines.filter(Boolean).join('\n');
+    } else if (data.document_type === 'rg') {
+      const lines = [
+        `=== DADOS DO RG DIGITAL (GOV.BR / ICP-BRASIL) ===`,
+        `AUTENTICIDADE: ${data.is_authentic ? 'AUTÊNTICO / ASSINATURA VÁLIDA' : 'NÃO CONFERE / INVÁLIDO'}`,
+        `TITULAR: ${fmt.nome || f.nome || ''}`,
+      ];
+      if (fmt.nome_social || f.nome_social) lines.push(`NOME SOCIAL: ${fmt.nome_social || f.nome_social}`);
+      lines.push(
+        `CPF: ${fmt.cpf_formatado || f.cpf || ''}`,
+        `NASCIMENTO: ${fmt.data_nascimento || f.data_nascimento || ''} | SEXO: ${fmt.sexo || f.sexo || ''}`,
+        `NATURALIDADE: ${fmt.naturalidade || f.naturalidade || ''} - ${fmt.nacionalidade || f.nacionalidade || ''}`,
+        `EXPEDIÇÃO: ${fmt.data_expedicao || f.data_expedicao || ''} (${fmt.orgao_expedidor || f.orgao_expedidor || ''} ${fmt.uf || f.uf || ''})`,
+        `VALIDADE: ${fmt.data_validade || f.data_validade || ''}`
+      );
+      if (fmt.filiacao_1 || f.filiacao_1) lines.push(`FILIAÇÃO 1: ${fmt.filiacao_1 || f.filiacao_1}`);
+      if (fmt.filiacao_2 || f.filiacao_2) lines.push(`FILIAÇÃO 2: ${fmt.filiacao_2 || f.filiacao_2}`);
       return lines.filter(Boolean).join('\n');
     } else {
       const sourceFields = (fmt && Object.keys(fmt).length) ? fmt : f;

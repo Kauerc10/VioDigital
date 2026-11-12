@@ -1714,24 +1714,27 @@ a.nav-link-btn {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 25, 18, 0.55);
-  backdrop-filter: blur(2px);
+  background-color: rgba(15, 25, 18, 0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  z-index: 60;
+  z-index: 999;
 }
 
 .modal-card {
-  background-color: var(--bg-card);
+  background-color: #ffffff;
   border: 1px solid var(--border-color);
   border-top: 4px solid var(--primary);
   border-radius: var(--radius);
   max-width: 580px;
   width: 100%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
   overflow: hidden;
+  opacity: 1;
+  position: relative;
+  z-index: 1000;
 }
 
 .modal-header {

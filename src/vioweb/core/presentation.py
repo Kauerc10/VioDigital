@@ -12,8 +12,11 @@ import re
 from typing import Any, Dict
 
 from vioweb.core.documents.atpv import ATPVData
+from vioweb.core.documents.cin import CINData
 from vioweb.core.documents.cnh import CNHData
 from vioweb.core.documents.crlv import CRLVData
+from vioweb.core.documents.dni import DNIData
+from vioweb.core.documents.rg import RGData
 from vioweb.core.models import DocumentResult
 
 
@@ -93,6 +96,7 @@ def present(res: DocumentResult) -> Dict[str, Any]:
             "numero_crv": data_obj.numero_crv,
             "data_emissao": data_obj.data,
             "observacoes": data_obj.observacoes,
+            "placa_anterior_uf": data_obj.placa_anterior_uf,
         }
     elif isinstance(data_obj, CNHData):
         formatted = {
@@ -143,6 +147,53 @@ def present(res: DocumentResult) -> Dict[str, Any]:
             "email_comprador": data_obj.email_comprador,
             "municipio_comprador": data_obj.municipio_comprador,
             "uf_comprador": data_obj.uf_comprador,
+        }
+    elif isinstance(data_obj, CINData):
+        formatted = {
+            "cpf_formatado": data_obj.cpf_formatado,
+            "cpf": data_obj.cpf,
+            "data_nascimento": data_obj.data_nascimento,
+            "data_validade": data_obj.data_validade,
+            "orgao_emissor": data_obj.iss,
+            "uuid": data_obj.uuid,
+            "url_validacao": data_obj.url,
+            **{k: v for k, v in data_obj.outras_claims.items()},
+        }
+    elif isinstance(data_obj, DNIData):
+        formatted = {
+            "nome": data_obj.nome,
+            "cpf_formatado": data_obj.cpf_formatado,
+            "cpf": data_obj.cpf,
+            "numero_icn": data_obj.numero_icn,
+            "data_nascimento": data_obj.data_nascimento,
+            "matricula_nascimento": data_obj.matricula_nascimento,
+            "naturalidade": data_obj.naturalidade,
+            "uf": data_obj.uf,
+            "filiacao_1": data_obj.filiacao_1,
+            "filiacao_2": data_obj.filiacao_2,
+            "titulo_eleitor": data_obj.titulo_eleitor,
+            "orgao_expedidor": data_obj.orgao_expedidor,
+            "data_expedicao": data_obj.data_expedicao,
+            "situacao_registro": data_obj.situacao_registro,
+            "data_ultima_atualizacao": data_obj.data_ultima_atualizacao,
+        }
+    elif isinstance(data_obj, RGData):
+        formatted = {
+            "nome": data_obj.nome,
+            "nome_social": data_obj.nome_social,
+            "cpf_formatado": data_obj.cpf_formatado,
+            "cpf": data_obj.cpf,
+            "sexo": data_obj.sexo,
+            "data_nascimento": data_obj.data_nascimento,
+            "nacionalidade": data_obj.nacionalidade,
+            "naturalidade": data_obj.naturalidade,
+            "data_validade": data_obj.data_validade,
+            "filiacao_1": data_obj.filiacao_1,
+            "filiacao_2": data_obj.filiacao_2,
+            "orgao_expedidor": data_obj.orgao_expedidor,
+            "local_emissao": data_obj.local_emissao,
+            "data_emissao": data_obj.data_emissao,
+            "certidao": data_obj.certidao,
         }
     elif isinstance(res.fields, dict) and res.fields:
         formatted = format_generic_fields(res.fields)
