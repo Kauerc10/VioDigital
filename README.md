@@ -2,6 +2,7 @@
 
 > Verificador e decodificador **100% gratuito e Open Source** de documentos oficiais brasileiros (**CRLV-e, CNH, ATPV-e, CIN / Novo RG, TIE Marinha, CRAF e +160 templates VIO**) projetado para **computadores de cartórios, despachantes, empresas e cidadãos**.
 
+[![CI](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
 [![Demo Online](https://img.shields.io/badge/Acessar_Sistema-vioweb.vercel.app-3b7a28)](https://vioweb.vercel.app)
