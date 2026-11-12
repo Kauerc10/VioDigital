@@ -10,6 +10,7 @@ Gera o diretório estático ``dist/`` contendo:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -26,7 +27,59 @@ if str(SRC_DIR) not in sys.path:
 WEB_DIR = Path(__file__).resolve().parent / "web"
 STATIC_DIR = WEB_DIR / "static"
 
+from viodigital.core.__meta__ import __version__
 from viodigital.core.registry import default_templates
+
+
+def _hash_directory(base_dir: Path, exclude_parts: tuple[str, ...] = ("__pycache__", "vendor", "wheels")) -> str:
+    """Calcula um hash determinístico curto (12 chars) do conteúdo dos arquivos fonte."""
+    h = hashlib.sha256()
+    if not base_dir.exists():
+        return "0" * 12
+    files = sorted(
+        p for p in base_dir.rglob("*")
+        if p.is_file() and not any(part in exclude_parts for part in p.parts) and p.suffix != ".pyc"
+    )
+    for p in files:
+        rel = p.relative_to(base_dir).as_posix()
+        h.update(rel.encode("utf-8"))
+        h.update(b"\x00")
+        h.update(p.read_bytes())
+        h.update(b"\x00")
+    return h.hexdigest()[:12]
+
+
+def compute_core_hash() -> str:
+    """Hash apenas do motor Python (src/viodigital/core + __init__.py) para invalidação da wheel."""
+    h = hashlib.sha256()
+    pkg_dir = SRC_DIR / "viodigital"
+    h.update(_hash_directory(pkg_dir / "core").encode("utf-8"))
+    init_file = pkg_dir / "__init__.py"
+    if init_file.exists():
+        h.update(init_file.read_bytes())
+    return h.hexdigest()[:12]
+
+
+def compute_engine_hash() -> str:
+    """Hash completo do motor + frontend web para invalidação automática de cache PWA/SW."""
+    return _hash_directory(SRC_DIR / "viodigital")
+
+
+def _is_wheel_stale(wheels_dir: Path) -> bool:
+    """Verifica se a wheel em cache está ausente ou desatualizada em relação ao código-fonte."""
+    if not wheels_dir.exists():
+        return True
+    whls = list(wheels_dir.glob("viodigital-*.whl"))
+    if not whls:
+        return True
+    hash_file = wheels_dir / ".wheel_hash"
+    if not hash_file.exists():
+        return True
+    try:
+        saved_hash = hash_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return True
+    return saved_hash != compute_core_hash()
 
 SEO_DOC_PAGES: Dict[str, Dict[str, str]] = {
     "crlv": {
@@ -213,10 +266,11 @@ def _build_wheel_pure_python(wheels_dir: Path) -> Path:
 def build_wheel(wheels_dir: Path) -> Path | None:
     wheels_dir.mkdir(parents=True, exist_ok=True)
     ret: Path | None = None
+    core_hash = compute_core_hash()
 
-    # Reutiliza wheel em cache se já existir e não for a pasta de destino
+    # Reutiliza wheel em cache SOMENTE se não estiver desatualizada em relação ao código-fonte
     default_dist_wheels = ROOT_DIR / "dist" / "static" / "wheels"
-    if default_dist_wheels.exists() and wheels_dir != default_dist_wheels:
+    if default_dist_wheels.exists() and wheels_dir != default_dist_wheels and not _is_wheel_stale(default_dist_wheels):
         cached = list(default_dist_wheels.glob("viodigital-*.whl"))
         if cached:
             target = wheels_dir / cached[0].name
@@ -225,7 +279,7 @@ def build_wheel(wheels_dir: Path) -> Path | None:
 
     if not ret:
         src_wheels = STATIC_DIR / "wheels"
-        if src_wheels.exists() and wheels_dir != src_wheels:
+        if src_wheels.exists() and wheels_dir != src_wheels and not _is_wheel_stale(src_wheels):
             cached = list(src_wheels.glob("viodigital-*.whl"))
             if cached:
                 target = wheels_dir / cached[0].name
@@ -260,6 +314,10 @@ def build_wheel(wheels_dir: Path) -> Path | None:
             ret = built[0] if built else None
 
     if ret:
+        try:
+            (wheels_dir / ".wheel_hash").write_text(core_hash, encoding="utf-8")
+        except Exception:
+            pass
         legacy_alias = wheels_dir / "vioweb-0.2.0-py3-none-any.whl"
         try:
             shutil.copy2(ret, legacy_alias)
@@ -351,14 +409,13 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
 
 
 def ensure_runtime_assets(target_web_dir: Path, download: bool = True) -> None:
-    """Provisiona todos os ativos necessários para o pipeline de execução 100% no navegador."""
+    """Provisiona e mantém atualizados os ativos necessários para o pipeline 100% no navegador."""
     static_dir = target_web_dir / "static"
     wheels_dir = static_dir / "wheels"
     vendor_dir = static_dir / "vendor"
 
-    # 1. Garante a wheel do viodigital
-    has_wheel = wheels_dir.exists() and bool(list(wheels_dir.glob("viodigital-*.whl")))
-    if not has_wheel:
+    # 1. Garante que a wheel do viodigital exista e esteja sincronizada com o código-fonte
+    if _is_wheel_stale(wheels_dir):
         build_wheel(wheels_dir)
 
     # 2. Garante os ativos de terceiros (ZXing WASM, Pyodide, PDF.js)
@@ -403,11 +460,21 @@ def build(output_dir: Path | str = "dist") -> Path:
         src_wheels = STATIC_DIR / "wheels"
         src_wheels.mkdir(parents=True, exist_ok=True)
         shutil.copy2(wheel_path, src_wheels / wheel_path.name)
+        hash_src = (dist_static / "wheels" / ".wheel_hash")
+        if hash_src.exists():
+            shutil.copy2(hash_src, src_wheels / ".wheel_hash")
 
     # 3. Garante ativos vendor do Pyodide e ZXing WASM em static/vendor/
     ensure_vendor_assets(dist_static / "vendor")
     if out == ROOT_DIR / "dist":
         ensure_vendor_assets(STATIC_DIR / "vendor")
+
+    # 3.1 Gera version.json com o hash determinístico da build
+    engine_hash = compute_engine_hash()
+    (dist_static / "version.json").write_text(
+        json.dumps({"version": __version__, "build_hash": engine_hash}, indent=2),
+        encoding="utf-8",
+    )
 
     # 4. Gera templates-data.json
     tpl_data = get_templates_catalog_data()
@@ -466,10 +533,11 @@ def build(output_dir: Path | str = "dist") -> Path:
         slug_dir.mkdir(exist_ok=True)
         (slug_dir / "index.html").write_text(seo_html, encoding="utf-8")
 
-    # 5. PWA e Favicon: sw.js, manifest.json e favicon.ico
+    # 5. PWA e Favicon: sw.js (com hash automático de versão), manifest.json e favicon.ico
     sw_file = WEB_DIR / "sw.js"
     if sw_file.exists():
-        (out / "sw.js").write_text(sw_file.read_text(encoding="utf-8"), encoding="utf-8")
+        sw_content = sw_file.read_text(encoding="utf-8").replace("__BUILD_HASH__", engine_hash)
+        (out / "sw.js").write_text(sw_content, encoding="utf-8")
     manifest_file = WEB_DIR / "manifest.json"
     if manifest_file.exists():
         (out / "manifest.json").write_text(manifest_file.read_text(encoding="utf-8"), encoding="utf-8")

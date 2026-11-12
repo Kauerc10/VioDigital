@@ -42,6 +42,19 @@ async def add_security_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
+
+    path = request.url.path
+    if "Cache-Control" not in response.headers:
+        if path.startswith("/static/vendor/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif path.startswith("/static/wheels/") or path in (
+            "/static/app.js",
+            "/static/scanner.worker.js",
+            "/static/style.css",
+            "/",
+        ) or path.endswith(".html"):
+            response.headers["Cache-Control"] = "no-cache"
+
     return response
 
 MAX_UPLOAD_SIZE = 15 * 1024 * 1024  # 15 MB
@@ -51,9 +64,10 @@ _checker = DigitalDocumentChecker()
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 SRC_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 DIST_DIR = ROOT_DIR / "dist"
-WEB_DIR = DIST_DIR if (DIST_DIR / "index.html").exists() else SRC_WEB_DIR
+# Prioriza o código-fonte ao vivo em execução local para refletir alterações imediatamente
+WEB_DIR = SRC_WEB_DIR if (SRC_WEB_DIR / "index.html").exists() else DIST_DIR
 
-# Provisiona os ativos de runtime do navegador se estiverem ausentes (ex: clone limpo)
+# Provisiona e atualiza os ativos de runtime do navegador (ex: wheel WASM atualizada)
 try:
     from viodigital.build_static import ensure_runtime_assets
     ensure_runtime_assets(WEB_DIR)
@@ -105,6 +119,42 @@ _format_result = present
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "VioDigital", "version": __version__}
+
+
+@app.get("/api/version")
+async def version_info():
+    from viodigital.build_static import compute_engine_hash
+
+    return JSONResponse(
+        content={"version": __version__, "build_hash": compute_engine_hash()},
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
+
+@app.get("/sw.js")
+async def service_worker():
+    sw_file = WEB_DIR / "sw.js"
+    if not sw_file.exists():
+        raise HTTPException(status_code=404)
+    from viodigital.build_static import compute_engine_hash
+
+    content = sw_file.read_text(encoding="utf-8").replace("__BUILD_HASH__", compute_engine_hash())
+    return Response(
+        content=content,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
+
+@app.get("/manifest.json")
+async def pwa_manifest():
+    manifest_file = WEB_DIR / "manifest.json"
+    if not manifest_file.exists():
+        raise HTTPException(status_code=404)
+    return Response(
+        content=manifest_file.read_text(encoding="utf-8"),
+        media_type="application/manifest+json",
+    )
 
 
 @app.get("/api/templates")

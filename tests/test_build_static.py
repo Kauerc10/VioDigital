@@ -53,3 +53,27 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     assert "sitemap.xml" in robots_text
     sitemap_text = (dist / "sitemap.xml").read_text(encoding="utf-8")
     assert "<urlset" in sitemap_text
+
+    # Verifica version.json e injeção de hash no sw.js
+    version_file = dist / "static" / "version.json"
+    assert version_file.exists()
+    ver_data = json.loads(version_file.read_text(encoding="utf-8"))
+    assert "build_hash" in ver_data
+    assert len(ver_data["build_hash"]) == 12
+    sw_text = (dist / "sw.js").read_text(encoding="utf-8")
+    assert "__BUILD_HASH__" not in sw_text
+    assert ver_data["build_hash"] in sw_text
+
+
+def test_wheel_staleness_detection(tmp_path: Path):
+    from viodigital.build_static import _is_wheel_stale, build_wheel
+
+    wheels_dir = tmp_path / "wheels"
+    assert _is_wheel_stale(wheels_dir) is True
+
+    build_wheel(wheels_dir)
+    assert _is_wheel_stale(wheels_dir) is False
+
+    # Simula alteração no código-fonte alterando o hash salvo
+    (wheels_dir / ".wheel_hash").write_text("oldstalehash", encoding="utf-8")
+    assert _is_wheel_stale(wheels_dir) is True

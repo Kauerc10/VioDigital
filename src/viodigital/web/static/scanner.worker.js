@@ -106,10 +106,10 @@ async function initEngine() {
         postStatus('loading_viodigital', 90, 'Motor VioDigital e base de 161 templates...', '4/4');
       }
       let wheelUrl = resolveAssetUrl('wheels/viodigital-0.2.0-py3-none-any.whl');
-      let wheelResp = await fetch(wheelUrl);
+      let wheelResp = await fetch(wheelUrl, { cache: 'no-cache' });
       if (!wheelResp.ok) {
         wheelUrl = resolveAssetUrl('wheels/vioweb-0.2.0-py3-none-any.whl');
-        wheelResp = await fetch(wheelUrl);
+        wheelResp = await fetch(wheelUrl, { cache: 'no-cache' });
       }
       if (!wheelResp.ok) {
         throw new Error(`Falha ao obter wheel do VioDigital (${wheelResp.status})`);

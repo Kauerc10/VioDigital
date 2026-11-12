@@ -16,6 +16,24 @@ def test_api_health():
     assert res.json() == {"status": "ok", "service": "VioDigital", "version": "0.2.0"}
 
 
+def test_api_version_and_sw_auto_update():
+    ver = client.get("/api/version")
+    assert ver.status_code == 200
+    ver_data = ver.json()
+    assert "build_hash" in ver_data
+    assert len(ver_data["build_hash"]) == 12
+
+    sw = client.get("/sw.js")
+    assert sw.status_code == 200
+    assert "no-store" in sw.headers.get("cache-control", "")
+    assert "__BUILD_HASH__" not in sw.text
+    assert ver_data["build_hash"] in sw.text
+
+    manifest = client.get("/manifest.json")
+    assert manifest.status_code == 200
+    assert "VioDigital" in manifest.text
+
+
 def test_api_root_serves_html():
     res = client.get("/")
     assert res.status_code == 200

@@ -1,13 +1,15 @@
 /**
- * sw.js - Service Worker do VioDigital para operação 100% offline (PWA).
+ * sw.js - Service Worker do VioDigital para operação 100% offline (PWA) com auto-atualização.
  *
- * Estratégia de Cache:
- * - Cache-first para ativos estáticos, WebAssembly, wheels e modelos.
- * - Network-first com fallback para cache em navegações HTML.
+ * Estratégia de Cache Híbrida:
+ * - Cache-First para runtimes imutáveis (/static/vendor/ Pyodide, ZXing, PDF.js e ícones).
+ * - Network-First (com revalidação e fallback offline) para o motor Python (.whl),
+ *   lógica JS/CSS e páginas HTML, garantindo que alterações locais entrem em vigor
+ *   imediatamente sem perder a capacidade de operar 100% offline.
  * - Limpeza automática de caches antigos no evento 'activate'.
  */
 
-const CACHE_NAME = 'viodigital-cache-v0.2.0';
+const CACHE_NAME = 'viodigital-cache-v0.2.0-__BUILD_HASH__';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -43,30 +45,49 @@ const PRECACHE_ASSETS = [
   '/static/vendor/pyodide/six-1.16.0-py2.py3-none-any.whl',
 ];
 
+function isImmutableVendorAsset(pathname) {
+  return (
+    pathname.startsWith('/static/vendor/') ||
+    pathname.startsWith('/static/icon-') ||
+    pathname === '/static/pix-qrcode.png' ||
+    pathname === '/favicon.ico' ||
+    pathname === '/static/favicon.ico'
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      // Tenta armazenar em cache cada ativo individualmente para tolerar ausências em dev
-      for (const asset of PRECACHE_ASSETS) {
-        try {
-          await cache.add(asset);
-        } catch (_) {
-          // Ignora falhas em rotas opcionais durante o precache
+    caches
+      .open(CACHE_NAME)
+      .then(async (cache) => {
+        for (const asset of PRECACHE_ASSETS) {
+          try {
+            const req = new Request(asset, { cache: 'reload' });
+            const resp = await fetch(req);
+            if (resp && resp.ok) {
+              await cache.put(asset, resp);
+            }
+          } catch (_) {
+            // Ignora falhas em rotas opcionais durante o precache offline
+          }
         }
-      }
-    }).then(() => self.skipWaiting())
+      })
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME)
+            .map((name) => caches.delete(name))
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
@@ -75,31 +96,39 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
-
-  // Somente intercepta requisições same-origin
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
 
-  event.respondWith(
-    caches.match(req).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Cache hit: retorna imediatamente
-        return cachedResponse;
-      }
-
-      // Se não está no cache, tenta buscar na rede e guarda no cache
-      return fetch(req)
-        .then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-            return networkResponse;
+  // 1. Ativos pesados e imutáveis (Pyodide, ZXing, PDF.js, ícones): Cache-First
+  if (isImmutableVendorAsset(url.pathname)) {
+    event.respondWith(
+      caches.match(req).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(req).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
           }
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(req, responseToCache);
-          });
           return networkResponse;
-        })
-        .catch(() => {
-          // Se falhar e for navegação HTML, entrega /index.html em cache
+        });
+      })
+    );
+    return;
+  }
+
+  // 2. Motor Python (.whl), código da aplicação (JS/CSS) e HTML: Network-First com fallback offline
+  event.respondWith(
+    fetch(req, { cache: 'no-cache' })
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, responseToCache));
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(req).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
           if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
             return caches.match('/index.html') || caches.match('/');
           }
@@ -109,6 +138,6 @@ self.addEventListener('fetch', (event) => {
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
           });
         });
-    })
+      })
   );
 });
