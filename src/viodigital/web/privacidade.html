@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';">
+  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/static/icon-192.png">
+  <meta name="theme-color" content="#3b7a28">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <title>Privacidade e Conformidade LGPD — VioDigital</title>
+  <meta name="description" content="Política de privacidade, conformidade LGPD e garantias de segurança técnica do VioDigital para cartórios, despachantes e cidadãos.">
+  <link rel="canonical" href="https://viodigital.com.br/privacidade">
+  <meta property="og:title" content="Privacidade e Conformidade LGPD — VioDigital">
+  <meta property="og:description" content="Entenda como o VioDigital protege seus dados: validação 100% local no navegador, zero transmissão externa e conformidade estrita com a LGPD.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://viodigital.com.br/privacidade">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Institucional -->
+    <header class="app-header">
+      <div class="header-brand">
+        <a href="/" style="display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit;">
+          <div class="brand-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-title">VioDigital</h1>
+            <p class="brand-subtitle">Validação Notarial de Documentos Oficiais</p>
+          </div>
+        </a>
+      </div>
+      <div class="header-status">
+        <a href="/documentos" class="nav-doc-link">Documentos Suportados</a>
+        <a href="/privacidade" class="nav-doc-link active" style="color:var(--primary); font-weight:600;">Privacidade (LGPD)</a>
+        <a href="https://github.com/Kauerc10/VioDigital" target="_blank" rel="noopener noreferrer" class="nav-github-link" title="Projeto Open Source no GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content" style="max-width: 860px; margin: 2rem auto; padding: 0 1rem;">
+      <div class="institutional-badge" style="display:inline-flex; align-items:center; gap:0.5rem; background: rgba(16, 185, 129, 0.1); color: #059669; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018)
+      </div>
+
+      <h2 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 0.75rem;">Política de Privacidade e Arquitetura de Segurança</h2>
+      <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 2rem;">
+        O <strong>VioDigital</strong> foi concebido de um cartório para a comunidade brasileira. Como lidamos diariamente com documentos de identificação civil (CNH, CIN, RG) e veiculares (CRLV-e, ATPV-e), a <strong>privacidade absoluta e o não-compartilhamento de dados pessoais</strong> são princípios fundamentais de engenharia deste projeto.
+      </p>
+
+      <section class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+          1. Modo Navegador (viodigital.com.br)
+        </h3>
+        <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 0.75rem;">
+          No site público, a validação ocorre <strong>estritamente na memória do seu navegador</strong> através de tecnologias WebAssembly (WASM):
+        </p>
+        <ul style="color: var(--text-muted); line-height: 1.7; padding-left: 1.25rem; margin-bottom: 1rem;">
+          <li><strong>Zero envio para servidores:</strong> O arquivo PDF, imagem ou print colado via <code>Ctrl+V</code> não é transmitido para nenhum servidor externo.</li>
+          <li><strong>Execução isolada em Web Worker:</strong> O motor de leitura óptica e verificação criptográfica roda localmente no seu computador.</li>
+          <li><strong>Auditoria aberta no DevTools:</strong> Você pode abrir a aba <em>Rede (Network)</em> das ferramentas de desenvolvedor do seu navegador (pressione <code>F12</code>) e comprovar em tempo real que nenhuma requisição com dados do documento é enviada.</li>
+        </ul>
+      </section>
+
+      <section class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12m16 0 4 4H0l4-4m16 0H4"/></svg>
+          2. Modo Instalação Local (Rede Interna do Cartório / Escritório)
+        </h3>
+        <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 0.75rem;">
+          Para serventias e empresas com políticas estritas de tráfego aéreo de rede, o VioDigital pode ser executado 100% offline dentro da intranet local:
+        </p>
+        <ul style="color: var(--text-muted); line-height: 1.7; padding-left: 1.25rem;">
+          <li>Basta clonar o repositório e executar <code>python -m vioweb</code> em um computador da rede interna;</li>
+          <li>A verificação e a decodificação não necessitam de conexão com a internet, pois todos os certificados públicos e schemas oficiais estão embarcados localmente;</li>
+          <li>Nenhum dado é persistido em disco ou banco de dados durante o processamento.</li>
+        </ul>
+      </section>
+
+      <section class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          3. Tratamento de Dados Pessoais (LGPD)
+        </h3>
+        <p style="color: var(--text-muted); line-height: 1.6;">
+          O VioDigital <strong>não armazena, não rastreia, não cataloga e não comercializa</strong> dados pessoais de titulares de documentos (como CPF, RG, filiação, endereço, chassi, motor ou fotografias biométricas). O software atua unicamente como leitor criptográfico e formatador em memória para agilizar a colagem no sistema notarial ou de gestão corporativa.
+        </p>
+      </section>
+
+      <div class="legal-notice-box" style="background: var(--bg-card); border-left: 4px solid var(--primary); padding: 1rem 1.25rem; border-radius: 4px; margin-top: 2rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem;">Aviso Legal e Não-Afiliação Institucional</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+          O VioDigital é um projeto independente de código aberto desenvolvido para a comunidade. Não possui vínculo, representação, endosso ou afiliação oficial com o Serpro, SENATRAN, DETRANs, Ministério da Justiça ou órgãos emissores. "VIO" e demais denominações são marcas de seus respectivos titulares.
+        </p>
+      </div>
+
+      <div style="text-align: center; margin-top: 2rem;">
+        <a href="/" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          Voltar para a Validação de Documentos
+        </a>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <p>VioDigital — Projeto Independente Open Source (Licença MIT)</p>
+      <p class="footer-links">
+        <a href="/">Início</a> ·
+        <a href="/documentos">Documentos Suportados</a> ·
+        <a href="/privacidade">Privacidade (LGPD)</a> ·
+        <a href="/apoiar">Apoiar Projeto</a> ·
+        <a href="https://github.com/Kauerc10/VioDigital" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

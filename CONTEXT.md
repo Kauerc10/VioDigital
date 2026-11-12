@@ -1,6 +1,6 @@
-# Context & Glossário do Domínio: VioWeb
+# Context & Glossário do Domínio: VioDigital
 
-Este documento estabelece o modelo de domínio, a terminologia e as premissas operacionais do **VioWeb**, sistema de conferência e validação de documentos oficiais (CRLV-e, CNH, ATPV-e) para cartórios e ambientes corporativos.
+Este documento estabelece o modelo de domínio, a terminologia e as premissas operacionais do **VioDigital**, sistema de conferência e validação de documentos oficiais (CRLV-e, CNH, ATPV-e) para cartórios e ambientes corporativos.
 
 ---
 

@@ -2,7 +2,7 @@ import io
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from vioweb.api.app import app
+from viodigital.api.app import app
 from tests.conftest import build_multiblock_qr
 from tests.test_crlv import CRLV_FIELDS, TIMESTAMP
 from tests.test_pipeline import _create_crlv_pdf, _create_qr_image
@@ -13,19 +13,19 @@ client = TestClient(app)
 def test_api_health():
     res = client.get("/api/health")
     assert res.status_code == 200
-    assert res.json() == {"status": "ok", "service": "VioWeb", "version": "0.2.0"}
+    assert res.json() == {"status": "ok", "service": "VioDigital", "version": "0.2.0"}
 
 
 def test_api_root_serves_html():
     res = client.get("/")
     assert res.status_code == 200
-    assert "VioWeb" in res.text
+    assert "VioDigital" in res.text
     assert "dropzone" in res.text
 
 
 def test_api_verify_document_crlv(rsa_material, cert_store, crlv_template_store, monkeypatch):
-    from vioweb.core import DigitalDocumentChecker
-    from vioweb.api import app as api_module
+    from viodigital.core import DigitalDocumentChecker
+    from viodigital.api import app as api_module
 
     # Injeta checker configurado com chaves de teste
     test_checker = DigitalDocumentChecker(certificates=cert_store, templates=crlv_template_store)
@@ -75,9 +75,9 @@ def test_api_verify_no_qr_found():
 
 
 def test_api_verify_document_with_photo(rsa_material, cert_store, monkeypatch):
-    from vioweb.core.models import Photo, DocumentResult
-    from vioweb.core.documents.cnh import CNHData
-    from vioweb.api import app as api_module
+    from viodigital.core.models import Photo, DocumentResult
+    from viodigital.core.documents.cnh import CNHData
+    from viodigital.api import app as api_module
 
     fake_result = DocumentResult(
         raw=b"test",
@@ -109,9 +109,9 @@ def test_api_verify_document_with_photo(rsa_material, cert_store, monkeypatch):
 
 
 def test_api_verify_cnh_complete_fields(monkeypatch):
-    from vioweb.core.models import DocumentResult
-    from vioweb.core.documents.cnh import CNHData
-    from vioweb.api import app as api_module
+    from viodigital.core.models import DocumentResult
+    from viodigital.core.documents.cnh import CNHData
+    from viodigital.api import app as api_module
 
     fake_result = DocumentResult(
         raw=b"test",
@@ -167,9 +167,9 @@ def test_api_verify_cnh_complete_fields(monkeypatch):
 
 
 def test_api_verify_atpv_complete_fields(monkeypatch):
-    from vioweb.core.models import DocumentResult
-    from vioweb.core.documents.atpv import ATPVData
-    from vioweb.api import app as api_module
+    from viodigital.core.models import DocumentResult
+    from viodigital.core.documents.atpv import ATPVData
+    from viodigital.api import app as api_module
 
     fake_result = DocumentResult(
         raw=b"test",
@@ -244,9 +244,9 @@ def test_api_templates_catalog():
 
 
 def test_api_verify_generic_vio_template_with_photo_and_masks(monkeypatch):
-    from vioweb.core.models import DocumentResult, Photo
-    from vioweb.core.documents.base import DocumentData
-    from vioweb.api import app as api_module
+    from viodigital.core.models import DocumentResult, Photo
+    from viodigital.core.documents.base import DocumentData
+    from viodigital.api import app as api_module
 
     fake_fields = {
         "nome": "MARINHEIRO TESTE",
@@ -296,7 +296,7 @@ def test_api_dedicated_pages_and_seo_routes():
     res = client.get("/")
     assert res.status_code == 200
     html = res.text
-    assert "https://github.com/Kauerc10/VioWeb" in html
+    assert "https://github.com/Kauerc10/VioDigital" in html
     assert 'href="/documentos"' in html
     assert 'href="/apoiar"' in html
     assert 'href="/privacidade"' in html
@@ -307,7 +307,7 @@ def test_api_dedicated_pages_and_seo_routes():
 
     apoiar_page = client.get("/apoiar")
     assert apoiar_page.status_code == 200
-    assert "Apoie o VioWeb" in apoiar_page.text
+    assert "Apoie o VioDigital" in apoiar_page.text
 
     priv_page = client.get("/privacidade")
     assert priv_page.status_code == 200
@@ -323,17 +323,17 @@ def test_api_dedicated_pages_and_seo_routes():
         seo_page = client.get(f"/validar-{slug}")
         assert seo_page.status_code == 200
         assert expected in seo_page.text
-        assert f'href="https://vioweb.vercel.app/validar-{slug}"' in seo_page.text
+        assert f'href="https://viodigital.com.br/validar-{slug}"' in seo_page.text
 
 
 def test_api_seo_endpoints_and_metadata():
     robots = client.get("/robots.txt")
     assert robots.status_code == 200
-    assert "Sitemap: https://vioweb.vercel.app/sitemap.xml" in robots.text
+    assert "Sitemap: https://viodigital.com.br/sitemap.xml" in robots.text
 
     sitemap = client.get("/sitemap.xml")
     assert sitemap.status_code == 200
-    assert "<loc>https://vioweb.vercel.app/</loc>" in sitemap.text
+    assert "<loc>https://viodigital.com.br/</loc>" in sitemap.text
 
     root = client.get("/")
     assert root.status_code == 200
@@ -343,7 +343,7 @@ def test_api_seo_endpoints_and_metadata():
 
 
 def test_api_upload_payload_too_large(monkeypatch):
-    from vioweb.api import app as api_module
+    from viodigital.api import app as api_module
 
     # Reduz temporariamente o limite para testar 413
     monkeypatch.setattr(api_module, "MAX_UPLOAD_SIZE", 100)
@@ -357,7 +357,7 @@ def test_api_upload_payload_too_large(monkeypatch):
 
 
 def test_api_error_500_sanitized(monkeypatch):
-    from vioweb.api import app as api_module
+    from viodigital.api import app as api_module
 
     def _boom(_):
         raise ValueError("sensitive_internal_database_string")
@@ -395,7 +395,7 @@ def test_api_csp_strict_no_unsafe_eval():
 
 
 def test_ensure_runtime_assets_provisions_correctly(tmp_path):
-    from vioweb.build_static import ensure_runtime_assets
+    from viodigital.build_static import ensure_runtime_assets
 
     fake_web = tmp_path / "web"
     fake_web.mkdir(parents=True)
@@ -403,4 +403,19 @@ def test_ensure_runtime_assets_provisions_correctly(tmp_path):
 
     wheels_dir = fake_web / "static" / "wheels"
     assert wheels_dir.exists()
-    assert bool(list(wheels_dir.glob("vioweb-*.whl")))
+    assert bool(list(wheels_dir.glob("viodigital-*.whl")))
+
+
+def test_backwards_compatible_vioweb_shim():
+    """Garante que importações legadas via vioweb continuem funcionando perfeitamente."""
+    import vioweb
+    from vioweb.core import DigitalDocumentChecker as LegacyChecker, present as legacy_present
+    from vioweb.api.app import app as legacy_app
+    from viodigital.core import DigitalDocumentChecker as ModernChecker
+    from viodigital.api.app import app as modern_app
+
+    assert LegacyChecker is ModernChecker
+    assert legacy_app is modern_app
+    assert hasattr(vioweb, "__version__")
+    checker = LegacyChecker()
+    assert checker is not None

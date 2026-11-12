@@ -1,6 +1,6 @@
 # Third-Party Software and Licenses
 
-O **VioWeb** utiliza e integra componentes e bibliotecas de código aberto desenvolvidos pela comunidade. Abaixo constam os devidos créditos e avisos de licença:
+O **VioDigital** utiliza e integra componentes e bibliotecas de código aberto desenvolvidos pela comunidade. Abaixo constam os devidos créditos e avisos de licença:
 
 ---
 

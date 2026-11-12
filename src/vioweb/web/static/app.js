@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const engineBarClose = document.getElementById('engine-bar-close');
 
   // Detecção de motor em cache na sessão
-  const isWarmed = !!sessionStorage.getItem('vioweb_engine_warmed');
+  const isWarmed = !!sessionStorage.getItem('viodigital_engine_warmed');
   if (isWarmed) {
     if (engineStatusStep) {
       engineStatusStep.textContent = '⚡ CACHE';
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let scanIntervalId = null;
   let isScanningFrame = false;
   let scanAttemptCount = 0;
-  let isMirrored = localStorage.getItem('vioweb_camera_mirrored') === '1';
+  let isMirrored = localStorage.getItem('viodigital_camera_mirrored') === '1';
 
   let scannerWorker = null;
   let isEngineReady = false;
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleEngineReady() {
     isEngineReady = true;
-    sessionStorage.setItem('vioweb_engine_warmed', String(Date.now()));
+    sessionStorage.setItem('viodigital_engine_warmed', String(Date.now()));
     if (engineBar) {
       engineBar.classList.add('ready');
     }
@@ -100,11 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (engineBarClose && engineBar) {
     engineBarClose.addEventListener('click', () => {
       engineBar.style.display = 'none';
-      sessionStorage.setItem('vioweb_engine_bar_dismissed', '1');
+      sessionStorage.setItem('viodigital_engine_bar_dismissed', '1');
     });
   }
 
-  if (sessionStorage.getItem('vioweb_engine_bar_dismissed') === '1' && engineBar && isWarmed) {
+  if (sessionStorage.getItem('viodigital_engine_bar_dismissed') === '1' && engineBar && isWarmed) {
     engineBar.style.display = 'none';
     if (brandSecurityPill) {
       brandSecurityPill.style.display = 'inline-flex';
@@ -410,14 +410,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnMirrorCamera.addEventListener('click', () => {
     isMirrored = !isMirrored;
-    localStorage.setItem('vioweb_camera_mirrored', isMirrored ? '1' : '0');
+    localStorage.setItem('viodigital_camera_mirrored', isMirrored ? '1' : '0');
     cameraVideo.classList.toggle('mirrored', isMirrored);
   });
 
   cameraSelect.addEventListener('change', () => {
     const deviceId = cameraSelect.value;
     if (deviceId) {
-      localStorage.setItem('vioweb_camera_id', deviceId);
+      localStorage.setItem('viodigital_camera_id', deviceId);
       startCameraStream(deviceId);
     }
   });
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraStage.classList.remove('scan-success');
     cameraVideo.classList.toggle('mirrored', isMirrored);
 
-    const savedDeviceId = localStorage.getItem('vioweb_camera_id') || '';
+    const savedDeviceId = localStorage.getItem('viodigital_camera_id') || '';
     await startCameraStream(savedDeviceId);
     await populateCameraDevices();
   }

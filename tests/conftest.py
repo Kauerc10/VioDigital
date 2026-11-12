@@ -3,10 +3,10 @@ from __future__ import annotations
 import base64
 import pytest
 
-from vioweb.core.codecs import base91
-from vioweb.core.codecs.text import encode_6bit, encode_7bit
-from vioweb.core.models import Certificate
-from vioweb.core.registry import CertificateStore, TemplateStore
+from viodigital.core.codecs import base91
+from viodigital.core.codecs.text import encode_6bit, encode_7bit
+from viodigital.core.models import Certificate
+from viodigital.core.registry import CertificateStore, TemplateStore
 
 
 def build_v2_qr(fields_text: str, *, template_id: int, timestamp: int, sign) -> bytes:
@@ -100,7 +100,7 @@ def cert_store(rsa_material):
 
 @pytest.fixture
 def crlv_template_store():
-    from vioweb.core.documents.crlv import FIELD_ORDER_DEFAULT
+    from viodigital.core.documents.crlv import FIELD_ORDER_DEFAULT
 
     payload = [
         {

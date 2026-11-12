@@ -3,8 +3,8 @@ from __future__ import annotations
 import sys
 import pytest
 
-from vioweb.core import DigitalDocumentChecker
-from vioweb.core.exceptions import MissingDependencyError
+from viodigital.core import DigitalDocumentChecker
+from viodigital.core.exceptions import MissingDependencyError
 from tests.conftest import build_multiblock_qr
 from tests.test_crlv import CRLV_FIELDS, TIMESTAMP
 
@@ -37,12 +37,12 @@ def test_parse_image_raises_missing_dependency_when_pillow_missing(monkeypatch):
     with pytest.raises(MissingDependencyError) as exc_info:
         checker.parse_image(b"fake_image_bytes")
 
-    assert "vioweb[vision]" in str(exc_info.value)
+    assert "viodigital[vision]" in str(exc_info.value)
 
 
 def test_read_qr_from_image_raises_missing_dependency_when_decoders_missing(monkeypatch):
     """Verifica que read_qr_from_image levanta MissingDependencyError quando nenhum leitor de QR está instalado."""
-    from vioweb.core import qr
+    from viodigital.core import qr
 
     monkeypatch.setitem(sys.modules, "zxingcpp", None)
     monkeypatch.setitem(sys.modules, "pyzbar", None)
@@ -51,7 +51,7 @@ def test_read_qr_from_image_raises_missing_dependency_when_decoders_missing(monk
     with pytest.raises(MissingDependencyError) as exc_info:
         qr.read_qr_from_image(b"fake_image_bytes")
 
-    assert "vioweb[vision]" in str(exc_info.value)
+    assert "viodigital[vision]" in str(exc_info.value)
 
 
 def test_parse_pdf_raises_missing_dependency_when_pymupdf_missing(monkeypatch):
@@ -62,4 +62,4 @@ def test_parse_pdf_raises_missing_dependency_when_pymupdf_missing(monkeypatch):
     with pytest.raises(MissingDependencyError) as exc_info:
         checker.parse_pdf(b"%PDF-fake")
 
-    assert "vioweb[vision]" in str(exc_info.value)
+    assert "viodigital[vision]" in str(exc_info.value)

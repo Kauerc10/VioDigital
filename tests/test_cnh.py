@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from vioweb.core import DigitalDocumentChecker
-from vioweb.core.documents.cnh import CNHData
+from viodigital.core import DigitalDocumentChecker
+from viodigital.core.documents.cnh import CNHData
 from tests.conftest import build_v2_qr
 
 CNH_FIELDS = "^".join(
@@ -31,7 +31,7 @@ TIMESTAMP = 0x60C38DB5
 
 
 def test_cnh_parse_and_authenticate(rsa_material, cert_store):
-    from vioweb.core.registry import TemplateStore
+    from viodigital.core.registry import TemplateStore
 
     cnh_template_store = TemplateStore.from_json(
         [

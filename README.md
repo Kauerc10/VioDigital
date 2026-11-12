@@ -1,21 +1,21 @@
-# VioWeb — Validação e Decodificação Criptográfica de Documentos Oficiais (Serpro / VIO)
+# VioDigital — Validação e Decodificação Criptográfica de Documentos Oficiais (Serpro / VIO)
 
 > Verificador e decodificador **100% gratuito e Open Source** de documentos oficiais brasileiros (**CRLV-e, CNH, ATPV-e, CIN / Novo RG, TIE Marinha, CRAF e +160 templates VIO**) projetado para **computadores de cartórios, despachantes, empresas e cidadãos**.
 
 > [!NOTE]
-> **Aviso Legal e Não-Afiliação Institucional:** O **VioWeb** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://vioweb.vercel.app/privacidade).
+> **Aviso Legal e Não-Afiliação Institucional:** O **VioDigital** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://viodigital.vercel.app/privacidade).
 
-[![CI](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/Kauerc10/VioWeb/actions/workflows/ci.yml)
+[![CI](https://github.com/Kauerc10/VioDigital/actions/workflows/ci.yml/badge.svg)](https://github.com/Kauerc10/VioDigital/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
-[![Demo Online](https://img.shields.io/badge/Acessar_Sistema-vioweb.vercel.app-3b7a28)](https://vioweb.vercel.app)
+[![Demo Online](https://img.shields.io/badge/Acessar_Sistema-viodigital.vercel.app-3b7a28)](https://viodigital.vercel.app)
 [![LGPD Compliant](https://img.shields.io/badge/Privacidade-100%25_LGPD_Offline-1f6feb)](docs/adr/0001-offline-cryptographic-validation.md)
 
-**Acesse gratuitamente no navegador:** [**https://vioweb.vercel.app**](https://vioweb.vercel.app)
+**Acesse gratuitamente no navegador:** [**https://viodigital.vercel.app**](https://viodigital.vercel.app)
 
 ---
 
-## Por que o VioWeb nasceu? (De um Cartório para a Comunidade)
+## Por que o VioDigital nasceu? (De um Cartório para a Comunidade)
 
 Na rotina diária de um **cartório de notas e registros**, escreventes e atendentes conferem dezenas de documentos veiculares (**CRLV-e**, **ATPV-e**) e de identificação (**CNH Digital e Física**, **CIN / Novo RG**, **Carteiras Funcionais**) todos os dias.
 
@@ -23,7 +23,7 @@ Apesar de todos esses documentos possuírem o **QR Code criptográfico oficial d
 1. O aplicativo oficial **Vio** existe apenas para celular, obrigando colaboradores a usarem seus próprios smartphones pessoais no balcão e digitarem manualmente no sistema notarial todos os dados lidos na telinha;
 2. Todas as alternativas existentes para computador ou web eram **fechadas e pagas** (cobrando mensalidades caras ou taxas por cada documento consultado), além de exigirem o envio de documentos sensíveis de clientes para servidores de terceiros.
 
-O **VioWeb** nasceu diretamente dessa necessidade real dentro do cartório: construir uma ferramenta **rápida, limpa, profissional, 100% gratuita e de código aberto**, onde o colaborador possa simplesmente **colar um print (`Ctrl+V`)**, **arrastar um PDF recebido no WhatsApp Web** ou **apontar o documento físico para a webcam do PC** e ter todos os dados validados criptograficamente e prontos para copiar em um clique.
+O **VioDigital** nasceu diretamente dessa necessidade real dentro do cartório: construir uma ferramenta **rápida, limpa, profissional, 100% gratuita e de código aberto**, onde o colaborador possa simplesmente **colar um print (`Ctrl+V`)**, **arrastar um PDF recebido no WhatsApp Web** ou **apontar o documento físico para a webcam do PC** e ter todos os dados validados criptograficamente e prontos para copiar em um clique.
 
 Como essa dor é compartilhada por milhares de cartórios, despachantes, vistoriadores e pequenas empresas em todo o Brasil, decidimos disponibilizar o projeto de forma **totalmente aberta e comunitária**.
 
@@ -49,7 +49,7 @@ Como essa dor é compartilhada por milhares de cartórios, despachantes, vistori
 
 ## Documentos Suportados (161 Templates Oficiais VIO + CIN)
 
-O motor do VioWeb embarca o catálogo oficial de **161 templates do Serpro/VIO** (`templates.json`) mais as chaves públicas da **Carteira de Identidade Nacional (CIN)**:
+O motor do VioDigital embarca o catálogo oficial de **161 templates do Serpro/VIO** (`templates.json`) mais as chaves públicas da **Carteira de Identidade Nacional (CIN)**:
 
 | Categoria | Documentos Oficiais Suportados |
 | :--- | :--- |
@@ -64,7 +64,7 @@ O motor do VioWeb embarca o catálogo oficial de **161 templates do Serpro/VIO**
 
 ## Como Executar Localmente no seu Computador ou Rede do Cartório
 
-O VioWeb pode ser usado diretamente pelo site [**vioweb.vercel.app**](https://vioweb.vercel.app) ou instalado localmente em qualquer computador Windows, Linux ou macOS para operação **100% offline na rede interna do cartório**:
+O VioDigital pode ser usado diretamente pelo site [**viodigital.vercel.app**](https://viodigital.vercel.app) ou instalado localmente em qualquer computador Windows, Linux ou macOS para operação **100% offline na rede interna do cartório**:
 
 ### 1. Pré-requisitos
 * **Python 3.12+** instalado.
@@ -72,14 +72,14 @@ O VioWeb pode ser usado diretamente pelo site [**vioweb.vercel.app**](https://vi
 ### 2. Instalação e Execução Rápida
 ```bash
 # Clone o repositório
-git clone https://github.com/Kauerc10/VioWeb.git
-cd VioWeb
+git clone https://github.com/Kauerc10/VioDigital.git
+cd VioDigital
 
 # Instale as dependências com suporte a servidor local e visão computacional
 pip install -e ".[server,vision]"
 
 # Inicie o servidor local
-python -m vioweb
+python -m viodigital
 ```
 
 Abra o navegador em **`http://127.0.0.1:8000`** e pronto!
@@ -94,8 +94,8 @@ pytest
 ## Estrutura do Repositório e Documentação
 
 ```text
-VioWeb/
-├── src/vioweb/
+VioDigital/
+├── src/viodigital/
 │   ├── api/                 # Servidor FastAPI e endpoints REST (/api/documents/verify)
 │   ├── core/                # Motor criptográfico VIO/CIN, leitor multi-QR e catálogo de certificados
 │   │   ├── data/            # Catálogo oficial de 161 templates e chaves públicas ICP-Brasil/SENATRAN
@@ -127,7 +127,7 @@ VioWeb/
 O espírito do Open Source é construir sobre o trabalho incrível da comunidade:
 
 * O núcleo base de decodificação criptográfica dos formatos VIO e CIN em Python teve como ponto de partida a excelente biblioteca open-source [**`digital-document-checker`**](https://github.com/helviojunior/digital-document-checker), criada por **Helvio Junior (`@helviojunior` / `M4v3r1ck`)** sob licença MIT.
-* A partir dessa base, o **VioWeb** expandiu o motor e construiu a plataforma completa voltada à operação notarial e corporativa, adicionando:
+* A partir dessa base, o **VioDigital** expandiu o motor e construiu a plataforma completa voltada à operação notarial e corporativa, adicionando:
   * Handlers dedicados para **CRLV-e Digital**, **CRV-e RENAVE (Template 24)** e **ATPV-e (Template 43)** com normalização de campos;
   * Pipeline de visão computacional **Multi-QR** com `zxing-cpp` e `OpenCV` para documentos com múltiplos selos e correção de codificação binária;
   * Renderização direta de fotografias biométricas **BPG em HTML5 Canvas via WebAssembly** no navegador;
@@ -135,17 +135,17 @@ O espírito do Open Source é construir sobre o trabalho incrível da comunidade
 
 ---
 
-## Apoie o Projeto (Mantenha o VioWeb Gratuito)
+## Apoie o Projeto (Mantenha o VioDigital Gratuito)
 
-O **VioWeb** foi criado para continuar sendo **gratuito, aberto e acessível** para qualquer escrevente, cartório, despachante ou cidadão brasileiro, sem cobrar por documento verificado.
+O **VioDigital** foi criado para continuar sendo **gratuito, aberto e acessível** para qualquer escrevente, cartório, despachante ou cidadão brasileiro, sem cobrar por documento verificado.
 
 Se esta ferramenta economiza tempo e dinheiro no seu dia a dia, considere apoiar a manutenção do projeto:
 * ⭐ Deixe uma **Estrela (Star)** neste repositório no GitHub e compartilhe com colegas de outros cartórios e escritórios!
-* 💬 Acompanhe e envie feedbacks, ideias e melhorias através das [Issues do GitHub](https://github.com/Kauerc10/VioWeb/issues).
+* 💬 Acompanhe e envie feedbacks, ideias e melhorias através das [Issues do GitHub](https://github.com/Kauerc10/VioDigital/issues).
 * ☕ **Apoie voluntariamente via PIX:**
 
 <div align="center">
-  <img src="src/vioweb/web/static/pix-qrcode.png" width="180" alt="QR Code PIX de Apoio ao VioWeb"><br>
+  <img src="src/viodigital/web/static/pix-qrcode.png" width="180" alt="QR Code PIX de Apoio ao VioDigital"><br>
   <strong>Chave Aleatória:</strong> <code>84afcca1-eea6-4a15-9adf-581b37fb5897</code><br>
   <em>Beneficiário: Kaue Ruon Cardoso · Cidade: São Paulo</em>
 </div>
@@ -158,7 +158,7 @@ Se esta ferramenta economiza tempo e dinheiro no seu dia a dia, considere apoiar
 ```
 </details>
 
-Ou acesse a [página de apoio no VioWeb](https://vioweb.vercel.app/apoiar).
+Ou acesse a [página de apoio no VioDigital](https://viodigital.vercel.app/apoiar).
 
 ---
 

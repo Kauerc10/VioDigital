@@ -1,6 +1,6 @@
 {
-  "name": "VioWeb — Validador Offline de Documentos",
-  "short_name": "VioWeb",
+  "name": "VioDigital — Validador Offline de Documentos",
+  "short_name": "VioDigital",
   "description": "Verificador e decodificador 100% offline de CRLV-e, CNH, ATPV-e, CIN e +160 documentos oficiais Serpro/VIO.",
   "start_url": "/",
   "display": "standalone",
