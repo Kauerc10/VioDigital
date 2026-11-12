@@ -340,3 +340,47 @@ def test_api_seo_endpoints_and_metadata():
     assert 'property="og:title"' in root.text
     assert 'application/ld+json' in root.text
     assert 'id="seo-faq-section"' in root.text
+
+
+def test_api_upload_payload_too_large(monkeypatch):
+    from vioweb.api import app as api_module
+
+    # Reduz temporariamente o limite para testar 413
+    monkeypatch.setattr(api_module, "MAX_UPLOAD_SIZE", 100)
+    response = client.post(
+        "/api/documents/verify",
+        files={"file": ("large.bin", b"X" * 200, "application/octet-stream")},
+    )
+    assert response.status_code == 413
+    data = response.json()
+    assert data["error"] == "PAYLOAD_TOO_LARGE"
+
+
+def test_api_error_500_sanitized(monkeypatch):
+    from vioweb.api import app as api_module
+
+    def _boom(_):
+        raise ValueError("sensitive_internal_database_string")
+
+    monkeypatch.setattr(api_module._checker, "parse_file", _boom)
+    response = client.post(
+        "/api/documents/verify",
+        files={"file": ("test.png", b"test_content", "image/png")},
+    )
+    assert response.status_code == 500
+    data = response.json()
+    assert data["error"] == "SERVER_ERROR"
+    # Garante que detalhes sensíveis internos não vazaram na mensagem
+    assert "sensitive_internal_database_string" not in data["message"]
+    assert "Erro interno" in data["message"]
+
+
+def test_api_cors_no_credentials():
+    response = client.options(
+        "/api/documents/verify",
+        headers={
+            "Origin": "https://external.site",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert response.headers.get("access-control-allow-credentials") is None or response.headers.get("access-control-allow-credentials") == "false"

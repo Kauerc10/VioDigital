@@ -24,10 +24,12 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+MAX_UPLOAD_SIZE = 15 * 1024 * 1024  # 15 MB
 
 _checker = DigitalDocumentChecker()
 WEB_DIR = Path(__file__).parent.parent / "web"
@@ -94,7 +96,7 @@ async def list_supported_templates():
         })
 
     return {
-        "total_templates": max(len(templates_list), 161),
+        "total_templates": len(templates_list),
         "cin_supported": True,
         "templates": templates_list,
         "categories": [
@@ -214,6 +216,16 @@ async def verify_document(file: UploadFile = File(...)):
         if not content:
             raise HTTPException(status_code=400, detail="Arquivo vazio.")
 
+        if len(content) > MAX_UPLOAD_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "is_parsed": False,
+                    "error": "PAYLOAD_TOO_LARGE",
+                    "message": f"Arquivo excede o tamanho máximo permitido de {MAX_UPLOAD_SIZE // (1024 * 1024)}MB.",
+                },
+            )
+
         result = _checker.parse_file(content)
         return JSONResponse(_format_result(result))
     except QRCodeNotFoundError as exc:
@@ -235,12 +247,15 @@ async def verify_document(file: UploadFile = File(...)):
             },
         )
     except Exception as exc:
+        import logging
+
+        logging.getLogger("vioweb.api").exception("Erro inesperado no processamento: %s", exc)
         return JSONResponse(
             status_code=500,
             content={
                 "is_parsed": False,
                 "error": "SERVER_ERROR",
-                "message": f"Erro inesperado no processamento: {exc}",
+                "message": "Erro interno ao processar documento. Tente novamente mais tarde.",
             },
         )
 
@@ -253,6 +268,16 @@ async def verify_document_base64(req: VerifyBase64Request):
             data_str = data_str.split(",", 1)[1]
 
         content = base64.b64decode(data_str)
+        if len(content) > MAX_UPLOAD_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "is_parsed": False,
+                    "error": "PAYLOAD_TOO_LARGE",
+                    "message": f"Arquivo excede o tamanho máximo permitido de {MAX_UPLOAD_SIZE // (1024 * 1024)}MB.",
+                },
+            )
+
         result = _checker.parse_file(content)
         return JSONResponse(_format_result(result))
     except QRCodeNotFoundError as exc:
@@ -265,12 +290,15 @@ async def verify_document_base64(req: VerifyBase64Request):
             },
         )
     except Exception as exc:
+        import logging
+
+        logging.getLogger("vioweb.api").exception("Erro inesperado no processamento base64: %s", exc)
         return JSONResponse(
-            status_code=400,
+            status_code=500,
             content={
                 "is_parsed": False,
                 "error": "PROCESSING_ERROR",
-                "message": str(exc),
+                "message": "Erro interno ao processar documento. Tente novamente mais tarde.",
             },
         )
 
