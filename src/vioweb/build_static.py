@@ -162,17 +162,30 @@ def build_wheel(wheels_dir: Path) -> Path | None:
             shutil.copy2(cached[0], target)
             return target
 
-    uv_bin = shutil.which("uv")
-    if uv_bin:
-        cmd = [uv_bin, "build", "--wheel", "--out-dir", str(wheels_dir)]
-    else:
-        cmd = [sys.executable, "-m", "build", "--wheel", "--out-dir", str(wheels_dir)]
+    src_wheels = STATIC_DIR / "wheels"
+    if src_wheels.exists() and wheels_dir != src_wheels:
+        cached = list(src_wheels.glob("vioweb-*.whl"))
+        if cached:
+            target = wheels_dir / cached[0].name
+            shutil.copy2(cached[0], target)
+            return target
 
-    try:
-        subprocess.run(cmd, cwd=ROOT_DIR, check=True, capture_output=True)
-    except Exception as exc:
-        print(f"Aviso: Não foi possível compilar wheel: {exc}")
-        return None
+    uv_bin = shutil.which("uv")
+    commands_to_try = []
+    if uv_bin:
+        commands_to_try.append([uv_bin, "build", "--wheel", "--out-dir", str(wheels_dir)])
+    commands_to_try.append([sys.executable, "-m", "build", "--wheel", "--out-dir", str(wheels_dir)])
+    commands_to_try.append([sys.executable, "-m", "pip", "wheel", "--no-deps", "-w", str(wheels_dir), str(ROOT_DIR)])
+
+    for cmd in commands_to_try:
+        try:
+            res = subprocess.run(cmd, cwd=ROOT_DIR, check=False, capture_output=True, text=True)
+            if res.returncode == 0:
+                built = list(wheels_dir.glob("vioweb-*.whl"))
+                if built:
+                    return built[0]
+        except Exception:
+            continue
 
     built = list(wheels_dir.glob("vioweb-*.whl"))
     return built[0] if built else None
@@ -204,6 +217,7 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
         "pyodide-lock.json",
         "cryptography-42.0.5-cp312-cp312-pyodide_2024_0_wasm32.whl",
         "cffi-1.16.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+        "pycparser-2.22-py3-none-any.whl",
         "openssl-1.1.1n.zip",
         "six-1.16.0-py2.py3-none-any.whl",
     ]

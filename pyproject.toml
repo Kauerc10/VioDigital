@@ -35,6 +35,7 @@ dev = [
     "qrcode>=7.4.2",
     "ruff>=0.4.0",
     "playwright>=1.40.0",
+    "build>=1.0.0",
     "vioweb[server]",
     "vioweb[vision]",
 ]

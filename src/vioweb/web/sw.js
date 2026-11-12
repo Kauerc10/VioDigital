@@ -33,6 +33,7 @@ const PRECACHE_ASSETS = [
   '/static/vendor/pyodide/pyodide-lock.json',
   '/static/vendor/pyodide/cryptography-42.0.5-cp312-cp312-pyodide_2024_0_wasm32.whl',
   '/static/vendor/pyodide/cffi-1.16.0-cp312-cp312-pyodide_2024_0_wasm32.whl',
+  '/static/vendor/pyodide/pycparser-2.22-py3-none-any.whl',
   '/static/vendor/pyodide/openssl-1.1.1n.zip',
   '/static/vendor/pyodide/six-1.16.0-py2.py3-none-any.whl',
 ];
