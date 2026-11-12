@@ -33,8 +33,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const engineBar = document.getElementById('engine-bar');
   const engineStatusText = document.getElementById('engine-status-text');
+  const engineStatusStep = document.getElementById('engine-status-step');
   const engineProgressFill = document.getElementById('engine-progress-fill');
+  const enginePercent = document.getElementById('engine-percent');
+  const headerEnginePill = document.getElementById('header-engine-pill');
   const privacyBadge = document.getElementById('privacy-badge');
+
+  // Detecção de motor em cache na sessão
+  const isWarmed = sessionStorage.getItem('vioweb_engine_warmed');
+  if (isWarmed && engineStatusText) {
+    engineStatusText.textContent = 'Restaurando motor do cache local...';
+  }
+
+  if (headerEnginePill) {
+    headerEnginePill.addEventListener('click', () => {
+      if (engineBar) {
+        engineBar.classList.toggle('docked');
+      }
+    });
+  }
 
   let currentResult = null;
   let mediaStream = null;
@@ -45,6 +62,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let scannerWorker = null;
   let isEngineReady = false;
+  let dockTimer = null;
+
+  function handleEngineReady() {
+    isEngineReady = true;
+    sessionStorage.setItem('vioweb_engine_warmed', String(Date.now()));
+    if (engineBar) {
+      engineBar.classList.add('ready');
+      if (dockTimer) clearTimeout(dockTimer);
+      dockTimer = setTimeout(() => {
+        engineBar.classList.add('docked');
+        if (headerEnginePill) {
+          headerEnginePill.style.display = 'inline-flex';
+        }
+      }, 2400);
+    }
+    if (engineStatusText) {
+      engineStatusText.textContent = 'Motor pronto · 100% offline no navegador';
+    }
+    if (enginePercent) {
+      enginePercent.textContent = '100%';
+    }
+  }
 
   function initScannerWorker() {
     try {
@@ -52,25 +91,24 @@ document.addEventListener('DOMContentLoaded', () => {
       scannerWorker.onmessage = (e) => {
         const msg = e.data || {};
         if (msg.type === 'status') {
+          if (engineStatusStep && msg.step) {
+            engineStatusStep.textContent = msg.step;
+            engineStatusStep.style.display = 'inline-block';
+          }
           if (engineStatusText && msg.message) {
             engineStatusText.textContent = msg.message;
           }
           if (engineProgressFill && typeof msg.progress === 'number') {
             engineProgressFill.style.width = `${msg.progress}%`;
           }
+          if (enginePercent && typeof msg.progress === 'number') {
+            enginePercent.textContent = `${msg.progress}%`;
+          }
           if (msg.status === 'ready') {
-            isEngineReady = true;
-            if (engineBar) engineBar.classList.add('ready');
-            if (engineStatusText) {
-              engineStatusText.textContent = 'Motor pronto · 100% offline no navegador';
-            }
+            handleEngineReady();
           }
         } else if (msg.type === 'ready') {
-          isEngineReady = true;
-          if (engineBar) engineBar.classList.add('ready');
-          if (engineStatusText) {
-            engineStatusText.textContent = 'Motor pronto · 100% offline no navegador';
-          }
+          handleEngineReady();
         } else if (msg.type === 'verify_result') {
           loadingState.style.display = 'none';
           const data = msg.data;

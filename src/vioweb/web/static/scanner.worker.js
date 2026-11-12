@@ -17,8 +17,8 @@ self.zxingReady = false;
 self.engineReady = false;
 self.initPromise = null;
 
-function postStatus(status, progress, message) {
-  self.postMessage({ type: 'status', status, progress, message });
+function postStatus(status, progress, message, step) {
+  self.postMessage({ type: 'status', status, progress, message, step });
 }
 
 function resolveAssetUrl(relPath) {
@@ -32,7 +32,7 @@ async function initEngine() {
   self.initPromise = (async () => {
     try {
       // 1. ZXing WASM
-      postStatus('loading_zxing', 15, 'Carregando decodificador óptico (WASM)...');
+      postStatus('loading_zxing', 25, 'Decodificador óptico (WASM)...', '1/4');
       const zxingLocalJs = resolveAssetUrl('vendor/zxing/zxing_reader.js');
       const zxingLocalWasm = resolveAssetUrl('vendor/zxing/zxing_reader.wasm');
 
@@ -62,7 +62,7 @@ async function initEngine() {
       self.zxingReady = true;
 
       // 2. Pyodide
-      postStatus('loading_pyodide', 35, 'Iniciando ambiente Python WebAssembly...');
+      postStatus('loading_pyodide', 50, 'Ambiente Python WebAssembly...', '2/4');
       const pyodideLocalJs = resolveAssetUrl('vendor/pyodide/pyodide.js');
       const pyodideLocalIndex = resolveAssetUrl('vendor/pyodide/');
 
@@ -85,11 +85,11 @@ async function initEngine() {
       }
 
       // 3. Cryptography
-      postStatus('loading_crypto', 65, 'Carregando biblioteca de criptografia (ECDSA/RSA)...');
+      postStatus('loading_crypto', 75, 'Biblioteca de criptografia (ECDSA/RSA)...', '3/4');
       await self.pyodide.loadPackage('cryptography');
 
       // 4. VioWeb Wheel
-      postStatus('loading_vioweb', 85, 'Instalando motor VioWeb e base de certificados...');
+      postStatus('loading_vioweb', 90, 'Motor VioWeb e base de 161 templates...', '4/4');
       const wheelUrl = resolveAssetUrl('wheels/vioweb-0.2.0-py3-none-any.whl');
       const wheelResp = await fetch(wheelUrl);
       if (!wheelResp.ok) {
@@ -150,7 +150,7 @@ def _py_is_vio(raw_bytes_py):
       `);
 
       self.engineReady = true;
-      postStatus('ready', 100, 'Motor pronto · 100% offline');
+      postStatus('ready', 100, 'Motor pronto · 100% offline no navegador', '✓');
       self.postMessage({ type: 'ready' });
     } catch (err) {
       console.error('Erro na inicialização do motor offline:', err);
