@@ -77,6 +77,19 @@
     </div>
   </header>
 
+  <div class="engine-bar" id="engine-bar">
+    <div class="engine-bar-inner">
+      <div class="engine-status-left">
+        <div class="engine-spinner" id="engine-spinner"></div>
+        <span class="engine-ready-icon" id="engine-ready-icon">✓</span>
+        <span class="engine-status-text" id="engine-status-text">Iniciando motor de validação local no navegador...</span>
+      </div>
+      <div class="engine-progress-track">
+        <div class="engine-progress-fill" id="engine-progress-fill" style="width: 5%;"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="app-container">
     <main class="main-content">
       <!-- Upload & Camera Section -->
@@ -190,6 +203,10 @@
               <div class="auth-badge" id="auth-badge">
                 <span class="auth-icon" id="auth-icon">✓</span>
                 <span class="auth-text" id="auth-status-text">Documento Autêntico</span>
+              </div>
+              <div class="privacy-badge" id="privacy-badge">
+                <span class="privacy-icon">🔒</span>
+                <span>Processado no seu navegador · offline</span>
               </div>
             </div>
             <div class="result-actions">

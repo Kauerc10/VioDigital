@@ -10,7 +10,7 @@ authors = [
     { name = "Kauê (@Kauerc10)" },
     { name = "Helvio Junior (M4v3r1ck)", email = "helvio_junior@hotmail.com" },
 ]
-license = { text = "MIT" }
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

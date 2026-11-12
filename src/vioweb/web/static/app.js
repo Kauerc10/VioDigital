@@ -31,12 +31,74 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnNewCheck = document.getElementById('btn-new-check');
   const toast = document.getElementById('toast');
 
+  const engineBar = document.getElementById('engine-bar');
+  const engineStatusText = document.getElementById('engine-status-text');
+  const engineProgressFill = document.getElementById('engine-progress-fill');
+  const privacyBadge = document.getElementById('privacy-badge');
+
   let currentResult = null;
   let mediaStream = null;
   let scanIntervalId = null;
   let isScanningFrame = false;
   let scanAttemptCount = 0;
   let isMirrored = localStorage.getItem('vioweb_camera_mirrored') === '1';
+
+  let scannerWorker = null;
+  let isEngineReady = false;
+
+  function initScannerWorker() {
+    try {
+      scannerWorker = new Worker('/static/scanner.worker.js');
+      scannerWorker.onmessage = (e) => {
+        const msg = e.data || {};
+        if (msg.type === 'status') {
+          if (engineStatusText && msg.message) {
+            engineStatusText.textContent = msg.message;
+          }
+          if (engineProgressFill && typeof msg.progress === 'number') {
+            engineProgressFill.style.width = `${msg.progress}%`;
+          }
+          if (msg.status === 'ready') {
+            isEngineReady = true;
+            if (engineBar) engineBar.classList.add('ready');
+            if (engineStatusText) {
+              engineStatusText.textContent = 'Motor pronto · 100% offline no navegador';
+            }
+          }
+        } else if (msg.type === 'ready') {
+          isEngineReady = true;
+          if (engineBar) engineBar.classList.add('ready');
+          if (engineStatusText) {
+            engineStatusText.textContent = 'Motor pronto · 100% offline no navegador';
+          }
+        } else if (msg.type === 'verify_result') {
+          loadingState.style.display = 'none';
+          const data = msg.data;
+          if (!data || !data.is_parsed) {
+            const errDetail =
+              (data && data.message) ||
+              (data && Array.isArray(data.errors) && data.errors.length
+                ? data.errors.join(' | ')
+                : 'Falha ao decodificar documento.');
+            showError(errDetail);
+            dropzone.style.display = 'flex';
+            return;
+          }
+          currentResult = data;
+          renderResult(data);
+        } else if (msg.type === 'error' || msg.type === 'init_error') {
+          console.warn('Motor offline alerta:', msg.error || msg.message);
+        }
+      };
+      scannerWorker.onerror = (err) => {
+        console.warn('Erro ao carregar worker local:', err);
+      };
+    } catch (err) {
+      console.warn('Web Workers não disponíveis:', err);
+    }
+  }
+
+  initScannerWorker();
 
   const captureCanvas = document.createElement('canvas');
   const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
@@ -448,6 +510,23 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraPanel.style.display = 'none';
     loadingState.style.display = 'flex';
     resultSection.style.display = 'none';
+
+    const isImage = (file.type && file.type.startsWith('image/')) || /\.(png|jpe?g|webp|bmp)$/i.test(file.name || '');
+
+    // Se for imagem e o worker estiver disponível, processa 100% no navegador (sem tráfego de rede)
+    if (isImage && scannerWorker) {
+      const loadingH3 = loadingState.querySelector('h3');
+      const loadingP = loadingState.querySelector('p');
+      if (loadingH3) loadingH3.textContent = 'Validando no seu navegador (offline)...';
+      if (loadingP) loadingP.textContent = 'Decodificando envelope binário Serpro/VIO e checando assinatura digital localmente';
+
+      scannerWorker.postMessage({
+        type: 'verify_image',
+        file: file,
+        id: Date.now(),
+      });
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);

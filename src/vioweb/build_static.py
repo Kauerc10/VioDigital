@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -150,6 +151,88 @@ def generate_sitemap_xml() -> str:
     )
 
 
+def build_wheel(wheels_dir: Path) -> Path | None:
+    wheels_dir.mkdir(parents=True, exist_ok=True)
+    # Reutiliza wheel em cache se já existir e não for a pasta de destino
+    default_dist_wheels = ROOT_DIR / "dist" / "static" / "wheels"
+    if default_dist_wheels.exists() and wheels_dir != default_dist_wheels:
+        cached = list(default_dist_wheels.glob("vioweb-*.whl"))
+        if cached:
+            target = wheels_dir / cached[0].name
+            shutil.copy2(cached[0], target)
+            return target
+
+    uv_bin = shutil.which("uv")
+    if uv_bin:
+        cmd = [uv_bin, "build", "--wheel", "--out-dir", str(wheels_dir)]
+    else:
+        cmd = [sys.executable, "-m", "build", "--wheel", "--out-dir", str(wheels_dir)]
+
+    try:
+        subprocess.run(cmd, cwd=ROOT_DIR, check=True, capture_output=True)
+    except Exception as exc:
+        print(f"Aviso: Não foi possível compilar wheel: {exc}")
+        return None
+
+    built = list(wheels_dir.glob("vioweb-*.whl"))
+    return built[0] if built else None
+
+
+def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
+    vendor_dir.mkdir(parents=True, exist_ok=True)
+    cache_dir = ROOT_DIR / ".vendor_cache"
+    pyodide_cache = cache_dir / "pyodide"
+    zxing_cache = cache_dir / "zxing"
+    pyodide_cache.mkdir(parents=True, exist_ok=True)
+    zxing_cache.mkdir(parents=True, exist_ok=True)
+
+    pyodide_target = vendor_dir / "pyodide"
+    zxing_target = vendor_dir / "zxing"
+    pyodide_target.mkdir(parents=True, exist_ok=True)
+    zxing_target.mkdir(parents=True, exist_ok=True)
+
+    pyodide_base = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
+    pyodide_files = [
+        "pyodide.js",
+        "pyodide.asm.js",
+        "pyodide.asm.wasm",
+        "python_stdlib.zip",
+        "pyodide-lock.json",
+        "cryptography-42.0.5-cp312-cp312-pyodide_2024_0_wasm32.whl",
+        "cffi-1.16.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+        "openssl-1.1.1n.zip",
+        "six-1.16.0-py2.py3-none-any.whl",
+    ]
+
+    for fname in pyodide_files:
+        cached_file = pyodide_cache / fname
+        if not cached_file.exists() and download:
+            try:
+                import urllib.request
+
+                urllib.request.urlretrieve(pyodide_base + fname, cached_file)
+            except Exception as e:
+                print(f"Aviso: Não foi possível baixar {fname}: {e}")
+        if cached_file.exists():
+            shutil.copy2(cached_file, pyodide_target / fname)
+
+    zxing_files = {
+        "zxing_reader.js": "https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.6/dist/iife/reader/index.js",
+        "zxing_reader.wasm": "https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.6/dist/reader/zxing_reader.wasm",
+    }
+    for fname, url in zxing_files.items():
+        cached_file = zxing_cache / fname
+        if not cached_file.exists() and download:
+            try:
+                import urllib.request
+
+                urllib.request.urlretrieve(url, cached_file)
+            except Exception as e:
+                print(f"Aviso: Não foi possível baixar {fname}: {e}")
+        if cached_file.exists():
+            shutil.copy2(cached_file, zxing_target / fname)
+
+
 def _safe_clean_dir(path: Path) -> None:
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
@@ -182,7 +265,19 @@ def build(output_dir: Path | str = "dist") -> Path:
     dist_static = out / "static"
     shutil.copytree(STATIC_DIR, dist_static, dirs_exist_ok=True)
 
-    # 2. Gera templates-data.json
+    # 2. Compila wheel do vioweb e disponibiliza em static/wheels/
+    wheel_path = build_wheel(dist_static / "wheels")
+    if wheel_path and out == ROOT_DIR / "dist":
+        src_wheels = STATIC_DIR / "wheels"
+        src_wheels.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(wheel_path, src_wheels / wheel_path.name)
+
+    # 3. Garante ativos vendor do Pyodide e ZXing WASM em static/vendor/
+    ensure_vendor_assets(dist_static / "vendor")
+    if out == ROOT_DIR / "dist":
+        ensure_vendor_assets(STATIC_DIR / "vendor")
+
+    # 4. Gera templates-data.json
     tpl_data = get_templates_catalog_data()
     tpl_json_path = dist_static / "templates-data.json"
     tpl_json_path.write_text(json.dumps(tpl_data, ensure_ascii=False, indent=2), encoding="utf-8")

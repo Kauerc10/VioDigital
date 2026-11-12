@@ -65,6 +65,79 @@ body {
   z-index: 30;
 }
 
+/* Engine Bar (WASM / Pyodide) */
+.engine-bar {
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.45rem 1.5rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.engine-bar.ready {
+  background-color: #f6fbf5;
+  border-bottom-color: #d2ebd0;
+}
+
+.engine-bar-inner {
+  max-width: 1060px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.engine-status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.engine-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.engine-bar.ready .engine-spinner {
+  display: none;
+}
+
+.engine-ready-icon {
+  display: none;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.engine-bar.ready .engine-ready-icon {
+  display: inline-block;
+}
+
+.engine-progress-track {
+  width: 140px;
+  height: 6px;
+  background-color: var(--bg-muted);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.engine-bar.ready .engine-progress-track {
+  display: none;
+}
+
+.engine-progress-fill {
+  height: 100%;
+  background-color: var(--primary);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
 .header-inner {
   max-width: 1060px;
   margin: 0 auto;
@@ -695,6 +768,23 @@ kbd {
   background-color: var(--danger-bg);
   border: 1px solid var(--danger-border);
   color: var(--danger-text);
+}
+
+.privacy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background-color: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
+
+.privacy-badge .privacy-icon {
+  font-size: 0.85rem;
 }
 
 .result-actions {
