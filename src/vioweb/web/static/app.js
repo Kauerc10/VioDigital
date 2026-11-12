@@ -98,6 +98,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function checkBrowserCompatibility() {
+    const hasWasm = typeof WebAssembly === 'object' && typeof WebAssembly.instantiate === 'function';
+    const hasWorker = typeof Worker !== 'undefined';
+    if (!hasWasm || !hasWorker) {
+      const banner = document.createElement('div');
+      banner.className = 'notary-disclaimer';
+      banner.style.backgroundColor = 'var(--danger-bg)';
+      banner.style.color = 'var(--danger-text)';
+      banner.style.borderLeftColor = 'var(--detran-red)';
+      banner.style.margin = '1rem 0';
+      banner.innerHTML =
+        '<strong>Aviso de Compatibilidade:</strong> Seu navegador não suporta WebAssembly ou Web Workers modernos. Atualize para uma versão recente para validar documentos 100% offline no navegador.';
+      const main = document.querySelector('.main-content');
+      if (main) main.insertBefore(banner, main.firstChild);
+      return false;
+    }
+    return true;
+  }
+
+  checkBrowserCompatibility();
   initScannerWorker();
 
   const captureCanvas = document.createElement('canvas');
@@ -444,6 +464,46 @@ document.addEventListener('DOMContentLoaded', () => {
         captureCanvas.width = vw;
         captureCanvas.height = vh;
         captureCtx.drawImage(cameraVideo, 0, 0, vw, vh);
+      }
+
+      if (scannerWorker) {
+        const imgData = captureCtx.getImageData(0, 0, captureCanvas.width, captureCanvas.height);
+        const reqId = Date.now() + Math.random();
+        const pageRes = await new Promise((resolve) => {
+          const handler = (e) => {
+            const msg = e.data || {};
+            if (msg.type === 'verify_imagedata_result' && msg.id === reqId) {
+              scannerWorker.removeEventListener('message', handler);
+              resolve(msg);
+            }
+          };
+          scannerWorker.addEventListener('message', handler);
+          scannerWorker.postMessage({
+            type: 'verify_imagedata',
+            id: reqId,
+            imageData: imgData,
+            pageIndex: 1,
+            totalPages: 1,
+          });
+        });
+
+        const data = pageRes.data;
+        if (data && data.is_parsed) {
+          cameraStage.classList.add('scan-success');
+          playScanSuccessTone();
+          stopCamera();
+          currentResult = data;
+          renderResult(data);
+          showToast('Documento lido com sucesso pela câmera (offline)');
+          return;
+        }
+
+        if (isManual) {
+          cameraStatusText.textContent =
+            (data && data.message) ||
+            'Ainda não foi possível focar o QR Code. Aproxime ou incline levemente o documento para evitar reflexo.';
+        }
+        return;
       }
 
       const blob = await new Promise(resolve => captureCanvas.toBlob(resolve, 'image/jpeg', 0.92));
