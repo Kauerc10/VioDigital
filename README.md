@@ -75,8 +75,8 @@ O VioWeb pode ser usado diretamente pelo site [**vioweb.vercel.app**](https://vi
 git clone https://github.com/Kauerc10/VioWeb.git
 cd VioWeb
 
-# Instale as dependências do projeto
-pip install -e .
+# Instale as dependências com suporte a servidor local e visão computacional
+pip install -e ".[server,vision]"
 
 # Inicie o servidor local
 python -m vioweb
@@ -116,6 +116,8 @@ VioWeb/
 * [Engenharia Reversa e Especificação Técnica do Padrão VIO (`docs/vio-reverse-engineering.md`)](docs/vio-reverse-engineering.md)
 * [ADR 0001: Validação Criptográfica Offline Local](docs/adr/0001-offline-cryptographic-validation.md)
 * [ADR 0002: Arquitetura do Decodificador e Interface Web](docs/adr/0002-crlv-and-cnh-decoding-architecture.md)
+* [ADR 0003: Validação 100% no Navegador via WebAssembly (Pyodide)](docs/adr/0003-browser-wasm-pyodide-validation.md)
+* [Avisos e Licenças de Terceiros (`THIRD_PARTY_NOTICES.md`)](THIRD_PARTY_NOTICES.md)
 * [Guia de Contribuição (`CONTRIBUTING.md`)](CONTRIBUTING.md)
 
 ---
