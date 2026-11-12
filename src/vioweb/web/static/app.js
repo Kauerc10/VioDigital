@@ -1595,11 +1595,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showcase.appendChild(wrapper);
 
-    const badge = document.createElement('div');
-    badge.className = 'photo-badge';
-    badge.textContent = badgeText || 'Biometria Oficial';
-    showcase.appendChild(badge);
-
     const actions = document.createElement('div');
     actions.className = 'photo-actions';
 
