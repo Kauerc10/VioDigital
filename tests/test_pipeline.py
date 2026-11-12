@@ -196,3 +196,18 @@ def test_qr_shift_jis_recovery():
 
     candidates = _decode_qr_bytes_candidates(zbar_utf8_bytes)
     assert original_binary in candidates
+
+
+def test_qr_transport_latin1_utf8_recovery():
+    """Garante que bytes binários transportados como Latin-1 em UTF-8 sejam recuperados via _decode_qr_bytes."""
+    from vioweb.core.qr import _decode_qr_bytes, _decode_qr_bytes_candidates
+
+    # Envelope VIO válido com bytes > 0x7F (cabeçalho binário v4/v5 Serpro)
+    original_envelope = b"d\xb5\x8d\xc3\x02\x00\x04\x90\xaa\xbb\xcc\xdd"
+    transport_utf8 = original_envelope.decode("latin-1").encode("utf-8")
+
+    assert transport_utf8 != original_envelope
+    candidates = _decode_qr_bytes_candidates(transport_utf8)
+    assert original_envelope in candidates
+    recovered = _decode_qr_bytes(transport_utf8)
+    assert recovered == original_envelope

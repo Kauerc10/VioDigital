@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 import re
 from pathlib import Path
 from typing import Dict, Optional
@@ -34,7 +35,7 @@ app.add_middleware(
 async def add_security_headers(request, call_next):
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';"
+        "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';"
     )
     response.headers["Permissions-Policy"] = "camera=(self)"
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -44,11 +45,19 @@ async def add_security_headers(request, call_next):
 
 MAX_UPLOAD_SIZE = 15 * 1024 * 1024  # 15 MB
 
+logger = logging.getLogger("vioweb.api")
 _checker = DigitalDocumentChecker()
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 SRC_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 DIST_DIR = ROOT_DIR / "dist"
 WEB_DIR = DIST_DIR if (DIST_DIR / "index.html").exists() else SRC_WEB_DIR
+
+# Provisiona os ativos de runtime do navegador se estiverem ausentes (ex: clone limpo)
+try:
+    from vioweb.build_static import ensure_runtime_assets
+    ensure_runtime_assets(WEB_DIR)
+except Exception as _e:
+    logger.warning("Provisionamento de ativos de runtime do navegador adiado: %s", _e)
 
 SEO_DOC_PAGES: Dict[str, Dict[str, str]] = {
     "crlv": {

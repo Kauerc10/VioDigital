@@ -126,19 +126,24 @@ import vioweb
 from vioweb.core import DigitalDocumentChecker, present
 from vioweb.core.formats.envelope import is_vio_or_cin_qr, looks_like_external_qr
 from vioweb.core.exceptions import DigitalDocumentError, ParseError
+from vioweb.core.qr import _decode_qr_bytes, _decode_qr_bytes_candidates
 
 _checker = DigitalDocumentChecker()
 
-def _py_validate_bytes(raw_bytes_py):
+def _to_bytes(raw_bytes_py):
     if hasattr(raw_bytes_py, "to_py"):
-        raw_bytes = bytes(raw_bytes_py.to_py())
+        return bytes(raw_bytes_py.to_py())
     elif isinstance(raw_bytes_py, (bytes, bytearray)):
-        raw_bytes = bytes(raw_bytes_py)
-    else:
-        raw_bytes = bytes(raw_bytes_py)
+        return bytes(raw_bytes_py)
+    return bytes(raw_bytes_py)
+
+def _py_validate_bytes(raw_bytes_py):
+    raw_bytes = _to_bytes(raw_bytes_py)
+    # Recuperação dos bytes de transporte originais do QR (Latin-1 / UTF-8 / CP932)
+    target_bytes = _decode_qr_bytes(raw_bytes)
 
     try:
-        doc = _checker.parse_bytes(raw_bytes)
+        doc = _checker.parse_bytes(target_bytes)
         res = present(doc)
     except Exception as exc:
         res = {
@@ -155,13 +160,12 @@ def _py_validate_bytes(raw_bytes_py):
     return json.dumps(res, ensure_ascii=False)
 
 def _py_is_vio(raw_bytes_py):
-    if hasattr(raw_bytes_py, "to_py"):
-        raw_bytes = bytes(raw_bytes_py.to_py())
-    elif isinstance(raw_bytes_py, (bytes, bytearray)):
-        raw_bytes = bytes(raw_bytes_py)
-    else:
-        raw_bytes = bytes(raw_bytes_py)
-    return is_vio_or_cin_qr(raw_bytes)
+    raw_bytes = _to_bytes(raw_bytes_py)
+    # Testa todos os candidatos de transporte para identificar envelope oficial VIO/CIN
+    for cand in _decode_qr_bytes_candidates(raw_bytes):
+        if is_vio_or_cin_qr(cand):
+            return True
+    return False
       `);
 
       self.engineReady = true;
@@ -198,6 +202,20 @@ async function decodeBarcodesFromImageData(imageData) {
   });
 }
 
+// Auxiliar para identificar o primeiro código oficial VIO/CIN numa lista de barcodes
+function findVioBarcode(barcodeList) {
+  if (!barcodeList || !barcodeList.length || !self.pyodide) return null;
+  const pyIsVio = self.pyodide.globals.get('_py_is_vio');
+  for (const b of barcodeList) {
+    if (b.bytes && b.bytes.length > 0) {
+      if (pyIsVio(b.bytes)) {
+        return b;
+      }
+    }
+  }
+  return null;
+}
+
 // Processa arquivo de imagem
 async function processImageFile(file) {
   await initEngine();
@@ -212,9 +230,13 @@ async function processImageFile(file) {
   let imageData = ctx.getImageData(0, 0, w, h);
 
   let barcodes = await decodeBarcodesFromImageData(imageData);
+  let selected = findVioBarcode(barcodes);
+  let fallbackBarcode = barcodes.length > 0 ? barcodes[0] : null;
 
-  // Escalonamento de resolução progressivo se nada for encontrado (conforme vioweb.core.qr)
-  if (barcodes.length === 0 && (w < 1600 || h < 1600)) {
+  // Escalonamento progressivo (2x, 3x) se nenhum QR oficial VIO/CIN foi achado na resolução base.
+  // Mesmo que um QR Code externo (ex: selo de cartório TJ) tenha sido detectado em 1x,
+  // continuamos ampliando até achar o QR VIO ou esgotar as tentativas.
+  if (!selected && (w < 1600 || h < 1600)) {
     for (const scale of [2, 3]) {
       const upW = w * scale;
       const upH = h * scale;
@@ -224,12 +246,23 @@ async function processImageFile(file) {
       upCtx.imageSmoothingEnabled = false;
       upCtx.drawImage(bitmap, 0, 0, upW, upH);
       const upData = upCtx.getImageData(0, 0, upW, upH);
-      barcodes = await decodeBarcodesFromImageData(upData);
-      if (barcodes.length > 0) break;
+      const scaledBarcodes = await decodeBarcodesFromImageData(upData);
+      const vioHit = findVioBarcode(scaledBarcodes);
+      if (vioHit) {
+        selected = vioHit;
+        break;
+      }
+      if (!fallbackBarcode && scaledBarcodes.length > 0) {
+        fallbackBarcode = scaledBarcodes[0];
+      }
     }
   }
 
-  if (barcodes.length === 0) {
+  if (!selected) {
+    selected = fallbackBarcode;
+  }
+
+  if (!selected) {
     return {
       is_parsed: false,
       is_authentic: false,
@@ -243,23 +276,7 @@ async function processImageFile(file) {
     };
   }
 
-  // Priorização Multi-QR: seleciona o QR oficial VIO/CIN se presente
-  const pyIsVio = self.pyodide.globals.get('_py_is_vio');
-  let selected = null;
-  for (const b of barcodes) {
-    if (b.bytes && b.bytes.length > 0) {
-      const isVio = pyIsVio(b.bytes);
-      if (isVio) {
-        selected = b;
-        break;
-      }
-    }
-  }
-  if (!selected) {
-    selected = barcodes[0];
-  }
-
-  // Validação criptográfica no Pyodide
+  // Validação criptográfica no Pyodide (com recuperação de bytes de transporte)
   const pyValidate = self.pyodide.globals.get('_py_validate_bytes');
   const resJson = pyValidate(selected.bytes);
   return JSON.parse(resJson);
@@ -297,19 +314,8 @@ async function processImageData(imageData) {
   }
 
   // Priorização Multi-QR: seleciona o QR oficial VIO/CIN se presente
-  const pyIsVio = self.pyodide.globals.get('_py_is_vio');
-  let selected = null;
-  let isVioFound = false;
-
-  for (const b of barcodes) {
-    if (b.bytes && b.bytes.length > 0) {
-      if (pyIsVio(b.bytes)) {
-        selected = b;
-        isVioFound = true;
-        break;
-      }
-    }
-  }
+  let selected = findVioBarcode(barcodes);
+  const isVioFound = !!selected;
 
   if (!selected) {
     selected = barcodes[0];

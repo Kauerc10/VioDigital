@@ -155,6 +155,36 @@ def generate_sitemap_xml() -> str:
     )
 
 
+def _build_wheel_pure_python(wheels_dir: Path) -> Path:
+    """Fallback puro Python para gerar a wheel do vioweb sem depender de ferramentas externas."""
+    import zipfile
+
+    wheels_dir.mkdir(parents=True, exist_ok=True)
+    target_whl = wheels_dir / "vioweb-0.2.0-py3-none-any.whl"
+    src_pkg = ROOT_DIR / "src" / "vioweb"
+    dist_info = "vioweb-0.2.0.dist-info"
+
+    with zipfile.ZipFile(target_whl, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        for p in src_pkg.rglob("*"):
+            if p.is_file() and "__pycache__" not in p.parts:
+                if "vendor" in p.parts or "wheels" in p.parts:
+                    continue
+                rel = p.relative_to(src_pkg)
+                z.write(p, arcname=f"vioweb/{rel.as_posix()}")
+
+        z.writestr(
+            f"{dist_info}/METADATA",
+            "Metadata-Version: 2.1\nName: vioweb\nVersion: 0.2.0\nSummary: Verificador Serpro VIO e CIN\n",
+        )
+        z.writestr(
+            f"{dist_info}/WHEEL",
+            "Wheel-Version: 1.0\nGenerator: vioweb-internal (0.2.0)\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+        )
+        z.writestr(f"{dist_info}/top_level.txt", "vioweb\n")
+
+    return target_whl
+
+
 def build_wheel(wheels_dir: Path) -> Path | None:
     wheels_dir.mkdir(parents=True, exist_ok=True)
     # Reutiliza wheel em cache se já existir e não for a pasta de destino
@@ -191,8 +221,12 @@ def build_wheel(wheels_dir: Path) -> Path | None:
         except Exception:
             continue
 
-    built = list(wheels_dir.glob("vioweb-*.whl"))
-    return built[0] if built else None
+    # Fallback autossuficiente caso nenhum comando de build do sistema tenha sucedido
+    try:
+        return _build_wheel_pure_python(wheels_dir)
+    except Exception:
+        built = list(wheels_dir.glob("vioweb-*.whl"))
+        return built[0] if built else None
 
 
 def _download_file(url: str, dest: Path) -> None:
@@ -274,6 +308,21 @@ def ensure_vendor_assets(vendor_dir: Path, download: bool = True) -> None:
                 print(f"Aviso: Não foi possível baixar {fname}: {e}")
         if cached_file.exists():
             shutil.copy2(cached_file, pdfjs_target / fname)
+
+
+def ensure_runtime_assets(target_web_dir: Path, download: bool = True) -> None:
+    """Provisiona todos os ativos necessários para o pipeline de execução 100% no navegador."""
+    static_dir = target_web_dir / "static"
+    wheels_dir = static_dir / "wheels"
+    vendor_dir = static_dir / "vendor"
+
+    # 1. Garante a wheel do vioweb
+    has_wheel = wheels_dir.exists() and bool(list(wheels_dir.glob("vioweb-*.whl")))
+    if not has_wheel:
+        build_wheel(wheels_dir)
+
+    # 2. Garante os ativos de terceiros (ZXing WASM, Pyodide, PDF.js)
+    ensure_vendor_assets(vendor_dir, download=download)
 
 
 def _safe_clean_dir(path: Path) -> None:

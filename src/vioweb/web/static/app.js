@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let scannerWorker = null;
   let isEngineReady = false;
+  let workerFailed = false;
 
   function handleEngineReady() {
     isEngineReady = true;
@@ -156,10 +157,26 @@ document.addEventListener('DOMContentLoaded', () => {
           renderResult(data);
         } else if (msg.type === 'error' || msg.type === 'init_error') {
           console.warn('Motor offline alerta:', msg.error || msg.message);
+          workerFailed = true;
+          if (engineStatusText) {
+            engineStatusText.textContent = 'Validação local pronta · Motor Python local';
+          }
+          if (engineStatusStep) {
+            engineStatusStep.textContent = 'LOCAL';
+            engineStatusStep.style.display = 'inline-block';
+          }
         }
       };
       scannerWorker.onerror = (err) => {
         console.warn('Erro ao carregar worker local:', err);
+        workerFailed = true;
+        if (engineStatusText) {
+          engineStatusText.textContent = 'Validação local pronta · Motor Python local';
+        }
+        if (engineStatusStep) {
+          engineStatusStep.textContent = 'LOCAL';
+          engineStatusStep.style.display = 'inline-block';
+        }
       };
     } catch (err) {
       console.warn('Web Workers não disponíveis:', err);
@@ -755,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isPdf = (file.type === 'application/pdf') || /\.pdf$/i.test(file.name || '');
 
     // Se for PDF e o motor local estiver disponível, rasteriza e valida localmente
-    if (isPdf && scannerWorker && window.pdfjsLib) {
+    if (isPdf && scannerWorker && !workerFailed && window.pdfjsLib) {
       try {
         await processPdfFile(file);
       } catch (err) {
@@ -767,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Se for imagem e o worker estiver disponível, processa 100% no navegador (sem tráfego de rede)
-    if (isImage && scannerWorker) {
+    if (isImage && scannerWorker && !workerFailed) {
       const loadingH3 = loadingState.querySelector('h3');
       const loadingP = loadingState.querySelector('p');
       if (loadingH3) loadingH3.textContent = 'Validando no seu navegador (offline)...';
@@ -781,11 +798,36 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    loadingState.style.display = 'none';
-    dropzone.style.display = 'flex';
-    showError(
-      'Formato de arquivo não suportado. Por favor, envie um arquivo PDF, imagem (PNG, JPG, WebP) ou cole uma captura de tela com Ctrl + V.'
-    );
+    // Fallback: se o worker WebAssembly do navegador não estiver ativo/carregado,
+    // valida via backend local (Python nativo) mantendo a premissa de processamento local
+    try {
+      const loadingH3 = loadingState.querySelector('h3');
+      const loadingP = loadingState.querySelector('p');
+      if (loadingH3) loadingH3.textContent = 'Validando no motor local...';
+      if (loadingP) loadingP.textContent = 'Processando documento via servidor local Python';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      const resp = await fetch('/api/documents/verify', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await resp.json();
+      loadingState.style.display = 'none';
+      if (!resp.ok || !data.is_parsed) {
+        showError(data.detail || data.message || (data.errors && data.errors.join(' | ')) || 'Erro ao validar documento.');
+        dropzone.style.display = 'flex';
+        return;
+      }
+      currentResult = data;
+      renderResult(data);
+      return;
+    } catch (err) {
+      loadingState.style.display = 'none';
+      dropzone.style.display = 'flex';
+      showError(`Erro na validação do documento: ${err.message}`);
+      return;
+    }
   }
 
   function showError(msg) {

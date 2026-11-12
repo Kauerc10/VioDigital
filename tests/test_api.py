@@ -384,3 +384,23 @@ def test_api_cors_no_credentials():
         },
     )
     assert response.headers.get("access-control-allow-credentials") is None or response.headers.get("access-control-allow-credentials") == "false"
+
+
+def test_api_csp_strict_no_unsafe_eval():
+    response = client.get("/")
+    assert response.status_code == 200
+    csp = response.headers.get("Content-Security-Policy", "")
+    assert "wasm-unsafe-eval" in csp
+    assert "'unsafe-eval'" not in csp
+
+
+def test_ensure_runtime_assets_provisions_correctly(tmp_path):
+    from vioweb.build_static import ensure_runtime_assets
+
+    fake_web = tmp_path / "web"
+    fake_web.mkdir(parents=True)
+    ensure_runtime_assets(fake_web, download=False)
+
+    wheels_dir = fake_web / "static" / "wheels"
+    assert wheels_dir.exists()
+    assert bool(list(wheels_dir.glob("vioweb-*.whl")))
