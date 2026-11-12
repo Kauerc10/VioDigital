@@ -310,7 +310,12 @@ def decode_qr(image, *, upscale_steps: tuple[int, ...] = UPSCALE_STEPS) -> Optio
 
 
 def _open_image(source: Union[bytes, bytearray, str, Path]):
-    from PIL import Image
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise MissingDependencyError(
+            "Pillow é necessário para processar imagens. Instale com: pip install 'vioweb[vision]'"
+        ) from exc
 
     if isinstance(source, (bytes, bytearray)):
         return Image.open(io.BytesIO(source))
@@ -321,6 +326,38 @@ def _open_image(source: Union[bytes, bytearray, str, Path]):
 
 def read_qr_from_image(source: Union[bytes, bytearray, str, Path]) -> bytes:
     """Lê o primeiro QRCode de uma imagem (caminho, bytes ou ``PIL.Image``)."""
+    try:
+        from PIL import Image  # noqa: F401
+    except ImportError as exc:
+        raise MissingDependencyError(
+            "Pillow é necessário para processar imagens. Instale com: pip install 'vioweb[vision]'"
+        ) from exc
+
+    has_decoder = False
+    try:
+        import zxingcpp  # noqa: F401
+        has_decoder = True
+    except ImportError:
+        pass
+    if not has_decoder:
+        try:
+            import pyzbar  # noqa: F401
+            has_decoder = True
+        except ImportError:
+            pass
+    if not has_decoder:
+        try:
+            import cv2  # noqa: F401
+            has_decoder = True
+        except ImportError:
+            pass
+
+    if not has_decoder:
+        raise MissingDependencyError(
+            "Um decodificador de visão (zxing-cpp, pyzbar ou opencv) é necessário para ler imagens. "
+            "Instale com: pip install 'vioweb[vision]'"
+        )
+
     image = _open_image(source)
 
     data = decode_qr(image)
@@ -346,77 +383,60 @@ def read_qr_from_pdf(source: Union[str, Path, bytes, bytearray], *, dpi: int = 3
     except ImportError:
         pymupdf = None
 
+    if pymupdf is None:
+        raise MissingDependencyError(
+            "PyMuPDF é necessário para ler PDFs. Instale com: pip install 'vioweb[vision]'"
+        )
+
     fallback_non_vio: Optional[bytes] = None
 
-    if pymupdf is not None:
-        from PIL import Image
-
-        if isinstance(source, (bytes, bytearray)):
-            doc = pymupdf.open(stream=source, filetype="pdf")
-        else:
-            doc = pymupdf.open(str(source))
-
-        try:
-            # 1) Tenta primeiro extrair imagens embutidas diretamente nas páginas (muito rápido e sem perda)
-            for page in doc:
-                try:
-                    for img_info in page.get_images(full=True):
-                        xref = img_info[0]
-                        base_img = doc.extract_image(xref)
-                        if base_img and base_img.get("image"):
-                            pil_img = Image.open(io.BytesIO(base_img["image"]))
-                            data = decode_qr(pil_img)
-                            if data is not None:
-                                if is_vio_or_cin_qr(data):
-                                    return data
-                                if fallback_non_vio is None:
-                                    fallback_non_vio = data
-                except Exception:
-                    continue
-
-            # 2) Renderiza cada página em alta resolução (300 DPI e 600 DPI)
-            for render_dpi in (dpi, dpi * 2):
-                zoom = render_dpi / 72
-                matrix = pymupdf.Matrix(zoom, zoom)
-                for page in doc:
-                    pixmap = page.get_pixmap(matrix=matrix, alpha=False)
-                    image = Image.frombytes(
-                        "RGB", (pixmap.width, pixmap.height), pixmap.samples
-                    )
-                    data = decode_qr(image)
-                    if data is not None:
-                        if is_vio_or_cin_qr(data):
-                            return data
-                        if fallback_non_vio is None:
-                            fallback_non_vio = data
-        finally:
-            doc.close()
-
-        if fallback_non_vio is not None:
-            return fallback_non_vio
-        raise QRCodeNotFoundError("nenhum QRCode encontrado no PDF")
-
-    # fallback: pdf2image
     try:
-        from pdf2image import convert_from_path, convert_from_bytes
+        from PIL import Image
     except ImportError as exc:
         raise MissingDependencyError(
-            "leitura de PDF requer 'PyMuPDF' ou 'pdf2image'"
+            "Pillow é necessário para ler PDFs. Instale com: pip install 'vioweb[vision]'"
         ) from exc
 
-    for render_dpi in (dpi, dpi * 2):
-        images = (
-            convert_from_bytes(source, dpi=render_dpi)
-            if isinstance(source, (bytes, bytearray))
-            else convert_from_path(str(source), dpi=render_dpi)
-        )
-        for image in images:
-            data = decode_qr(image)
-            if data is not None:
-                if is_vio_or_cin_qr(data):
-                    return data
-                if fallback_non_vio is None:
-                    fallback_non_vio = data
+    if isinstance(source, (bytes, bytearray)):
+        doc = pymupdf.open(stream=source, filetype="pdf")
+    else:
+        doc = pymupdf.open(str(source))
+
+    try:
+        # 1) Tenta primeiro extrair imagens embutidas diretamente nas páginas (muito rápido e sem perda)
+        for page in doc:
+            try:
+                for img_info in page.get_images(full=True):
+                    xref = img_info[0]
+                    base_img = doc.extract_image(xref)
+                    if base_img and base_img.get("image"):
+                        pil_img = Image.open(io.BytesIO(base_img["image"]))
+                        data = decode_qr(pil_img)
+                        if data is not None:
+                            if is_vio_or_cin_qr(data):
+                                return data
+                            if fallback_non_vio is None:
+                                fallback_non_vio = data
+            except Exception:
+                continue
+
+        # 2) Renderiza cada página em alta resolução (300 DPI e 600 DPI)
+        for render_dpi in (dpi, dpi * 2):
+            zoom = render_dpi / 72
+            matrix = pymupdf.Matrix(zoom, zoom)
+            for page in doc:
+                pixmap = page.get_pixmap(matrix=matrix, alpha=False)
+                image = Image.frombytes(
+                    "RGB", (pixmap.width, pixmap.height), pixmap.samples
+                )
+                data = decode_qr(image)
+                if data is not None:
+                    if is_vio_or_cin_qr(data):
+                        return data
+                    if fallback_non_vio is None:
+                        fallback_non_vio = data
+    finally:
+        doc.close()
 
     if fallback_non_vio is not None:
         return fallback_non_vio
