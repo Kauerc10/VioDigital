@@ -26,6 +26,7 @@ const PRECACHE_ASSETS = [
   '/static/style.css',
   '/static/app.js',
   '/static/bpgdec8.js',
+  '/static/camera-quality.js',
   '/static/scanner.worker.js',
   '/static/templates-data.json',
   '/static/wheels/viodigital-0.2.0-py3-none-any.whl',

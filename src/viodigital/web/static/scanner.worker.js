@@ -26,6 +26,63 @@ function resolveAssetUrl(relPath) {
   return new URL(relPath, self.location.href).href;
 }
 
+function loadCameraQualityHelper() {
+  if (self.VioCameraQuality) return self.VioCameraQuality;
+  try {
+    importScripts(resolveAssetUrl('camera-quality.js'));
+  } catch (_) {}
+  return self.VioCameraQuality || null;
+}
+
+function buildEnhancedImageData(imageData, amount = 1.3) {
+  const cq = loadCameraQualityHelper();
+  if (!cq || !imageData || !imageData.data) return null;
+  const enhancedRgba = cq.enhanceForQr(imageData.data, imageData.width, imageData.height, amount);
+  return new ImageData(enhancedRgba, imageData.width, imageData.height);
+}
+
+function upscaleImageData(imageData, scale) {
+  if (typeof OffscreenCanvas === 'undefined' || !imageData) return null;
+  const targetW = Math.round(imageData.width * scale);
+  const targetH = Math.round(imageData.height * scale);
+  if (targetW <= 0 || targetH <= 0) return null;
+
+  const srcCanvas = new OffscreenCanvas(imageData.width, imageData.height);
+  const srcCtx = srcCanvas.getContext('2d');
+  if (!srcCtx) return null;
+  srcCtx.putImageData(imageData, 0, 0);
+
+  const dstCanvas = new OffscreenCanvas(targetW, targetH);
+  const dstCtx = dstCanvas.getContext('2d');
+  if (!dstCtx) return null;
+  dstCtx.imageSmoothingEnabled = true;
+  dstCtx.imageSmoothingQuality = 'high';
+  dstCtx.drawImage(srcCanvas, 0, 0, targetW, targetH);
+  return dstCtx.getImageData(0, 0, targetW, targetH);
+}
+
+async function processCameraImageDataWithFallback(imageData, enhance = true) {
+  let output = await processImageData(imageData);
+  if (output.foundVio || !enhance || !imageData) return output;
+
+  const enhanced = buildEnhancedImageData(imageData, 1.3);
+  if (enhanced) {
+    output = await processImageData(enhanced);
+    if (output.foundVio) return output;
+  }
+
+  const maxDim = Math.max(imageData.width, imageData.height);
+  if (maxDim < 1100) {
+    const scale = Math.min(2.4, Math.max(1.75, 1100 / Math.max(1, maxDim)));
+    const upscaled = upscaleImageData(imageData, scale);
+    if (upscaled) {
+      const upscaledEnhanced = buildEnhancedImageData(upscaled, 1.15) || upscaled;
+      output = await processImageData(upscaledEnhanced);
+    }
+  }
+  return output;
+}
+
 async function initEngine() {
   if (self.engineReady) return;
   if (self.initPromise) return self.initPromise;
@@ -405,7 +462,8 @@ self.onmessage = async (e) => {
 
   if (type === 'verify_imagedata') {
     try {
-      const { foundVio, result } = await processImageData(msg.imageData);
+      const enhance = msg.enhance !== false;
+      const { foundVio, result } = await processCameraImageDataWithFallback(msg.imageData, enhance);
       self.postMessage({
         type: 'verify_imagedata_result',
         id,
