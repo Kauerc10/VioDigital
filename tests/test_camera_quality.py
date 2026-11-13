@@ -22,15 +22,14 @@ def test_camera_focus_ui_and_worker_assets_served():
     assert root.status_code == 200
     html = root.text
     for expected_id in (
-        'id="camera-focus-ring"',
-        'id="camera-focus-badge"',
         'id="camera-zoom-select"',
-        'id="btn-refocus-camera"',
         'id="btn-torch-camera"',
         'id="camera-focus-distance"',
-        '/static/camera-quality.js',
     ):
         assert expected_id in html
+    assert 'id="camera-focus-badge"' not in html
+    assert 'id="btn-refocus-camera"' not in html
+    assert 'id="camera-focus-ring"' not in html
 
     cq_res = client.get("/static/camera-quality.js")
     assert cq_res.status_code == 200
