@@ -21,6 +21,7 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     assert (dist / "404.html").exists()
     assert (dist / "static" / "style.css").exists()
     assert (dist / "static" / "app.js").exists()
+    assert (dist / "static" / "camera-quality.js").exists()
     assert (dist / "static" / "scanner.worker.js").exists()
     assert (dist / "static" / "wheels").exists()
     assert any((dist / "static" / "wheels").glob("viodigital-*.whl"))

@@ -10,9 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const cameraPanel = document.getElementById('camera-panel');
   const cameraStage = document.getElementById('camera-stage');
   const cameraVideo = document.getElementById('camera-video');
+  const cameraFocusRing = document.getElementById('camera-focus-ring');
+  const cameraFocusBadge = document.getElementById('camera-focus-badge');
   const cameraSelect = document.getElementById('camera-select');
+  const cameraZoomSelect = document.getElementById('camera-zoom-select');
   const cameraStatusText = document.getElementById('camera-status-text');
   const btnMirrorCamera = document.getElementById('btn-mirror-camera');
+  const btnRefocusCamera = document.getElementById('btn-refocus-camera');
+  const btnTorchCamera = document.getElementById('btn-torch-camera');
+  const cameraFocusDistanceWrap = document.getElementById('camera-focus-distance-wrap');
+  const cameraFocusDistance = document.getElementById('camera-focus-distance');
   const btnCloseCamera = document.getElementById('btn-close-camera');
   const btnCaptureNow = document.getElementById('btn-capture-now');
 
@@ -62,9 +69,24 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentResult = null;
   let mediaStream = null;
   let scanIntervalId = null;
+  let focusMonitorIntervalId = null;
   let isScanningFrame = false;
   let scanAttemptCount = 0;
   let isMirrored = localStorage.getItem('viodigital_camera_mirrored') === '1';
+  let desiredCameraZoom = Math.max(1, parseFloat(localStorage.getItem('viodigital_camera_zoom') || '1') || 1);
+  let activeDigitalZoom = 1;
+  let lastMeasuredSharpness = 0;
+  let isTorchOn = false;
+  let focusRingTimeoutId = null;
+  let focusRestoreTimeoutId = null;
+  let refocusCaptureTimeoutId = null;
+
+  const focusMetricCanvas = document.createElement('canvas');
+  focusMetricCanvas.width = 200;
+  focusMetricCanvas.height = 200;
+  const focusMetricCtx = focusMetricCanvas.getContext('2d', { willReadFrequently: true });
+  const burstCandidateCanvas = document.createElement('canvas');
+  const burstCandidateCtx = burstCandidateCanvas.getContext('2d', { willReadFrequently: true });
 
   let scannerWorker = null;
   let isEngineReady = false;
@@ -422,7 +444,61 @@ document.addEventListener('DOMContentLoaded', () => {
     isMirrored = !isMirrored;
     localStorage.setItem('viodigital_camera_mirrored', isMirrored ? '1' : '0');
     cameraVideo.classList.toggle('mirrored', isMirrored);
+    applyCameraVideoTransform();
   });
+
+  if (cameraStage) {
+    cameraStage.addEventListener('click', (e) => {
+      if (!mediaStream) return;
+      const rect = cameraStage.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const normX = (e.clientX - rect.left) / rect.width;
+      const normY = (e.clientY - rect.top) / rect.height;
+      triggerCameraRefocus(normX, normY);
+    });
+  }
+
+  if (btnRefocusCamera) {
+    btnRefocusCamera.addEventListener('click', () => {
+      if (!mediaStream) return;
+      triggerCameraRefocus(0.5, 0.5);
+      if (refocusCaptureTimeoutId) clearTimeout(refocusCaptureTimeoutId);
+      refocusCaptureTimeoutId = setTimeout(() => {
+        if (mediaStream && !isScanningFrame) {
+          captureCameraFrame(true);
+        }
+      }, 280);
+    });
+  }
+
+  if (cameraZoomSelect) {
+    cameraZoomSelect.addEventListener('change', () => {
+      applyDesiredZoom(cameraZoomSelect.value);
+    });
+  }
+
+  if (btnTorchCamera) {
+    btnTorchCamera.addEventListener('click', async () => {
+      const track = getActiveVideoTrack();
+      if (!track) return;
+      const nextTorch = !isTorchOn;
+      const applied = await applyTrackConstraintSafely(track, { torch: nextTorch });
+      if (applied) {
+        isTorchOn = nextTorch;
+        btnTorchCamera.classList.toggle('is-on', isTorchOn);
+        btnTorchCamera.textContent = isTorchOn ? 'Luz: ON' : 'Luz';
+      }
+    });
+  }
+
+  if (cameraFocusDistance) {
+    cameraFocusDistance.addEventListener('input', () => {
+      const track = getActiveVideoTrack();
+      if (!track) return;
+      const val = Number(cameraFocusDistance.value);
+      applyTrackConstraintSafely(track, { focusMode: 'manual', focusDistance: val });
+    });
+  }
 
   cameraSelect.addEventListener('change', () => {
     const deviceId = cameraSelect.value;
@@ -462,6 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraPanel.style.display = 'flex';
     cameraStage.classList.remove('scan-success');
     cameraVideo.classList.toggle('mirrored', isMirrored);
+    applyCameraVideoTransform();
 
     const savedDeviceId = localStorage.getItem('viodigital_camera_id') || '';
     await startCameraStream(savedDeviceId);
@@ -490,6 +567,267 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.warn('Não foi possível listar dispositivos de vídeo:', err);
     }
+  }
+
+  function getActiveVideoTrack() {
+    if (!mediaStream || typeof mediaStream.getVideoTracks !== 'function') return null;
+    const tracks = mediaStream.getVideoTracks();
+    return tracks && tracks.length ? tracks[0] : null;
+  }
+
+  function applyCameraVideoTransform() {
+    if (!cameraVideo) return;
+    const parts = [];
+    if (isMirrored) parts.push('scaleX(-1)');
+    if (activeDigitalZoom > 1.02) parts.push(`scale(${activeDigitalZoom.toFixed(2)})`);
+    cameraVideo.style.transform = parts.join(' ');
+  }
+
+  function showFocusRing(normX = 0.5, normY = 0.5) {
+    if (!cameraFocusRing) return;
+    const clampedX = Math.min(0.92, Math.max(0.08, normX));
+    const clampedY = Math.min(0.92, Math.max(0.08, normY));
+    cameraFocusRing.style.left = `${(clampedX * 100).toFixed(1)}%`;
+    cameraFocusRing.style.top = `${(clampedY * 100).toFixed(1)}%`;
+    cameraFocusRing.classList.remove('active');
+    void cameraFocusRing.offsetWidth;
+    cameraFocusRing.classList.add('active');
+    if (focusRingTimeoutId) clearTimeout(focusRingTimeoutId);
+    focusRingTimeoutId = setTimeout(() => {
+      if (cameraFocusRing) cameraFocusRing.classList.remove('active');
+    }, 750);
+  }
+
+  async function applyTrackConstraintSafely(track, constraintObj) {
+    if (!track || typeof track.applyConstraints !== 'function') return false;
+    try {
+      await track.applyConstraints({ advanced: [constraintObj] });
+      return true;
+    } catch (_) {
+      try {
+        await track.applyConstraints(constraintObj);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  async function applyDesiredZoom(zoomValue) {
+    desiredCameraZoom = Math.max(1, Math.min(3, Number(zoomValue) || 1));
+    localStorage.setItem('viodigital_camera_zoom', String(desiredCameraZoom));
+    if (cameraZoomSelect) {
+      const targetStr = String(desiredCameraZoom);
+      if ([...cameraZoomSelect.options].some(opt => opt.value === targetStr)) {
+        cameraZoomSelect.value = targetStr;
+      }
+    }
+
+    const track = getActiveVideoTrack();
+    const caps = track && typeof track.getCapabilities === 'function' ? (track.getCapabilities() || {}) : {};
+    let hwZoomApplied = 1;
+
+    if (track && caps.zoom && typeof caps.zoom.max === 'number' && caps.zoom.max > 1) {
+      const minZ = Math.max(1, caps.zoom.min || 1);
+      const maxZ = caps.zoom.max;
+      const targetHw = Math.min(maxZ, Math.max(minZ, desiredCameraZoom));
+      const ok = await applyTrackConstraintSafely(track, { zoom: targetHw });
+      if (ok) {
+        hwZoomApplied = targetHw;
+      }
+    }
+
+    activeDigitalZoom = desiredCameraZoom / hwZoomApplied;
+    if (activeDigitalZoom < 1.02) activeDigitalZoom = 1;
+    applyCameraVideoTransform();
+  }
+
+  async function initCameraHardwareControls() {
+    isTorchOn = false;
+    if (btnTorchCamera) {
+      btnTorchCamera.hidden = true;
+      btnTorchCamera.classList.remove('is-on');
+      btnTorchCamera.textContent = 'Luz';
+    }
+    if (cameraFocusDistanceWrap) {
+      cameraFocusDistanceWrap.hidden = true;
+    }
+
+    const track = getActiveVideoTrack();
+    const caps = track && typeof track.getCapabilities === 'function' ? (track.getCapabilities() || {}) : {};
+    const modes = Array.isArray(caps.focusMode) ? caps.focusMode : [];
+
+    if (track && modes.includes('continuous')) {
+      await applyTrackConstraintSafely(track, { focusMode: 'continuous' });
+    } else if (track && modes.includes('single-shot')) {
+      await applyTrackConstraintSafely(track, { focusMode: 'single-shot' });
+    }
+
+    if (track && caps.torch === true && btnTorchCamera) {
+      btnTorchCamera.hidden = false;
+    }
+
+    if (
+      track &&
+      caps.focusDistance &&
+      typeof caps.focusDistance.min === 'number' &&
+      typeof caps.focusDistance.max === 'number' &&
+      caps.focusDistance.max > caps.focusDistance.min &&
+      modes.includes('manual') &&
+      cameraFocusDistanceWrap &&
+      cameraFocusDistance
+    ) {
+      const fd = caps.focusDistance;
+      cameraFocusDistance.min = String(fd.min);
+      cameraFocusDistance.max = String(fd.max);
+      cameraFocusDistance.step = String(fd.step || ((fd.max - fd.min) / 25));
+      const settings = typeof track.getSettings === 'function' ? (track.getSettings() || {}) : {};
+      cameraFocusDistance.value = String(
+        typeof settings.focusDistance === 'number' ? settings.focusDistance : (fd.min + fd.max) / 2
+      );
+      cameraFocusDistanceWrap.hidden = false;
+    }
+
+    await applyDesiredZoom(desiredCameraZoom);
+  }
+
+  async function triggerCameraRefocus(normX = 0.5, normY = 0.5) {
+    showFocusRing(normX, normY);
+    const track = getActiveVideoTrack();
+    if (!track) return;
+    const caps = typeof track.getCapabilities === 'function' ? (track.getCapabilities() || {}) : {};
+    const settings = typeof track.getSettings === 'function' ? (track.getSettings() || {}) : {};
+    const modes = Array.isArray(caps.focusMode) ? caps.focusMode : [];
+
+    const unmirroredX = isMirrored ? 1 - normX : normX;
+    const poiX = Math.min(1, Math.max(0, 0.5 + (unmirroredX - 0.5) / Math.max(1, activeDigitalZoom)));
+    const poiY = Math.min(1, Math.max(0, 0.5 + (normY - 0.5) / Math.max(1, activeDigitalZoom)));
+
+    if (modes.includes('single-shot')) {
+      const constraint = { focusMode: 'single-shot' };
+      if ('pointsOfInterest' in caps || 'pointsOfInterest' in settings) {
+        constraint.pointsOfInterest = [{ x: poiX, y: poiY }];
+      }
+      await applyTrackConstraintSafely(track, constraint);
+      if (modes.includes('continuous')) {
+        if (focusRestoreTimeoutId) clearTimeout(focusRestoreTimeoutId);
+        focusRestoreTimeoutId = setTimeout(() => {
+          const activeTrack = getActiveVideoTrack();
+          if (activeTrack) {
+            applyTrackConstraintSafely(activeTrack, { focusMode: 'continuous' });
+          }
+        }, 700);
+      }
+    } else if (modes.includes('continuous')) {
+      await applyTrackConstraintSafely(track, { focusMode: 'continuous' });
+    }
+  }
+
+  function updateFocusBadge(score) {
+    lastMeasuredSharpness = score;
+    if (!cameraFocusBadge) return;
+    cameraFocusBadge.classList.remove('good', 'medium', 'low');
+    cameraFocusBadge.title = `Índice óptico de nitidez: ${Math.round(score)}`;
+    if (score >= 260) {
+      cameraFocusBadge.classList.add('good');
+      cameraFocusBadge.textContent = 'Nitidez: Boa';
+    } else if (score >= 95) {
+      cameraFocusBadge.classList.add('medium');
+      cameraFocusBadge.textContent = 'Nitidez: Média';
+    } else {
+      cameraFocusBadge.classList.add('low');
+      cameraFocusBadge.textContent = 'Nitidez: Baixa · Afaste ou use Zoom';
+    }
+  }
+
+  function computeTargetCropRect(vw, vh, useCenterCrop) {
+    const zoom = Math.max(1, activeDigitalZoom || 1);
+    if (useCenterCrop) {
+      const baseSide = Math.min(vw, vh) * 0.72;
+      const side = Math.max(220, Math.min(Math.min(vw, vh), Math.floor(baseSide / zoom)));
+      return {
+        sx: Math.floor((vw - side) / 2),
+        sy: Math.floor((vh - side) / 2),
+        sw: side,
+        sh: side,
+      };
+    }
+    const cropW = Math.max(260, Math.min(vw, Math.floor(vw / zoom)));
+    const cropH = Math.max(220, Math.min(vh, Math.floor(vh / zoom)));
+    return {
+      sx: Math.floor((vw - cropW) / 2),
+      sy: Math.floor((vh - cropH) / 2),
+      sw: cropW,
+      sh: cropH,
+    };
+  }
+
+  function scoreSourceCanvasSharpness(sourceCanvas, width, height) {
+    if (!focusMetricCtx || !window.VioCameraQuality || !width || !height) return 0;
+    const mw = focusMetricCanvas.width;
+    const mh = focusMetricCanvas.height;
+    focusMetricCtx.drawImage(sourceCanvas, 0, 0, width, height, 0, 0, mw, mh);
+    const metricImg = focusMetricCtx.getImageData(0, 0, mw, mh);
+    return window.VioCameraQuality.sharpnessScore(metricImg.data, mw, mh);
+  }
+
+  function measureLiveFocusIndicator() {
+    if (!mediaStream || !cameraVideo || cameraVideo.readyState < 2 || isScanningFrame) return;
+    if (!focusMetricCtx || !window.VioCameraQuality) return;
+    const vw = cameraVideo.videoWidth;
+    const vh = cameraVideo.videoHeight;
+    if (!vw || !vh) return;
+    const { sx, sy, sw, sh } = computeTargetCropRect(vw, vh, true);
+    const mw = focusMetricCanvas.width;
+    const mh = focusMetricCanvas.height;
+    focusMetricCtx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, mw, mh);
+    const metricImg = focusMetricCtx.getImageData(0, 0, mw, mh);
+    updateFocusBadge(window.VioCameraQuality.sharpnessScore(metricImg.data, mw, mh));
+  }
+
+  async function captureBestFrameToCaptureCanvas(useCenterCrop, burstCount) {
+    const count = Math.max(1, burstCount || 1);
+    let bestScore = -1;
+    let capturedAny = false;
+
+    for (let i = 0; i < count; i += 1) {
+      if (!mediaStream || !cameraVideo || cameraVideo.readyState < 2) return false;
+      const vw = cameraVideo.videoWidth;
+      const vh = cameraVideo.videoHeight;
+      if (!vw || !vh) return false;
+
+      const { sx, sy, sw, sh } = computeTargetCropRect(vw, vh, useCenterCrop);
+      if (count === 1 || !burstCandidateCtx) {
+        captureCanvas.width = sw;
+        captureCanvas.height = sh;
+        captureCtx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
+        const s = scoreSourceCanvasSharpness(captureCanvas, sw, sh);
+        updateFocusBadge(s);
+        return true;
+      }
+
+      burstCandidateCanvas.width = sw;
+      burstCandidateCanvas.height = sh;
+      burstCandidateCtx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
+      const score = scoreSourceCanvasSharpness(burstCandidateCanvas, sw, sh);
+
+      if (!capturedAny || score > bestScore) {
+        bestScore = score;
+        capturedAny = true;
+        captureCanvas.width = sw;
+        captureCanvas.height = sh;
+        captureCtx.drawImage(burstCandidateCanvas, 0, 0);
+      }
+
+      if (i < count - 1) {
+        await new Promise(resolve => setTimeout(resolve, 55));
+      }
+    }
+
+    if (capturedAny && bestScore >= 0) {
+      updateFocusBadge(bestScore);
+    }
+    return capturedAny;
   }
 
   async function startCameraStream(preferredDeviceId = '') {
@@ -530,6 +868,8 @@ document.addEventListener('DOMContentLoaded', () => {
       await cameraVideo.play();
     } catch (_) {}
 
+    await initCameraHardwareControls();
+
     scanAttemptCount = 0;
     cameraStatusText.textContent = 'Posicione o QR Code do documento físico ou tela dentro da área de leitura';
 
@@ -537,6 +877,12 @@ document.addEventListener('DOMContentLoaded', () => {
     scanIntervalId = setInterval(() => {
       captureCameraFrame(false);
     }, 550);
+
+    if (focusMonitorIntervalId) clearInterval(focusMonitorIntervalId);
+    focusMonitorIntervalId = setInterval(() => {
+      measureLiveFocusIndicator();
+    }, 450);
+    setTimeout(measureLiveFocusIndicator, 250);
   }
 
   function stopCameraStreamOnly() {
@@ -544,13 +890,48 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(scanIntervalId);
       scanIntervalId = null;
     }
+    if (focusMonitorIntervalId) {
+      clearInterval(focusMonitorIntervalId);
+      focusMonitorIntervalId = null;
+    }
+    if (focusRingTimeoutId) {
+      clearTimeout(focusRingTimeoutId);
+      focusRingTimeoutId = null;
+    }
+    if (focusRestoreTimeoutId) {
+      clearTimeout(focusRestoreTimeoutId);
+      focusRestoreTimeoutId = null;
+    }
+    if (refocusCaptureTimeoutId) {
+      clearTimeout(refocusCaptureTimeoutId);
+      refocusCaptureTimeoutId = null;
+    }
     isScanningFrame = false;
+    isTorchOn = false;
+    activeDigitalZoom = 1;
+    lastMeasuredSharpness = 0;
+    if (btnTorchCamera) {
+      btnTorchCamera.hidden = true;
+      btnTorchCamera.classList.remove('is-on');
+      btnTorchCamera.textContent = 'Luz';
+    }
+    if (cameraFocusDistanceWrap) {
+      cameraFocusDistanceWrap.hidden = true;
+    }
+    if (cameraFocusRing) {
+      cameraFocusRing.classList.remove('active');
+    }
+    if (cameraFocusBadge) {
+      cameraFocusBadge.classList.remove('good', 'medium', 'low');
+      cameraFocusBadge.textContent = 'Nitidez: Medindo…';
+    }
     if (mediaStream) {
       mediaStream.getTracks().forEach(track => track.stop());
       mediaStream = null;
     }
     if (cameraVideo) {
       cameraVideo.srcObject = null;
+      cameraVideo.style.transform = '';
     }
   }
 
@@ -573,20 +954,11 @@ document.addEventListener('DOMContentLoaded', () => {
     scanAttemptCount += 1;
 
     try {
-      // Alterna entre recorte central de alta densidade (mira) e quadro completo
+      // Alterna entre recorte central de alta densidade (mira) e quadro completo (respeitando zoom ativo)
       const useCenterCrop = !isManual && (scanAttemptCount % 2 === 1);
-      if (useCenterCrop) {
-        const side = Math.floor(Math.min(vw, vh) * 0.72);
-        const sx = Math.floor((vw - side) / 2);
-        const sy = Math.floor((vh - side) / 2);
-        captureCanvas.width = side;
-        captureCanvas.height = side;
-        captureCtx.drawImage(cameraVideo, sx, sy, side, side, 0, 0, side, side);
-      } else {
-        captureCanvas.width = vw;
-        captureCanvas.height = vh;
-        captureCtx.drawImage(cameraVideo, 0, 0, vw, vh);
-      }
+      const burstCount = isManual ? 3 : (lastMeasuredSharpness > 0 && lastMeasuredSharpness < 180 ? 3 : 2);
+      const ok = await captureBestFrameToCaptureCanvas(useCenterCrop, burstCount);
+      if (!ok || !mediaStream) return;
 
       if (scannerWorker) {
         const imgData = captureCtx.getImageData(0, 0, captureCanvas.width, captureCanvas.height);
@@ -606,6 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
             imageData: imgData,
             pageIndex: 1,
             totalPages: 1,
+            enhance: true,
           });
         });
 

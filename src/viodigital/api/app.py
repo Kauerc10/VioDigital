@@ -49,6 +49,7 @@ async def add_security_headers(request, call_next):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         elif path.startswith("/static/wheels/") or path in (
             "/static/app.js",
+            "/static/camera-quality.js",
             "/static/scanner.worker.js",
             "/static/style.css",
             "/",
