@@ -10,13 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const cameraPanel = document.getElementById('camera-panel');
   const cameraStage = document.getElementById('camera-stage');
   const cameraVideo = document.getElementById('camera-video');
-  const cameraFocusRing = document.getElementById('camera-focus-ring');
-  const cameraFocusBadge = document.getElementById('camera-focus-badge');
   const cameraSelect = document.getElementById('camera-select');
   const cameraZoomSelect = document.getElementById('camera-zoom-select');
   const cameraStatusText = document.getElementById('camera-status-text');
   const btnMirrorCamera = document.getElementById('btn-mirror-camera');
-  const btnRefocusCamera = document.getElementById('btn-refocus-camera');
   const btnTorchCamera = document.getElementById('btn-torch-camera');
   const cameraFocusDistanceWrap = document.getElementById('camera-focus-distance-wrap');
   const cameraFocusDistance = document.getElementById('camera-focus-distance');
@@ -69,24 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentResult = null;
   let mediaStream = null;
   let scanIntervalId = null;
-  let focusMonitorIntervalId = null;
   let isScanningFrame = false;
   let scanAttemptCount = 0;
   let isMirrored = localStorage.getItem('viodigital_camera_mirrored') === '1';
   let desiredCameraZoom = Math.max(1, parseFloat(localStorage.getItem('viodigital_camera_zoom') || '1') || 1);
   let activeDigitalZoom = 1;
-  let lastMeasuredSharpness = 0;
   let isTorchOn = false;
-  let focusRingTimeoutId = null;
-  let focusRestoreTimeoutId = null;
-  let refocusCaptureTimeoutId = null;
-
-  const focusMetricCanvas = document.createElement('canvas');
-  focusMetricCanvas.width = 200;
-  focusMetricCanvas.height = 200;
-  const focusMetricCtx = focusMetricCanvas.getContext('2d', { willReadFrequently: true });
-  const burstCandidateCanvas = document.createElement('canvas');
-  const burstCandidateCtx = burstCandidateCanvas.getContext('2d', { willReadFrequently: true });
 
   let scannerWorker = null;
   let isEngineReady = false;
@@ -447,30 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
     applyCameraVideoTransform();
   });
 
-  if (cameraStage) {
-    cameraStage.addEventListener('click', (e) => {
-      if (!mediaStream) return;
-      const rect = cameraStage.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const normX = (e.clientX - rect.left) / rect.width;
-      const normY = (e.clientY - rect.top) / rect.height;
-      triggerCameraRefocus(normX, normY);
-    });
-  }
-
-  if (btnRefocusCamera) {
-    btnRefocusCamera.addEventListener('click', () => {
-      if (!mediaStream) return;
-      triggerCameraRefocus(0.5, 0.5);
-      if (refocusCaptureTimeoutId) clearTimeout(refocusCaptureTimeoutId);
-      refocusCaptureTimeoutId = setTimeout(() => {
-        if (mediaStream && !isScanningFrame) {
-          captureCameraFrame(true);
-        }
-      }, 280);
-    });
-  }
-
   if (cameraZoomSelect) {
     cameraZoomSelect.addEventListener('change', () => {
       applyDesiredZoom(cameraZoomSelect.value);
@@ -583,21 +544,6 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraVideo.style.transform = parts.join(' ');
   }
 
-  function showFocusRing(normX = 0.5, normY = 0.5) {
-    if (!cameraFocusRing) return;
-    const clampedX = Math.min(0.92, Math.max(0.08, normX));
-    const clampedY = Math.min(0.92, Math.max(0.08, normY));
-    cameraFocusRing.style.left = `${(clampedX * 100).toFixed(1)}%`;
-    cameraFocusRing.style.top = `${(clampedY * 100).toFixed(1)}%`;
-    cameraFocusRing.classList.remove('active');
-    void cameraFocusRing.offsetWidth;
-    cameraFocusRing.classList.add('active');
-    if (focusRingTimeoutId) clearTimeout(focusRingTimeoutId);
-    focusRingTimeoutId = setTimeout(() => {
-      if (cameraFocusRing) cameraFocusRing.classList.remove('active');
-    }, 750);
-  }
-
   async function applyTrackConstraintSafely(track, constraintObj) {
     if (!track || typeof track.applyConstraints !== 'function') return false;
     try {
@@ -691,55 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
     await applyDesiredZoom(desiredCameraZoom);
   }
 
-  async function triggerCameraRefocus(normX = 0.5, normY = 0.5) {
-    showFocusRing(normX, normY);
-    const track = getActiveVideoTrack();
-    if (!track) return;
-    const caps = typeof track.getCapabilities === 'function' ? (track.getCapabilities() || {}) : {};
-    const settings = typeof track.getSettings === 'function' ? (track.getSettings() || {}) : {};
-    const modes = Array.isArray(caps.focusMode) ? caps.focusMode : [];
-
-    const unmirroredX = isMirrored ? 1 - normX : normX;
-    const poiX = Math.min(1, Math.max(0, 0.5 + (unmirroredX - 0.5) / Math.max(1, activeDigitalZoom)));
-    const poiY = Math.min(1, Math.max(0, 0.5 + (normY - 0.5) / Math.max(1, activeDigitalZoom)));
-
-    if (modes.includes('single-shot')) {
-      const constraint = { focusMode: 'single-shot' };
-      if ('pointsOfInterest' in caps || 'pointsOfInterest' in settings) {
-        constraint.pointsOfInterest = [{ x: poiX, y: poiY }];
-      }
-      await applyTrackConstraintSafely(track, constraint);
-      if (modes.includes('continuous')) {
-        if (focusRestoreTimeoutId) clearTimeout(focusRestoreTimeoutId);
-        focusRestoreTimeoutId = setTimeout(() => {
-          const activeTrack = getActiveVideoTrack();
-          if (activeTrack) {
-            applyTrackConstraintSafely(activeTrack, { focusMode: 'continuous' });
-          }
-        }, 700);
-      }
-    } else if (modes.includes('continuous')) {
-      await applyTrackConstraintSafely(track, { focusMode: 'continuous' });
-    }
-  }
-
-  function updateFocusBadge(score) {
-    lastMeasuredSharpness = score;
-    if (!cameraFocusBadge) return;
-    cameraFocusBadge.classList.remove('good', 'medium', 'low');
-    cameraFocusBadge.title = `Índice óptico de nitidez: ${Math.round(score)}`;
-    if (score >= 260) {
-      cameraFocusBadge.classList.add('good');
-      cameraFocusBadge.textContent = 'Nitidez: Boa';
-    } else if (score >= 95) {
-      cameraFocusBadge.classList.add('medium');
-      cameraFocusBadge.textContent = 'Nitidez: Média';
-    } else {
-      cameraFocusBadge.classList.add('low');
-      cameraFocusBadge.textContent = 'Nitidez: Baixa · Afaste ou use Zoom';
-    }
-  }
-
   function computeTargetCropRect(vw, vh, useCenterCrop) {
     const zoom = Math.max(1, activeDigitalZoom || 1);
     if (useCenterCrop) {
@@ -760,74 +657,6 @@ document.addEventListener('DOMContentLoaded', () => {
       sw: cropW,
       sh: cropH,
     };
-  }
-
-  function scoreSourceCanvasSharpness(sourceCanvas, width, height) {
-    if (!focusMetricCtx || !window.VioCameraQuality || !width || !height) return 0;
-    const mw = focusMetricCanvas.width;
-    const mh = focusMetricCanvas.height;
-    focusMetricCtx.drawImage(sourceCanvas, 0, 0, width, height, 0, 0, mw, mh);
-    const metricImg = focusMetricCtx.getImageData(0, 0, mw, mh);
-    return window.VioCameraQuality.sharpnessScore(metricImg.data, mw, mh);
-  }
-
-  function measureLiveFocusIndicator() {
-    if (!mediaStream || !cameraVideo || cameraVideo.readyState < 2 || isScanningFrame) return;
-    if (!focusMetricCtx || !window.VioCameraQuality) return;
-    const vw = cameraVideo.videoWidth;
-    const vh = cameraVideo.videoHeight;
-    if (!vw || !vh) return;
-    const { sx, sy, sw, sh } = computeTargetCropRect(vw, vh, true);
-    const mw = focusMetricCanvas.width;
-    const mh = focusMetricCanvas.height;
-    focusMetricCtx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, mw, mh);
-    const metricImg = focusMetricCtx.getImageData(0, 0, mw, mh);
-    updateFocusBadge(window.VioCameraQuality.sharpnessScore(metricImg.data, mw, mh));
-  }
-
-  async function captureBestFrameToCaptureCanvas(useCenterCrop, burstCount) {
-    const count = Math.max(1, burstCount || 1);
-    let bestScore = -1;
-    let capturedAny = false;
-
-    for (let i = 0; i < count; i += 1) {
-      if (!mediaStream || !cameraVideo || cameraVideo.readyState < 2) return false;
-      const vw = cameraVideo.videoWidth;
-      const vh = cameraVideo.videoHeight;
-      if (!vw || !vh) return false;
-
-      const { sx, sy, sw, sh } = computeTargetCropRect(vw, vh, useCenterCrop);
-      if (count === 1 || !burstCandidateCtx) {
-        captureCanvas.width = sw;
-        captureCanvas.height = sh;
-        captureCtx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
-        const s = scoreSourceCanvasSharpness(captureCanvas, sw, sh);
-        updateFocusBadge(s);
-        return true;
-      }
-
-      burstCandidateCanvas.width = sw;
-      burstCandidateCanvas.height = sh;
-      burstCandidateCtx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
-      const score = scoreSourceCanvasSharpness(burstCandidateCanvas, sw, sh);
-
-      if (!capturedAny || score > bestScore) {
-        bestScore = score;
-        capturedAny = true;
-        captureCanvas.width = sw;
-        captureCanvas.height = sh;
-        captureCtx.drawImage(burstCandidateCanvas, 0, 0);
-      }
-
-      if (i < count - 1) {
-        await new Promise(resolve => setTimeout(resolve, 55));
-      }
-    }
-
-    if (capturedAny && bestScore >= 0) {
-      updateFocusBadge(bestScore);
-    }
-    return capturedAny;
   }
 
   async function startCameraStream(preferredDeviceId = '') {
@@ -877,12 +706,6 @@ document.addEventListener('DOMContentLoaded', () => {
     scanIntervalId = setInterval(() => {
       captureCameraFrame(false);
     }, 550);
-
-    if (focusMonitorIntervalId) clearInterval(focusMonitorIntervalId);
-    focusMonitorIntervalId = setInterval(() => {
-      measureLiveFocusIndicator();
-    }, 450);
-    setTimeout(measureLiveFocusIndicator, 250);
   }
 
   function stopCameraStreamOnly() {
@@ -890,26 +713,9 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(scanIntervalId);
       scanIntervalId = null;
     }
-    if (focusMonitorIntervalId) {
-      clearInterval(focusMonitorIntervalId);
-      focusMonitorIntervalId = null;
-    }
-    if (focusRingTimeoutId) {
-      clearTimeout(focusRingTimeoutId);
-      focusRingTimeoutId = null;
-    }
-    if (focusRestoreTimeoutId) {
-      clearTimeout(focusRestoreTimeoutId);
-      focusRestoreTimeoutId = null;
-    }
-    if (refocusCaptureTimeoutId) {
-      clearTimeout(refocusCaptureTimeoutId);
-      refocusCaptureTimeoutId = null;
-    }
     isScanningFrame = false;
     isTorchOn = false;
     activeDigitalZoom = 1;
-    lastMeasuredSharpness = 0;
     if (btnTorchCamera) {
       btnTorchCamera.hidden = true;
       btnTorchCamera.classList.remove('is-on');
@@ -917,13 +723,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (cameraFocusDistanceWrap) {
       cameraFocusDistanceWrap.hidden = true;
-    }
-    if (cameraFocusRing) {
-      cameraFocusRing.classList.remove('active');
-    }
-    if (cameraFocusBadge) {
-      cameraFocusBadge.classList.remove('good', 'medium', 'low');
-      cameraFocusBadge.textContent = 'Nitidez: Medindo…';
     }
     if (mediaStream) {
       mediaStream.getTracks().forEach(track => track.stop());
@@ -956,9 +755,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // Alterna entre recorte central de alta densidade (mira) e quadro completo (respeitando zoom ativo)
       const useCenterCrop = !isManual && (scanAttemptCount % 2 === 1);
-      const burstCount = isManual ? 3 : (lastMeasuredSharpness > 0 && lastMeasuredSharpness < 180 ? 3 : 2);
-      const ok = await captureBestFrameToCaptureCanvas(useCenterCrop, burstCount);
-      if (!ok || !mediaStream) return;
+      const { sx, sy, sw, sh } = computeTargetCropRect(vw, vh, useCenterCrop);
+      captureCanvas.width = sw;
+      captureCanvas.height = sh;
+      captureCtx.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, sw, sh);
 
       if (scannerWorker) {
         const imgData = captureCtx.getImageData(0, 0, captureCanvas.width, captureCanvas.height);

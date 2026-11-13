@@ -179,6 +179,22 @@
             </div>
             <div class="camera-controls-top">
               <select id="camera-select" class="camera-select" title="Selecionar dispositivo de câmera"></select>
+              <label class="camera-zoom-control" for="camera-zoom-select" title="Aproxima o QR Code sem encostar o documento na lente (ideal para webcams de foco fixo)">
+                <span>Zoom</span>
+                <select id="camera-zoom-select" class="camera-zoom-select">
+                  <option value="1">1,0x</option>
+                  <option value="1.4">1,4x</option>
+                  <option value="1.8">1,8x</option>
+                  <option value="2.3">2,3x</option>
+                </select>
+              </label>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-torch-camera" hidden title="Alternar flash/luz da câmera">
+                Luz
+              </button>
+              <label class="camera-focus-distance-wrap" id="camera-focus-distance-wrap" hidden for="camera-focus-distance">
+                <span>Foco</span>
+                <input type="range" id="camera-focus-distance" class="camera-focus-distance" />
+              </label>
               <button type="button" class="btn btn-secondary btn-sm" id="btn-mirror-camera" title="Espelhar imagem da câmera">
                 Espelhar
               </button>
@@ -188,9 +204,8 @@
             </div>
           </div>
 
-          <div class="camera-stage" id="camera-stage" title="Clique ou toque na imagem para refocar no ponto desejado">
+          <div class="camera-stage" id="camera-stage">
             <video id="camera-video" autoplay playsinline muted></video>
-            <div class="camera-focus-ring" id="camera-focus-ring" aria-hidden="true"></div>
             <div class="camera-overlay">
               <div class="qr-reticle" id="qr-reticle">
                 <span class="corner tl"></span>
@@ -202,37 +217,8 @@
             </div>
           </div>
 
-          <div class="camera-pro-bar" id="camera-pro-bar">
-            <div class="camera-pro-status">
-              <span class="camera-focus-badge" id="camera-focus-badge" title="Medidor em tempo real de nitidez óptica dentro da mira">
-                Nitidez: Medindo…
-              </span>
-            </div>
-            <div class="camera-pro-controls">
-              <label class="camera-zoom-control" for="camera-zoom-select">
-                <span>Zoom</span>
-                <select id="camera-zoom-select" class="camera-zoom-select" title="Aproxime o QR Code sem encostar o documento na lente (ideal para webcams de foco fixo)">
-                  <option value="1">1,0x (Padrão)</option>
-                  <option value="1.4">1,4x (Perto)</option>
-                  <option value="1.8">1,8x (Foco fixo)</option>
-                  <option value="2.3">2,3x (Distante)</option>
-                </select>
-              </label>
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-refocus-camera" title="Reacionar autofoco e priorizar o quadro mais nítido">
-                Refocar
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-torch-camera" hidden title="Alternar flash/luz da câmera">
-                Luz
-              </button>
-              <label class="camera-focus-distance-wrap" id="camera-focus-distance-wrap" hidden for="camera-focus-distance">
-                <span>Foco manual</span>
-                <input type="range" id="camera-focus-distance" class="camera-focus-distance" />
-              </label>
-            </div>
-          </div>
-
           <div class="camera-footer">
-            <span class="camera-tip">Dica: Em webcams de foco fixo, mantenha o documento a 20–35 cm e use o Zoom (1,4x ou 1,8x) em vez de encostar na lente. Clique no vídeo para refocar.</span>
+            <span class="camera-tip">Dica: Em webcams de foco fixo, afaste o documento para 20–35 cm e use o Zoom (1,4x ou 1,8x), evitando reflexo direto de luz sobre o QR Code.</span>
             <div class="camera-footer-actions">
               <button type="button" class="btn btn-primary" id="btn-capture-now">
                 CAPTURAR AGORA (ESPAÇO)
@@ -399,7 +385,6 @@
   <div class="toast" id="toast">Copiado para a área de transferência</div>
   <script src="/static/vendor/pdfjs/pdf.min.js"></script>
   <script src="/static/bpgdec8.js"></script>
-  <script src="/static/camera-quality.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>
