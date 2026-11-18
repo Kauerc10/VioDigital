@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reportar Vulnerabilidade de Segurança (Privado)
+    url: https://github.com/Kauerc10/VioDigital/security/advisories/new
+    about: Canal privado para relatar falhas criptográficas, de certificados ou de privacidade/LGPD. Nunca use issues públicas.
+  - name: Documentação de Privacidade e LGPD
+    url: https://viodigital.com.br/privacidade
+    about: Saiba como o VioDigital valida documentos 100% localmente no navegador sem enviar dados pessoais a servidores.

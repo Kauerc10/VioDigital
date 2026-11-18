@@ -1,0 +1,56 @@
+name: Sugestão de Melhoria (Feature Request)
+description: Proponha uma nova funcionalidade, melhoria de usabilidade notarial, acessibilidade ou otimização.
+title: "[Melhoria]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > ⚠️ **AVISO DE PRIVACIDADE E ARQUITETURA (LGPD / ADR 0001 & 0003):**
+        > O VioDigital opera **100% offline** na validação de documentos, sem chamadas externas de rede e sem coleta de dados pessoais.
+        > **NUNCA anexe documentos reais de cidadãos** para ilustrar sua sugestão; use apenas exemplos fictícios/sintéticos.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área do Projeto
+      options:
+        - Interface Web / Produtividade Notarial
+        - Leitor Óptico / Webcam / Multi-QR
+        - Motor Criptográfico / Core Python
+        - API REST / Container Docker / Self-Hosted
+        - Documentação / Acessibilidade
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema ou necessidade essa melhoria resolve?
+      description: "Explique o contexto de uso (ex.: rotina em cartório, despachante, auditoria, self-hosting)."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solução Proposta
+      description: Descreva o comportamento esperado e eventuais detalhes técnicos.
+    validations:
+      required: true
+
+  - type: textarea
+    id: privacy_impact
+    attributes:
+      label: Alternativas Consideradas e Impacto em Privacidade (LGPD)
+      description: Confirme como a proposta mantém a validação local/offline e zero exposição de dados.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: lgpd_confirm
+    attributes:
+      label: Conformidade com LGPD e Arquitetura Offline
+      options:
+        - label: "Confirmo que a proposta preserva a execução 100% offline/LGPD (sem envio de documentos a APIs externas) e não contém dados reais."
+          required: true

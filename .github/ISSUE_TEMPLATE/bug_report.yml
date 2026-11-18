@@ -1,0 +1,80 @@
+name: Relato de Bug (Bug Report)
+description: Reporte um erro na validação de documentos, leitura de QR Code, interface web, CLI ou container.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > ⚠️ **AVISO CRÍTICO DE PRIVACIDADE (LGPD):**
+        > **NUNCA anexe documentos reais de cidadãos** (PDF, foto, captura de tela, string bruta de QR Code, CPF, placa, chassi, RENAVAM ou foto biométrica).
+        > Todas as issues públicas ficam visíveis a qualquer pessoa. Para relatar problemas, descreva o cenário sem dados pessoais ou utilize apenas **vetores sintéticos/fictícios**.
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Modo de Execução / Ambiente
+      description: Onde o problema ocorreu?
+      options:
+        - Site Público (viodigital.com.br — Browser WASM)
+        - Container Docker / Self-Hosted
+        - Servidor Local FastAPI (python -m viodigital)
+        - Linha de Comando / CLI (viodigital)
+        - Biblioteca Python (import viodigital)
+    validations:
+      required: true
+
+  - type: input
+    id: version_os
+    attributes:
+      label: Versão do VioDigital, Sistema Operacional e Navegador
+      description: Informe a versão do pacote/tag, navegador ou sistema onde ocorreu a falha.
+      placeholder: "ex.: v0.2.0, Chrome 131 no Windows 11 / Docker Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Problema
+      description: Descreva de forma clara e objetiva o erro observado.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para Reproduzir (somente dados sintéticos)
+      description: Informe os passos exatos para reproduzir o comportamento sem incluir documentos reais.
+      placeholder: |
+        1. Abrir ...
+        2. Selecionar vetor sintético de teste ...
+        3. Observar erro ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_vs_actual
+    attributes:
+      label: Comportamento Esperado vs. Comportamento Atual
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Console do DevTools (sem dados pessoais)
+      description: Cole mensagens de erro ou stack traces garantindo que não contenham payloads reais de QR Code ou dados pessoais.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: lgpd_confirm
+    attributes:
+      label: Declaração de Privacidade e LGPD
+      options:
+        - label: "Confirmo que esta issue NÃO contém documentos reais, PDFs/imagens de terceiros, CPF, placa, chassi, foto biométrica ou QR Code real."
+          required: true
+        - label: "Verifiquei as issues existentes para evitar duplicidade."
+          required: false
