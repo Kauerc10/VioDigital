@@ -199,3 +199,12 @@ def test_api_serves_opengraph_banner_and_page_meta_tags() -> None:
         assert page_res.status_code == 200
         assert CANONICAL_OG_IMAGE_URL in page_res.text
         _assert_opengraph_tags(page_res.text, route)
+
+
+def test_release_container_workflow_metadata_expressions_valid() -> None:
+    """Seam 2: release-container.yml usa expressões GitHub válidas no docker/metadata-action."""
+    workflow_path: Path = ROOT_DIR / ".github" / "workflows" / "release-container.yml"
+    workflow_text: str = workflow_path.read_text(encoding="utf-8")
+    assert "{{is_tag}}" not in workflow_text
+    assert "enable=${{ startsWith(github.ref, 'refs/tags/') }}" in workflow_text
+
