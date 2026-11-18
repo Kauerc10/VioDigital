@@ -15,8 +15,8 @@ from viodigital.build_static import SEO_DOC_PAGES, build
 from viodigital.core.__meta__ import __version__
 
 ROOT_DIR: Final[Path] = Path(__file__).resolve().parent.parent
-CANONICAL_OG_IMAGE_URL: Final[str] = "https://viodigital.com.br/static/og-banner.png"
-LEGACY_DOMAINS: Final[tuple[str, ...]] = ("vioweb.vercel.app", "viodigital.vercel.app")
+CANONICAL_OG_IMAGE_URL: Final[str] = "https://vioweb.vercel.app/static/og-banner.png"
+LEGACY_DOMAINS: Final[tuple[str, ...]] = ("viodigital.com.br", "viodigital.vercel.app")
 REQUIRED_README_ASSETS: Final[tuple[str, ...]] = (
     "docs/assets/demo-validation.gif",
     "docs/assets/screenshot-result.png",

@@ -443,7 +443,7 @@ async def page_validar_documento(slug: str):
         raise HTTPException(status_code=404)
 
     html = index_file.read_text(encoding="utf-8")
-    canonical_url = f"https://viodigital.com.br/validar-{slug}"
+    canonical_url = f"https://vioweb.vercel.app/validar-{slug}"
     html = re.sub(r"<title>.*?</title>", f"<title>{meta['title']}</title>", html, flags=re.DOTALL)
     html = re.sub(
         r'<meta name="description" content=".*?">',

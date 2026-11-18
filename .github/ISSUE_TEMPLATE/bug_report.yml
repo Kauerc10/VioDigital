@@ -16,7 +16,7 @@ body:
       label: Modo de Execução / Ambiente
       description: Onde o problema ocorreu?
       options:
-        - Site Público (viodigital.com.br — Browser WASM)
+        - Site Público (vioweb.vercel.app — Browser WASM)
         - Container Docker / Self-Hosted
         - Servidor Local FastAPI (python -m viodigital)
         - Linha de Comando / CLI (viodigital)

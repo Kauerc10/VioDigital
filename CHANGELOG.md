@@ -18,7 +18,7 @@ e este projeto adere ao [Versionamento Semântico (SemVer)](https://semver.org/l
 - Arquivos de governança comunitária (`CODE_OF_CONDUCT.md`, `SECURITY.md`, templates de issue/PR com alertas LGPD) e empacotamento self-hosted em container (`Dockerfile` multi-stage não-root, `docker-compose.yml` e workflow de publicação no GHCR).
 
 ### Changed
-- Rebranding completo do projeto de `VioWeb` para **VioDigital** com domínio canônico `https://viodigital.com.br` e shims mínimos de compatibilidade retroativa em `src/vioweb/`.
+- Rebranding completo do projeto de `VioWeb` para **VioDigital** com domínio canônico `https://vioweb.vercel.app` e shims mínimos de compatibilidade retroativa em `src/vioweb/`.
 - Reorganização das dependências opcionais em `pyproject.toml` (`server`, `vision`, `dev`) com desacoplamento claro de `MissingDependencyError`.
 - Camada unificada de apresentação de campos (`present()`) compartilhada entre CLI, API REST e WebAssembly.
 

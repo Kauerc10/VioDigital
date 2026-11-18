@@ -119,7 +119,7 @@ SEO_DOC_PAGES: Dict[str, Dict[str, str]] = {
 
 
 def render_seo_page(index_html: str, slug: str, meta: Dict[str, str]) -> str:
-    canonical_url = f"https://viodigital.com.br/validar-{slug}"
+    canonical_url = f"https://vioweb.vercel.app/validar-{slug}"
     html = re.sub(r"<title>.*?</title>", f"<title>{meta['title']}</title>", index_html, flags=re.DOTALL)
     html = re.sub(
         r'<meta name="description" content=".*?">',
@@ -193,7 +193,7 @@ def generate_robots_txt() -> str:
         "User-agent: *\n"
         "Allow: /\n"
         "Disallow: /api/documents/\n\n"
-        "Sitemap: https://viodigital.com.br/sitemap.xml\n"
+        "Sitemap: https://vioweb.vercel.app/sitemap.xml\n"
     )
 
 
@@ -205,26 +205,26 @@ def generate_llms_txt() -> str:
         "# VioDigital\n\n"
         "> Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO).\n\n"
         "## Links\n"
-        "- Site: https://viodigital.com.br/\n"
-        "- Documentos: https://viodigital.com.br/documentos\n"
-        "- Privacidade (LGPD): https://viodigital.com.br/privacidade\n"
-        "- API REST B2B: https://viodigital.com.br/api-comercial\n"
+        "- Site: https://vioweb.vercel.app/\n"
+        "- Documentos: https://vioweb.vercel.app/documentos\n"
+        "- Privacidade (LGPD): https://vioweb.vercel.app/privacidade\n"
+        "- API REST B2B: https://vioweb.vercel.app/api-comercial\n"
         "- Repositório: https://github.com/Kauerc10/VioDigital\n"
     )
 
 
 def generate_sitemap_xml() -> str:
     urls = [
-        ("https://viodigital.com.br/", "1.0"),
-        ("https://viodigital.com.br/documentos", "0.9"),
-        ("https://viodigital.com.br/privacidade", "0.9"),
-        ("https://viodigital.com.br/validar-crlv", "0.9"),
-        ("https://viodigital.com.br/validar-cnh", "0.9"),
-        ("https://viodigital.com.br/validar-atpv", "0.9"),
-        ("https://viodigital.com.br/validar-cin", "0.8"),
-        ("https://viodigital.com.br/validar-tie-marinha", "0.8"),
-        ("https://viodigital.com.br/apoiar", "0.7"),
-        ("https://viodigital.com.br/api-comercial", "0.7"),
+        ("https://vioweb.vercel.app/", "1.0"),
+        ("https://vioweb.vercel.app/documentos", "0.9"),
+        ("https://vioweb.vercel.app/privacidade", "0.9"),
+        ("https://vioweb.vercel.app/validar-crlv", "0.9"),
+        ("https://vioweb.vercel.app/validar-cnh", "0.9"),
+        ("https://vioweb.vercel.app/validar-atpv", "0.9"),
+        ("https://vioweb.vercel.app/validar-cin", "0.8"),
+        ("https://vioweb.vercel.app/validar-tie-marinha", "0.8"),
+        ("https://vioweb.vercel.app/apoiar", "0.7"),
+        ("https://vioweb.vercel.app/api-comercial", "0.7"),
     ]
     items = "\n".join(
         f"  <url>\n    <loc>{loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>{prio}</priority>\n  </url>"

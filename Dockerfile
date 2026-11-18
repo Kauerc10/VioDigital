@@ -29,7 +29,7 @@ FROM python:3.12-slim-bookworm AS runtime
 
 LABEL org.opencontainers.image.title="VioDigital" \
       org.opencontainers.image.description="Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO)" \
-      org.opencontainers.image.url="https://viodigital.com.br" \
+      org.opencontainers.image.url="https://vioweb.vercel.app" \
       org.opencontainers.image.source="https://github.com/Kauerc10/VioDigital" \
       org.opencontainers.image.licenses="MIT"
 

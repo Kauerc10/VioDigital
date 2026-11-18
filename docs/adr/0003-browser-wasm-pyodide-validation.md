@@ -1,7 +1,7 @@
 # ADR 0003: Validação Criptográfica 100% no Navegador via Pyodide/WebAssembly
 
 ## Contexto
-O VioDigital se apresentava como um validador offline, mas no ambiente de hospedagem web pública (`viodigital.com.br`), cada documento — PDF, imagem ou print colado via `Ctrl+V` — era transmitido via requisição HTTP `POST` para processamento no servidor backend.
+O VioDigital se apresentava como um validador offline, mas no ambiente de hospedagem web pública (`vioweb.vercel.app`), cada documento — PDF, imagem ou print colado via `Ctrl+V` — era transmitido via requisição HTTP `POST` para processamento no servidor backend.
 Para o usuário comum ou escrevente de cartório utilizando a versão pública, isso representava um risco de exposição de dados pessoais e veiculares (LGPD).
 Além disso, manter um backend serverless processando decodificações de imagens e computação criptográfica gerava custos operacionais, riscos de indisponibilidade e contradição com o posicionamento open source de "zero dados enviados a servidores".
 

@@ -346,20 +346,20 @@ def test_api_dedicated_pages_and_seo_routes():
         seo_page = client.get(f"/validar-{slug}")
         assert seo_page.status_code == 200
         assert expected in seo_page.text
-        assert f'href="https://viodigital.com.br/validar-{slug}"' in seo_page.text
+        assert f'href="https://vioweb.vercel.app/validar-{slug}"' in seo_page.text
 
 
 def test_api_seo_endpoints_and_metadata():
     robots = client.get("/robots.txt")
     assert robots.status_code == 200
-    assert "Sitemap: https://viodigital.com.br/sitemap.xml" in robots.text
+    assert "Sitemap: https://vioweb.vercel.app/sitemap.xml" in robots.text
     robots_head = client.head("/robots.txt")
     assert robots_head.status_code == 200
 
     sitemap = client.get("/sitemap.xml")
     assert sitemap.status_code == 200
-    assert "<loc>https://viodigital.com.br/</loc>" in sitemap.text
-    assert "<loc>https://viodigital.com.br/api-comercial</loc>" in sitemap.text
+    assert "<loc>https://vioweb.vercel.app/</loc>" in sitemap.text
+    assert "<loc>https://vioweb.vercel.app/api-comercial</loc>" in sitemap.text
     sitemap_head = client.head("/sitemap.xml")
     assert sitemap_head.status_code == 200
 

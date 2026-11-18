@@ -151,8 +151,10 @@ def test_static_build_csp_precache_sitemap_and_clean_wheel(tmp_path: Path):
 
     ET.fromstring((dist / "sitemap.xml").read_text(encoding="utf-8"))
     for seo_artifact in ("sitemap.xml", "robots.txt", "llms.txt"):
-        assert "viodigital.vercel.app" not in (dist / seo_artifact).read_text(encoding="utf-8")
-    assert "https://viodigital.com.br/api-comercial" in (dist / "llms.txt").read_text(encoding="utf-8")
+        artifact_text = (dist / seo_artifact).read_text(encoding="utf-8")
+        assert "viodigital.com.br" not in artifact_text
+        assert "viodigital.vercel.app" not in artifact_text
+    assert "https://vioweb.vercel.app/api-comercial" in (dist / "llms.txt").read_text(encoding="utf-8")
 
     wheels = list((dist / "static" / "wheels").glob("viodigital-*.whl"))
     assert len(wheels) == 1
@@ -234,7 +236,7 @@ def test_llms_txt_route_and_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyP
     client = TestClient(app)
     res = client.get("/llms.txt")
     assert res.status_code == 200
-    assert "https://viodigital.com.br/api-comercial" in res.text
+    assert "https://vioweb.vercel.app/api-comercial" in res.text
 
     empty_web = tmp_path / "empty_web"
     empty_web.mkdir()
@@ -242,7 +244,7 @@ def test_llms_txt_route_and_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(api_module, "WEB_DIR", empty_web)
 
     fallback_text = generate_llms_txt()
-    assert "https://viodigital.com.br/api-comercial" in fallback_text
+    assert "https://vioweb.vercel.app/api-comercial" in fallback_text
 
     fallback_res = client.get("/llms.txt")
     assert fallback_res.status_code == 200
@@ -250,12 +252,13 @@ def test_llms_txt_route_and_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
 
 def test_readme_uses_canonical_domain():
-    """Garante ausência de links legados viodigital.vercel.app e adoção de viodigital.com.br no README."""
+    """Garante ausência de domínios não adquiridos/legados e adoção de vioweb.vercel.app no README."""
     readme = (ROOT_DIR / "README.md").read_text(encoding="utf-8")
+    assert "viodigital.com.br" not in readme
     assert "viodigital.vercel.app" not in readme
-    assert "https://viodigital.com.br" in readme
-    assert "https://viodigital.com.br/privacidade" in readme
-    assert "https://viodigital.com.br/apoiar" in readme
+    assert "https://vioweb.vercel.app" in readme
+    assert "https://vioweb.vercel.app/privacidade" in readme
+    assert "https://vioweb.vercel.app/apoiar" in readme
 
 
 def test_vioweb_compatibility_shims_and_clean_tree():

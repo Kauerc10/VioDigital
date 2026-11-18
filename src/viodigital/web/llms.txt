@@ -20,12 +20,12 @@ O VioDigital é uma aplicação de conferência e validação notarial de docume
 - Biblioteca Python disponível para automação e integração em ERPs notariais.
 
 ## Links Canônicos
-- Site Oficial: https://viodigital.com.br/
-- Validador CRLV-e: https://viodigital.com.br/validar-crlv
-- Validador CNH: https://viodigital.com.br/validar-cnh
-- Validador ATPV-e: https://viodigital.com.br/validar-atpv
-- Validador CIN / Novo RG: https://viodigital.com.br/validar-cin
-- Catálogo de Documentos: https://viodigital.com.br/documentos
-- Política de Privacidade: https://viodigital.com.br/privacidade
-- API REST B2B: https://viodigital.com.br/api-comercial
+- Site Oficial: https://vioweb.vercel.app/
+- Validador CRLV-e: https://vioweb.vercel.app/validar-crlv
+- Validador CNH: https://vioweb.vercel.app/validar-cnh
+- Validador ATPV-e: https://vioweb.vercel.app/validar-atpv
+- Validador CIN / Novo RG: https://vioweb.vercel.app/validar-cin
+- Catálogo de Documentos: https://vioweb.vercel.app/documentos
+- Política de Privacidade: https://vioweb.vercel.app/privacidade
+- API REST B2B: https://vioweb.vercel.app/api-comercial
 - Repositório Open Source (MIT): https://github.com/Kauerc10/VioDigital

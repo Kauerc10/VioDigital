@@ -8,13 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
 [![Release: v0.2.0](https://img.shields.io/badge/Release-v0.2.0-15803d.svg)](https://github.com/Kauerc10/VioDigital/releases)
-[![Site: viodigital.com.br](https://img.shields.io/badge/Site-viodigital.com.br-3b7a28.svg)](https://viodigital.com.br)
+[![Site: vioweb.vercel.app](https://img.shields.io/badge/Site-vioweb.vercel.app-3b7a28.svg)](https://vioweb.vercel.app)
 [![Privacidade: 100% LGPD Offline](https://img.shields.io/badge/Privacidade-100%25_LGPD_Offline-1f6feb.svg)](docs/adr/0001-offline-cryptographic-validation.md)
 
-**Acesse gratuitamente no navegador (sem instalação):** [**https://viodigital.com.br**](https://viodigital.com.br)
+**Acesse gratuitamente no navegador (sem instalação):** [**https://vioweb.vercel.app**](https://vioweb.vercel.app)
 
 > [!NOTE]
-> **Aviso Legal e Não-Afiliação Institucional:** O **VioDigital** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs, ONR ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://viodigital.com.br/privacidade).
+> **Aviso Legal e Não-Afiliação Institucional:** O **VioDigital** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs, ONR ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://vioweb.vercel.app/privacidade).
 
 ---
 
@@ -63,7 +63,7 @@ O **VioDigital** nasceu diretamente dessa necessidade real dentro do cartório: 
 
 ### Opção 1 — Navegador / PWA (Zero Instalação)
 
-Acesse [**https://viodigital.com.br**](https://viodigital.com.br) diretamente em qualquer navegador moderno (Chrome, Edge, Firefox, Safari). Após o pré-carregamento inicial (~19 MB do runtime Pyodide/WASM), o Service Worker mantém tudo em cache local para operar **mesmo sem internet**.
+Acesse [**https://vioweb.vercel.app**](https://vioweb.vercel.app) diretamente em qualquer navegador moderno (Chrome, Edge, Firefox, Safari). Após o pré-carregamento inicial (~19 MB do runtime Pyodide/WASM), o Service Worker mantém tudo em cache local para operar **mesmo sem internet**.
 
 ### Opção 2 — Python (`pip` / Servidor Local / CLI / Biblioteca)
 
@@ -157,9 +157,9 @@ flowchart LR
 
 ## Privacidade (LGPD) e Auditoria Zero-Network no Navegador
 
-No VioDigital público (**`viodigital.com.br`**), **nenhum documento, CPF, placa, chassi ou foto sai do seu computador**. Você pode auditar essa garantia técnica em 30 segundos:
+No VioDigital público (**`vioweb.vercel.app`**), **nenhum documento, CPF, placa, chassi ou foto sai do seu computador**. Você pode auditar essa garantia técnica em 30 segundos:
 
-1. Acesse [**https://viodigital.com.br**](https://viodigital.com.br) e aguarde o selo **`WASM LOCAL`** aparecer no cabeçalho.
+1. Acesse [**https://vioweb.vercel.app**](https://vioweb.vercel.app) e aguarde o selo **`WASM LOCAL`** aparecer no cabeçalho.
 2. Abra o **DevTools** do navegador (`F12`) → aba **Rede (`Network`)** → marque **Preservar registro (`Preserve log`)**.
 3. Opcionalmente, ative o modo **Offline** no DevTools ou desconecte a internet do computador.
 4. Cole um print (`Ctrl+V`) ou arraste um PDF/imagem: confirme na aba Rede que **nenhuma requisição HTTP externa** é disparada durante toda a leitura e verificação.
@@ -171,13 +171,13 @@ Content-Security-Policy: default-src 'self'; connect-src 'self'; script-src 'sel
 
 * **`connect-src 'self'`:** O navegador bloqueia ativamente qualquer tentativa de `fetch`, `XHR` ou `WebSocket` para domínios terceiros.
 * **Zero `'unsafe-eval'` e zero fontes externas:** Apenas `'wasm-unsafe-eval'` para execução WebAssembly; combinado com `Referrer-Policy: no-referrer` e `X-Frame-Options: DENY`.
-* Essa garantia é testada continuamente no CI por Playwright em [`tests/test_e2e_privacy.py`](tests/test_e2e_privacy.py). Veja mais em [Política de Privacidade e LGPD](https://viodigital.com.br/privacidade) e no [ADR 0003](docs/adr/0003-browser-wasm-pyodide-validation.md).
+* Essa garantia é testada continuamente no CI por Playwright em [`tests/test_e2e_privacy.py`](tests/test_e2e_privacy.py). Veja mais em [Política de Privacidade e LGPD](https://vioweb.vercel.app/privacidade) e no [ADR 0003](docs/adr/0003-browser-wasm-pyodide-validation.md).
 
 ---
 
 ## Documentos Suportados (161 Templates Oficiais VIO + CIN)
 
-O motor embarca o catálogo oficial de **161 templates do Serpro/VIO** (`templates.json`) e as chaves públicas da **Carteira de Identidade Nacional (CIN)**. Consulte também o [catálogo pesquisável online](https://viodigital.com.br/documentos):
+O motor embarca o catálogo oficial de **161 templates do Serpro/VIO** (`templates.json`) e as chaves públicas da **Carteira de Identidade Nacional (CIN)**. Consulte também o [catálogo pesquisável online](https://vioweb.vercel.app/documentos):
 
 | Categoria | Documentos Oficiais Suportados |
 | :--- | :--- |
@@ -278,7 +278,7 @@ Se esta ferramenta economiza tempo e dinheiro no seu dia a dia, considere apoiar
 ```
 </details>
 
-Ou acesse a [página de apoio no VioDigital](https://viodigital.com.br/apoiar).
+Ou acesse a [página de apoio no VioDigital](https://vioweb.vercel.app/apoiar).
 
 ---
 

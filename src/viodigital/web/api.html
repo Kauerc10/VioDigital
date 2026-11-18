@@ -12,19 +12,19 @@
   <title>API VioDigital para Cartórios, Despachantes e Empresas — Validação REST Serpro / VIO</title>
   <meta name="description" content="Integre a leitura e validação criptográfica de documentos VIO (CRLV-e, CNH, ATPV-e, CIN e +160 templates) diretamente no seu sistema notarial, ERP de despachante, locadora ou seguradora via API REST.">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://viodigital.com.br/api-comercial">
+  <link rel="canonical" href="https://vioweb.vercel.app/api-comercial">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="pt_BR">
   <meta property="og:title" content="API VioDigital — Integração REST para ERPs de Cartório, Despachantes e Frotas">
   <meta property="og:description" content="Extraia campos estruturados, foto biométrica 3x4 e valide a assinatura digital ICP-Brasil/SENATRAN em milissegundos via API REST ou implantação On-Premise.">
-  <meta property="og:url" content="https://viodigital.com.br/api-comercial">
-  <meta property="og:image" content="https://viodigital.com.br/static/og-banner.png">
+  <meta property="og:url" content="https://vioweb.vercel.app/api-comercial">
+  <meta property="og:image" content="https://vioweb.vercel.app/static/og-banner.png">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="API VioDigital — Integração REST para Cartórios e Empresas">
   <meta name="twitter:description" content="Integre a leitura e validação criptográfica de documentos VIO diretamente no seu sistema notarial ou ERP via API REST.">
-  <meta name="twitter:image" content="https://viodigital.com.br/static/og-banner.png">
+  <meta name="twitter:image" content="https://vioweb.vercel.app/static/og-banner.png">
 
   <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -85,7 +85,7 @@
           <div class="info-panel">
             <h3>Modalidades de Integração</h3>
             <ul>
-              <li><strong>Uso Manual Web (Balcão de Cartório):</strong> R$ 0 / sempre gratuito diretamente em <code>viodigital.com.br</code>.</li>
+              <li><strong>Uso Manual Web (Balcão de Cartório):</strong> R$ 0 / sempre gratuito diretamente em <code>vioweb.vercel.app</code>.</li>
               <li><strong>API Cloud Gerenciada (B2B):</strong> Endpoint REST de alta disponibilidade com chave de API dedicada, rate-limit corporativo e suporte técnico para integração em ERPs.</li>
               <li><strong>Container On-Premise (Self-Hosted LGPD):</strong> Implantação isolada dentro da infraestrutura privada da sua empresa ou datacenter notarial, com zero tráfego externo.</li>
             </ul>
@@ -93,7 +93,7 @@
         </div>
 
         <h3 style="margin: 1.75rem 0 0.65rem; font-size: 1rem; color: var(--text-main);">Exemplo de Requisição e Resposta JSON (<code>POST /api/documents/verify</code>)</h3>
-        <pre class="api-code-sample">curl -X POST https://viodigital.com.br/api/documents/verify \
+        <pre class="api-code-sample">curl -X POST https://vioweb.vercel.app/api/documents/verify \
   -F "file=@crlv-digital.pdf"
 
 {

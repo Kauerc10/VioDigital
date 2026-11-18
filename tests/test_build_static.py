@@ -56,7 +56,7 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     assert "sitemap.xml" in robots_text
     sitemap_text = (dist / "sitemap.xml").read_text(encoding="utf-8")
     assert "<urlset" in sitemap_text
-    assert "<loc>https://viodigital.com.br/api-comercial</loc>" in sitemap_text
+    assert "<loc>https://vioweb.vercel.app/api-comercial</loc>" in sitemap_text
 
     # Verifica CSP estrita sem 'unsafe-eval' nas páginas geradas
     for page_name in ("index.html", "documentos.html", "apoiar.html", "privacidade.html", "api.html"):

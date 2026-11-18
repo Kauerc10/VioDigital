@@ -1,6 +1,6 @@
 # VioDigital — Playbook de Lançamento Público e Kit de Divulgação
 
-Guia operacional para o lançamento público do **VioDigital** (`Kauerc10/VioDigital` · `https://viodigital.com.br`) com foco em **adoção orgânica**, **transparência técnica** e **concentração coordenada de descoberta em janela de 24–48h** para ranqueamento em **GitHub Trending → Python**.
+Guia operacional para o lançamento público do **VioDigital** (`Kauerc10/VioDigital` · `https://vioweb.vercel.app`) com foco em **adoção orgânica**, **transparência técnica** e **concentração coordenada de descoberta em janela de 24–48h** para ranqueamento em **GitHub Trending → Python**.
 
 > [!IMPORTANT]
 > **Política Ética e Regras das Comunidades (Sem Manipulação):**
@@ -16,7 +16,7 @@ Execute e marque todos os itens abaixo **pelo menos 24 horas antes** da primeira
 
 ### Repositório & Engenharia
 - [ ] **Suíte verde no `main`:** `ruff check .`, `python src/viodigital/build_static.py` e `pytest` (incluindo `tests/test_e2e_privacy.py` com Playwright) passando 100% no GitHub Actions.
-- [ ] **Metadados GitHub (`About` & `Topics`):** descrição em uma frase, homepage apontando para `https://viodigital.com.br` e topics configurados (`python`, `pyodide`, `webassembly`, `wasm`, `qrcode`, `cryptography`, `icp-brasil`, `serpro`, `lgpd`, `privacy`, `offline-first`, `pwa`, `fastapi`, `brazil`, `cartorio`, `crlv`, `cnh`).
+- [ ] **Metadados GitHub (`About` & `Topics`):** descrição em uma frase, homepage apontando para `https://vioweb.vercel.app` e topics configurados (`python`, `pyodide`, `webassembly`, `wasm`, `qrcode`, `cryptography`, `icp-brasil`, `serpro`, `lgpd`, `privacy`, `offline-first`, `pwa`, `fastapi`, `brazil`, `cartorio`, `crlv`, `cnh`).
 - [ ] **Classificação Linguist:** confirmar na barra lateral do repositório no GitHub que a linguagem primária exibida é **Python** (necessário para competir em **GitHub Trending → Python**).
 - [ ] **Release `v0.2.0` & `CHANGELOG.md`:** tag `v0.2.0` publicada no GitHub Releases com notas claras e imagem container publicada em `ghcr.io/kauerc10/viodigital`.
 - [ ] **Smoke test do container offline:** executar `docker compose up --build` (ou `docker run -p 8000:8000 ghcr.io/kauerc10/viodigital:latest`) e confirmar `GET http://127.0.0.1:8000/api/health` retornando `{"status": "ok", ...}` sem acesso à internet.
@@ -28,7 +28,7 @@ Execute e marque todos os itens abaixo **pelo menos 24 horas antes** da primeira
   1. Acesse no GitHub: **Settings → General → Social preview → Edit → Upload an image...**
   2. Envie o arquivo [`docs/assets/social-preview.png`](assets/social-preview.png) (`1280×640`).
   3. Confirme que links compartilhados do repositório passam a exibir o card customizado do VioDigital.
-- [ ] **Validação dos cards OpenGraph do site (`https://viodigital.com.br`):**
+- [ ] **Validação dos cards OpenGraph do site (`https://vioweb.vercel.app`):**
   * Teste a URL canônica no [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/), no depurador do X/Twitter e em uma conversa de teste do WhatsApp/Telegram para confirmar o banner OpenGraph `1200×630`.
 - [ ] **Publicação no PyPI (Opcional):**
   * Caso queira habilitar `pip install viodigital` diretamente do PyPI antes ou depois do lançamento (requer credencial / Trusted Publisher do mantenedor):
@@ -59,7 +59,7 @@ O atrito no balcão sempre foi o mesmo:
 1. O app oficial do governo existe só para celular — obrigando o atendente a usar o aparelho pessoal e redigitar tudo no sistema do computador;
 2. As ferramentas web que apareciam no Google eram fechadas, cobravam por consulta ou mensalidade e exigiam upload de PDFs com CPF, placa, chassi e foto biométrica para servidores de terceiros.
 
-Decidi resolver isso com software livre (Licença MIT): o **VioDigital** ([https://viodigital.com.br](https://viodigital.com.br) | [GitHub](https://github.com/Kauerc10/VioDigital)).
+Decidi resolver isso com software livre (Licença MIT): o **VioDigital** ([https://vioweb.vercel.app](https://vioweb.vercel.app) | [GitHub](https://github.com/Kauerc10/VioDigital)).
 
 ### Como funciona por baixo dos panos (0 dados enviados ao servidor)
 
@@ -95,7 +95,7 @@ Pessoal, queria compartilhar um projeto open source (MIT) que construí a partir
 
 Todo mundo que já precisou conferir um CRLV-e, ATPV-e ou CNH no computador sabe que o app oficial (Vio) é só mobile, e as alternativas web cobram por consulta além de mandar PDF com CPF, placa, chassi e foto da pessoa pro servidor dos outros.
 
-No VioDigital ([https://viodigital.com.br](https://viodigital.com.br) / [repositório no GitHub](https://github.com/Kauerc10/VioDigital)):
+No VioDigital ([https://vioweb.vercel.app](https://vioweb.vercel.app) / [repositório no GitHub](https://github.com/Kauerc10/VioDigital)):
 - Você pode **colar um print com `Ctrl+V`** do WhatsApp Web, arrastar o **PDF** ou ler pela **webcam** do PC.
 - Tudo roda **100% no navegador via WebAssembly** (`PDF.js` → `ZXing-C++ WASM` → `Pyodide` rodando `viodigital.core` + `cryptography` → `bpgdec8.js` para a foto 3x4 BPG da CNH).
 - O header CSP usa `connect-src 'self'`, então o próprio navegador impede qualquer tráfego externo (dá para auditar no F12 → Network ou desligando o Wi-Fi).
@@ -110,7 +110,7 @@ Qualquer feedback de UX, segurança ou PR em handlers de novos templates (Marinh
 * **Título:** `Projeto Open Source BR: leitor e validador offline de documentos Serpro/VIO e CIN direto no navegador (zero upload de dados)`
 * **Texto:**
 ```markdown
-Compartilhando o **VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [App Web](https://viodigital.com.br)), um projeto aberto sob licença MIT que nasceu dentro de um cartório para substituir a digitação manual e ferramentas pagas de validação de QR Code de **CRLV-e, CNH, ATPV-e e CIN (Novo RG)**.
+Compartilhando o **VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [App Web](https://vioweb.vercel.app)), um projeto aberto sob licença MIT que nasceu dentro de um cartório para substituir a digitação manual e ferramentas pagas de validação de QR Code de **CRLV-e, CNH, ATPV-e e CIN (Novo RG)**.
 
 Alguns aprendizados legais da construção:
 - **Por que Pyodide/WASM em vez de reescrever em JS:** os envelopes VIO têm 4 versões binárias (`v2`, `v4`, `v5`, `v6`), compactação em `6-bit`, `7-bit` e `BasE91`, além de 161 templates oficiais e JWS `ES512` da CIN. Compilar a wheel Python pura e rodar dentro de um Web Worker garantiu 1 único motor testado por `pytest` rodando igual no navegador, na CLI e no Docker.
@@ -139,7 +139,7 @@ A base criptográfica inicial vem do `digital-document-checker` (MIT) e o reposi
 
 > **Regras estritas do Hacker News:**
 > * Título deve começar com `Show HN:`, ter no máximo ~80 caracteres e **ZERO superlativos** (proibido: *"100% free"*, *"best"*, *"revolutionary"*, *"zero-cost"*, emojis).
-> * URL aponta para `https://github.com/Kauerc10/VioDigital` (ou `https://viodigital.com.br` — para projetos dev/open source, o repositório GitHub costuma reter melhor atenção técnica com link para o demo ao vivo no topo).
+> * URL aponta para `https://github.com/Kauerc10/VioDigital` (ou `https://vioweb.vercel.app` — para projetos dev/open source, o repositório GitHub costuma reter melhor atenção técnica com link para o demo ao vivo no topo).
 > * Publique o **Maker's Comment** imediatamente após submeter.
 
 * **Title (71 caracteres — sem superlativos):**
@@ -155,7 +155,7 @@ Every one of those documents includes a high-density cryptographic QR Code signe
 
 VioDigital shares a single Python 3.12 core (`viodigital.core`) across three modes:
 
-1. **Static Browser / PWA (`https://viodigital.com.br`):** PDFs are rasterized locally via PDF.js at 300 DPI (or pasted via Ctrl+V / read from a webcam), decoded into raw bytes by ZXing-C++ WASM inside a Web Worker, and cryptographically verified in-memory by Pyodide running Python's `cryptography` wasm32 wheel against 161 bundled government templates and public keys. Embedded CNH biometric portraits (stored as headerless BPG images) are decoded directly to Canvas via `bpgdec8.js` (libbpg in WASM).
+1. **Static Browser / PWA (`https://vioweb.vercel.app`):** PDFs are rasterized locally via PDF.js at 300 DPI (or pasted via Ctrl+V / read from a webcam), decoded into raw bytes by ZXing-C++ WASM inside a Web Worker, and cryptographically verified in-memory by Pyodide running Python's `cryptography` wasm32 wheel against 161 bundled government templates and public keys. Embedded CNH biometric portraits (stored as headerless BPG images) are decoded directly to Canvas via `bpgdec8.js` (libbpg in WASM).
 2. **Privacy Enforcement:** The static app ships with `Content-Security-Policy: connect-src 'self'` (no `unsafe-eval`, only `wasm-unsafe-eval`) and `Referrer-Policy: no-referrer`, verified by a Playwright E2E test that asserts zero external requests and blocked outbound `fetch()`. You can open DevTools Network, go offline, and validate documents normally.
 3. **Self-Hosted / CLI (`docker compose up --build` or `pip`):** FastAPI + PyMuPDF + zxing-cpp + OpenCV for air-gapped office intranets or batch JSON/photo extraction.
 
@@ -174,7 +174,7 @@ The initial cryptographic parsing core builds on Helvio Junior's MIT-licensed `d
 * **Title:** `VioDigital – Self-hostable, air-gapped cryptographic verifier for Brazilian government QR documents (Docker / FastAPI / Pyodide WASM)`
 * **Body:**
 ```markdown
-**VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [Live Static Demo](https://viodigital.com.br)) is an MIT-licensed, offline-first cryptographic verifier and decoder for Brazilian government QR-coded documents (vehicle registrations CRLV-e/ATPV-e, CNH driver's licenses with biometric portraits, CIN national IDs, and 161 official Serpro/VIO templates).
+**VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [Live Static Demo](https://vioweb.vercel.app)) is an MIT-licensed, offline-first cryptographic verifier and decoder for Brazilian government QR-coded documents (vehicle registrations CRLV-e/ATPV-e, CNH driver's licenses with biometric portraits, CIN national IDs, and 161 official Serpro/VIO templates).
 
 ### Why self-host it?
 Notary offices, legal teams, and dispatchers deal with sensitive citizen PII every day. Closed-source SaaS tools charge per document and upload PDFs to third-party servers. VioDigital runs entirely inside your local intranet with zero outbound network calls.
@@ -202,7 +202,7 @@ Feedback on the Docker setup and self-hosting ergonomics is very welcome!
 ```markdown
 In Brazil, official vehicle registrations (CRLV-e), driver's licenses (CNH with biometric photo), and the new National ID (CIN) embed cryptographically signed payloads inside QR Codes. Unfortunately, most desktop web "verifiers" ask users to upload full PDFs containing CPF (tax ID), home address, vehicle VIN, and portrait photos to unknown third-party servers.
 
-We built **VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [Web App](https://viodigital.com.br)) under the MIT license so verification happens **strictly in local browser memory**:
+We built **VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [Web App](https://vioweb.vercel.app)) under the MIT license so verification happens **strictly in local browser memory**:
 
 * **Client-side WASM pipeline:** `PDF.js` (300 DPI) → `ZXing-C++ WASM` → `Pyodide` (Python 3.12 + `cryptography` wasm32) → `libbpg` WASM (`bpgdec8.js`) for biometric portraits.
 * **Browser-enforced isolation:** Served with `Content-Security-Policy: default-src 'self'; connect-src 'self'; ...` (no `'unsafe-eval'`, only `'wasm-unsafe-eval'`) and `Referrer-Policy: no-referrer`.
@@ -229,7 +229,7 @@ Would love feedback on the packaging/wheel-invalidation pattern and typed `Docum
 * **Title:** `Chaining PDF.js + ZXing-C++ WASM + Pyodide (cryptography) + libbpg WASM inside a Web Worker for offline document verification`
 * **Body:**
 ```markdown
-I wanted to share a production WebAssembly pipeline we built for **VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [Live App](https://viodigital.com.br)), an offline verifier for Brazilian government QR documents.
+I wanted to share a production WebAssembly pipeline we built for **VioDigital** ([GitHub](https://github.com/Kauerc10/VioDigital) | [Live App](https://vioweb.vercel.app)), an offline verifier for Brazilian government QR documents.
 
 Instead of porting 161 binary document schemas and 6-bit/7-bit/BasE91 unpackers from Python to JS, we chained four WASM/JS components cleanly:
 1. **PDF.js** rasterizes multi-page PDFs locally at 300 DPI.
@@ -263,7 +263,7 @@ Como funciona na prática:
 Aviso importante: a verificação atesta a autenticidade criptográfica na emissão (não substitui consultas online no DETRAN/RENAVAM para restrições supervenientes quando exigido pelo ato).
 
 Código aberto no GitHub (e disponível gratuitamente no navegador):
-🌐 Site: https://viodigital.com.br
+🌐 Site: https://vioweb.vercel.app
 💻 GitHub: https://github.com/Kauerc10/VioDigital
 
 Se você trabalha em cartório, escritório de despachante ou tecnologia jurídica, teste com um documento e me conte o que achou! (O vídeo/GIF acima usa exclusivamente dados fictícios de teste.)
@@ -294,7 +294,7 @@ Every Brazilian driver's license (CNH), vehicle registration (CRLV-e), electroni
 
 Inside a notary office (*cartório*), clerks check these documents all day on desktop PCs. Because the official government app is mobile-only, clerks either retype data from personal phones or resort to closed-source web tools that charge per check and upload full PDFs containing tax IDs, addresses, license plates, and biometric photos to remote servers.
 
-We built **[VioDigital](https://github.com/Kauerc10/VioDigital)** (MIT License, live at [viodigital.com.br](https://viodigital.com.br)) to keep verification **100% client-side, offline-capable, and auditable**.
+We built **[VioDigital](https://github.com/Kauerc10/VioDigital)** (MIT License, live at [vioweb.vercel.app](https://vioweb.vercel.app)) to keep verification **100% client-side, offline-capable, and auditable**.
 
 ## Why WebAssembly Instead of Rewriting Everything in JavaScript?
 
@@ -346,7 +346,7 @@ docker compose up --build
 
 ## Try It & Contribute
 
-* Web app: [https://viodigital.com.br](https://viodigital.com.br)
+* Web app: [https://vioweb.vercel.app](https://vioweb.vercel.app)
 * Source code & `good first issue` tickets: [https://github.com/Kauerc10/VioDigital](https://github.com/Kauerc10/VioDigital)
 ```
 
@@ -360,10 +360,10 @@ docker compose up --build
 | Tempo | Visual na Tela | Locução / Legenda (PT-BR) | Subtitles (EN) |
 | :--- | :--- | :--- | :--- |
 | **0–5s (Gancho)** | Close rápido em alguém tentando ler QR Code de um CRLV-e no celular e digitando no PC. Texto na tela: *"Ainda digitando CRLV-e do celular no PC?"* | "Você ainda usa celular pessoal no balcão para ler QR Code de CRLV-e e CNH e digitar tudo à mão?" | "Still scanning official QR codes on a phone and retyping fields on PC?" |
-| **5–18s (A Dor)** | Tela mostrando sites genéricos pedindo upload / cobrança. Transição limpa para `https://viodigital.com.br`. | "Os sites que existem por aí cobram por consulta e ainda sobem PDF com CPF, placa e foto do cliente pro servidor deles." | "Paid tools charge per check and upload sensitive citizen PDFs to remote servers." |
+| **5–18s (A Dor)** | Tela mostrando sites genéricos pedindo upload / cobrança. Transição limpa para `https://vioweb.vercel.app`. | "Os sites que existem por aí cobram por consulta e ainda sobem PDF com CPF, placa e foto do cliente pro servidor deles." | "Paid tools charge per check and upload sensitive citizen PDFs to remote servers." |
 | **18–40s (Solução Demo)** | Pressiona `Ctrl+V` (ou arrasta PDF fictício de `JOAO DA SILVA` / `ABC1D23`). Barra rápida mostra leitura, selo verde **AUTÊNTICO**, foto 3x4 (se CNH) e clique em **Copiar Ficha Completa**. | "Com o VioDigital, projeto brasileiro 100% gratuito e open source, você cola um print com Ctrl+V, arrasta o PDF ou lê na webcam — e copia todos os campos validados em 1 clique." | "With VioDigital, free & open source: paste with Ctrl+V, drop a PDF, or scan via webcam — and copy verified fields in one click." |
 | **40–52s (Prova Zero-Rede)** | Abre DevTools (`F12` → Network), mostra **Offline** ligado ou 0 requisições saindo enquanto valida outro documento. Destaca selo `WASM LOCAL`. | "E o melhor: tudo roda 100% offline dentro do próprio navegador em WebAssembly. Zero dados enviados, LGPD na prática — auditável no F12." | "Everything runs 100% offline inside your browser via WebAssembly. Zero data leaves your device." |
-| **52–60s (CTA)** | Tela final com URL `viodigital.com.br` + `github.com/Kauerc10/VioDigital`. | "Acesse viodigital.com.br, rode em Docker na rede do seu escritório e deixe uma estrela no GitHub!" | "Try viodigital.com.br, self-host with Docker, and check the repo on GitHub!" |
+| **52–60s (CTA)** | Tela final com URL `vioweb.vercel.app` + `github.com/Kauerc10/VioDigital`. | "Acesse vioweb.vercel.app, rode em Docker na rede do seu escritório e deixe uma estrela no GitHub!" | "Try vioweb.vercel.app, self-host with Docker, and check the repo on GitHub!" |
 
 ---
 
@@ -377,7 +377,7 @@ docker compose up --build
 | [`felipefialho/awesome-made-by-brazilians`](https://github.com/felipefialho/awesome-made-by-brazilians) | `Python` ou `Web` / `Segurança & Privacidade` | Projeto criado por brasileiro(s), ativo, README claro, licença open source, ordem alfabética na categoria. | `- [VioDigital](https://github.com/Kauerc10/VioDigital) - Verificador criptográfico offline (Python + Pyodide WASM) de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO).` |
 | [`backend-br/opensource-br`](https://github.com/backend-br/opensource-br) | `Python` / `Ferramentas` | Projetos open source brasileiros com documentação clara e código público ativo; respeitar formato da tabela/lista do repo. | `- [VioDigital](https://github.com/Kauerc10/VioDigital) - Decodificador e validador criptográfico offline de QR Codes oficiais brasileiros (Serpro/VIO e CIN) em Python, CLI, FastAPI e WebAssembly.` |
 | [`vinicius73/awesome-brasil`](https://github.com/vinicius73/awesome-brasil) | `Ferramentas` / `Python` / `Dados Públicos & Gov` | Projetos open source brasileiros úteis para a comunidade/dev; checar seção e ordem alfabética no `README.md`. | `- [VioDigital](https://github.com/Kauerc10/VioDigital) - Leitor e validador criptográfico 100% offline de CRLV-e, CNH, ATPV-e, CIN e 161 templates VIO via navegador (WASM) ou CLI/Docker.` |
-| [`awesome-selfhosted/awesome-selfhosted`](https://github.com/awesome-selfhosted/awesome-selfhosted) | `Document Management` ou `Misc / Utilities` | **Exigências estritas:** licença OSI aprovada (`MIT`), repositório público ativo, **deploy documentado em Docker/self-host** (`Dockerfile`/`docker-compose.yml` prontos), sem dependência obrigatória de SaaS externo, descrição em inglês neutra (sem marketing), formato padronizado com demo/source/license/stack. | `- [VioDigital](https://viodigital.com.br) - Offline cryptographic verifier and decoder for Brazilian government QR-coded documents running locally via Docker/FastAPI or browser WASM. ([Source Code](https://github.com/Kauerc10/VioDigital)) \`MIT\` \`Python/Docker\`` |
+| [`awesome-selfhosted/awesome-selfhosted`](https://github.com/awesome-selfhosted/awesome-selfhosted) | `Document Management` ou `Misc / Utilities` | **Exigências estritas:** licença OSI aprovada (`MIT`), repositório público ativo, **deploy documentado em Docker/self-host** (`Dockerfile`/`docker-compose.yml` prontos), sem dependência obrigatória de SaaS externo, descrição em inglês neutra (sem marketing), formato padronizado com demo/source/license/stack. | `- [VioDigital](https://vioweb.vercel.app) - Offline cryptographic verifier and decoder for Brazilian government QR-coded documents running locally via Docker/FastAPI or browser WASM. ([Source Code](https://github.com/Kauerc10/VioDigital)) \`MIT\` \`Python/Docker\`` |
 | [`uhub/awesome-python`](https://github.com/uhub/awesome-python) | `Cryptography` / `Document Processing` / `WebAssembly` | Descrição concisa em inglês em ordem alfabética, pacote Python instalável (`pyproject.toml`), testes e licença OSI (`MIT`). | `* [VioDigital](https://github.com/Kauerc10/VioDigital) - Offline cryptographic verifier and binary parser for Brazilian official QR documents (Serpro/VIO & CIN) running in CLI, FastAPI, and Pyodide WASM.` |
 
 ### Modelo de Descrição de PR para Awesome Lists
@@ -393,7 +393,7 @@ Adiciona o **[VioDigital](https://github.com/Kauerc10/VioDigital)** à lista:
 - **Checklist:**
   - [x] Repositório público ativo sob licença MIT
   - [x] Entrada em ordem alfabética seguindo o padrão do projeto
-  - [x] Link funcional (`https://github.com/Kauerc10/VioDigital` / `https://viodigital.com.br`)
+  - [x] Link funcional (`https://github.com/Kauerc10/VioDigital` / `https://vioweb.vercel.app`)
 ```
 
 **Para listas internacionais (`awesome-selfhosted`, `uhub/awesome-python`):**
@@ -417,7 +417,7 @@ O algoritmo de **GitHub Trending** mede **aceleração concentrada de stars úni
 
 | Janela | Horário (BRT / ET) | Ação Coordenada | Objetivo |
 | :--- | :--- | :--- | :--- |
-| **Dia 0 (Seg / T-24h)** | Tarde / Noite | Revisar todo o **Checklist Pré-Lançamento** (Seção 1), validar upload de `docs/assets/social-preview.png`, testar `viodigital.com.br` e `docker compose up --build`, preparar abas com os rascunhos. | Garantir vitrine 100% pronta antes do primeiro clique. |
+| **Dia 0 (Seg / T-24h)** | Tarde / Noite | Revisar todo o **Checklist Pré-Lançamento** (Seção 1), validar upload de `docs/assets/social-preview.png`, testar `vioweb.vercel.app` e `docker compose up --build`, preparar abas com os rascunhos. | Garantir vitrine 100% pronta antes do primeiro clique. |
 | **Dia 1 (Ter–Qui · T+0h)** | **10:00 BRT / 08:00 ET** | Publicar **Show HN** no Hacker News + postar imediatamente o **Maker's Comment**; ficar online 2–3h para responder toda dúvida técnica com precisão. | Pico inicial de tráfego técnico qualificado internacional. |
 | **Dia 1 (T+0h30)** | **10:30 BRT / 08:30 ET** | Publicar no **TabNews** (PT-BR) + artigo técnico completo no **Dev.to / Hashnode** (EN). | Tração simultânea da comunidade dev brasileira e global. |
 | **Dia 1 (T+1h30)** | **11:30 BRT / 09:30 ET** | Publicar no **LinkedIn** com `demo-validation.gif` ou vídeo curto de 30–60s (Seção 3). | Alcance no ecossistema de cartórios, legaltech e engenharia BR. |

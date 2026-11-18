@@ -8,13 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
 [![Release: v0.2.0](https://img.shields.io/badge/Release-v0.2.0-15803d.svg)](https://github.com/Kauerc10/VioDigital/releases)
-[![Site: viodigital.com.br](https://img.shields.io/badge/Site-viodigital.com.br-3b7a28.svg)](https://viodigital.com.br)
+[![Site: vioweb.vercel.app](https://img.shields.io/badge/Site-vioweb.vercel.app-3b7a28.svg)](https://vioweb.vercel.app)
 [![Privacy: 100% LGPD Offline](https://img.shields.io/badge/Privacy-100%25_LGPD_Offline-1f6feb.svg)](docs/adr/0001-offline-cryptographic-validation.md)
 
-**Try it live in your browser (zero install):** [**https://viodigital.com.br**](https://viodigital.com.br)
+**Try it live in your browser (zero install):** [**https://vioweb.vercel.app**](https://vioweb.vercel.app)
 
 > [!NOTE]
-> **Legal Disclaimer & Non-Affiliation:** **VioDigital** is an independent, community-driven open-source project. It has no affiliation, endorsement, or official link with Serpro, SENATRAN, DETRANs, ONR, or any Brazilian issuing government agency. "VIO" is a registered trademark of its respective owners. Read our [Privacy & LGPD Compliance Policy](https://viodigital.com.br/privacidade).
+> **Legal Disclaimer & Non-Affiliation:** **VioDigital** is an independent, community-driven open-source project. It has no affiliation, endorsement, or official link with Serpro, SENATRAN, DETRANs, ONR, or any Brazilian issuing government agency. "VIO" is a registered trademark of its respective owners. Read our [Privacy & LGPD Compliance Policy](https://vioweb.vercel.app/privacidade).
 
 ---
 
@@ -63,7 +63,7 @@ Even though every one of these documents carries an official cryptographic QR Co
 
 ### Option 1 — Browser / PWA (Zero Installation)
 
-Open [**https://viodigital.com.br**](https://viodigital.com.br) in any modern browser (Chrome, Edge, Firefox, Safari). After the initial runtime download (~19 MB Pyodide + WASM bundle), the Service Worker caches everything locally so validation keeps working **completely offline**.
+Open [**https://vioweb.vercel.app**](https://vioweb.vercel.app) in any modern browser (Chrome, Edge, Firefox, Safari). After the initial runtime download (~19 MB Pyodide + WASM bundle), the Service Worker caches everything locally so validation keeps working **completely offline**.
 
 ### Option 2 — Python (`pip` / Local Server / CLI / Library)
 
@@ -157,9 +157,9 @@ flowchart LR
 
 ## Privacy (LGPD) & Verifiable Zero-Network Audit
 
-On [**`https://viodigital.com.br`**](https://viodigital.com.br), **no document, CPF, vehicle plate, or biometric photo ever leaves your computer**. Anyone can verify this claim in 30 seconds:
+On [**`https://vioweb.vercel.app`**](https://vioweb.vercel.app), **no document, CPF, vehicle plate, or biometric photo ever leaves your computer**. Anyone can verify this claim in 30 seconds:
 
-1. Open [**https://viodigital.com.br**](https://viodigital.com.br) and wait for the **`WASM LOCAL`** badge in the header.
+1. Open [**https://vioweb.vercel.app**](https://vioweb.vercel.app) and wait for the **`WASM LOCAL`** badge in the header.
 2. Open Browser DevTools (`F12`) → **Network** tab → enable **Preserve log**.
 3. Optionally toggle **Offline** mode in DevTools (or disconnect Wi-Fi).
 4. Paste (`Ctrl+V`) or drop any PDF/image: observe the Network tab — **zero outbound HTTP requests** occur while decoding or verifying the document.
@@ -171,13 +171,13 @@ Content-Security-Policy: default-src 'self'; connect-src 'self'; script-src 'sel
 
 * **`connect-src 'self'`:** The browser actively blocks any attempt to `fetch`, `XHR`, or open a `WebSocket` to external domains.
 * **Zero `'unsafe-eval'` & zero external fonts:** Only `'wasm-unsafe-eval'` is permitted for WebAssembly execution, paired with `Referrer-Policy: no-referrer` and `X-Frame-Options: DENY`.
-* Continuously enforced in CI via Playwright E2E tests in [`tests/test_e2e_privacy.py`](tests/test_e2e_privacy.py). See [Privacy & LGPD Policy](https://viodigital.com.br/privacidade) and [ADR 0003](docs/adr/0003-browser-wasm-pyodide-validation.md).
+* Continuously enforced in CI via Playwright E2E tests in [`tests/test_e2e_privacy.py`](tests/test_e2e_privacy.py). See [Privacy & LGPD Policy](https://vioweb.vercel.app/privacidade) and [ADR 0003](docs/adr/0003-browser-wasm-pyodide-validation.md).
 
 ---
 
 ## Supported Documents (161 Official VIO Templates + CIN)
 
-The engine bundles the official **161 Serpro/VIO templates** (`templates.json`) plus the public keys for Brazil's **National Identity Card (CIN)**. Browse the [online searchable catalog](https://viodigital.com.br/documentos):
+The engine bundles the official **161 Serpro/VIO templates** (`templates.json`) plus the public keys for Brazil's **National Identity Card (CIN)**. Browse the [online searchable catalog](https://vioweb.vercel.app/documentos):
 
 | Category | Supported Official Documents |
 | :--- | :--- |
@@ -278,7 +278,7 @@ If this project saves you time or infrastructure cost, please consider supportin
 ```
 </details>
 
-Or visit the [support page on VioDigital](https://viodigital.com.br/apoiar).
+Or visit the [support page on VioDigital](https://vioweb.vercel.app/apoiar).
 
 ---
 
