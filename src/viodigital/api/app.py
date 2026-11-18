@@ -32,8 +32,11 @@ app.add_middleware(
 )
 
 
+_HTML_PAGE_PATHS = frozenset({"/", "/documentos", "/apoiar", "/privacidade", "/api-comercial"})
+
+
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';"
@@ -47,13 +50,12 @@ async def add_security_headers(request, call_next):
     if "Cache-Control" not in response.headers:
         if path.startswith("/static/vendor/"):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        elif path.startswith("/static/wheels/") or path in (
-            "/static/app.js",
-            "/static/camera-quality.js",
-            "/static/scanner.worker.js",
-            "/static/style.css",
-            "/",
-        ) or path.endswith(".html"):
+        elif (
+            (path.startswith("/static/") and not path.startswith("/static/vendor/"))
+            or path in _HTML_PAGE_PATHS
+            or path.startswith("/validar-")
+            or path.endswith(".html")
+        ):
             response.headers["Cache-Control"] = "no-cache"
 
     return response
@@ -246,56 +248,24 @@ async def list_supported_templates():
 
 @app.api_route("/robots.txt", methods=["GET", "HEAD"])
 async def robots_txt():
-    content = (
-        "User-agent: *\n"
-        "Allow: /\n"
-        "Disallow: /api/documents/\n\n"
-        "Sitemap: https://viodigital.com.br/sitemap.xml\n"
-    )
-    return PlainTextResponse(content=content, status_code=200)
+    from viodigital.build_static import generate_robots_txt
+
+    return PlainTextResponse(content=generate_robots_txt(), status_code=200)
 
 
 @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
 async def sitemap_xml():
-    urls = [
-        ("https://viodigital.com.br/", "1.0"),
-        ("https://viodigital.com.br/documentos", "0.9"),
-        ("https://viodigital.com.br/privacidade", "0.9"),
-        ("https://viodigital.com.br/validar-crlv", "0.9"),
-        ("https://viodigital.com.br/validar-cnh", "0.9"),
-        ("https://viodigital.com.br/validar-atpv", "0.9"),
-        ("https://viodigital.com.br/validar-cin", "0.8"),
-        ("https://viodigital.com.br/validar-tie-marinha", "0.8"),
-        ("https://viodigital.com.br/apoiar", "0.7"),
-    ]
-    items = "\n".join(
-        f"  <url>\n    <loc>{loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>{prio}</priority>\n  </url>"
-        for loc, prio in urls
-    )
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"{items}\n"
-        "</urlset>\n"
-    )
-    return Response(content=xml, media_type="application/xml", status_code=200)
+    from viodigital.build_static import generate_sitemap_xml
+
+    return Response(content=generate_sitemap_xml(), media_type="application/xml", status_code=200)
 
 
 @app.api_route("/llms.txt", methods=["GET", "HEAD"])
 async def llms_txt():
+    from viodigital.build_static import generate_llms_txt
+
     llms_file = WEB_DIR / "llms.txt"
-    if llms_file.exists():
-        content = llms_file.read_text(encoding="utf-8")
-    else:
-        content = (
-            "# VioDigital\n\n"
-            "> Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO).\n\n"
-            "## Links\n"
-            "- Site: https://viodigital.com.br/\n"
-            "- Documentos: https://viodigital.com.br/documentos\n"
-            "- Privacidade (LGPD): https://viodigital.com.br/privacidade\n"
-            "- Repositório: https://github.com/Kauerc10/VioDigital\n"
-        )
+    content = llms_file.read_text(encoding="utf-8") if llms_file.exists() else generate_llms_txt()
     return PlainTextResponse(content=content, status_code=200)
 
 
@@ -425,6 +395,16 @@ if (WEB_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
 
 
+def _serve_web_html(filename: str, *, fallback_to_src: bool = False) -> FileResponse:
+    """Serve uma página HTML estática do diretório web ativo."""
+    bases = dict.fromkeys((WEB_DIR, SRC_WEB_DIR)) if fallback_to_src else (WEB_DIR,)
+    for base in bases:
+        page = base / filename
+        if page.exists():
+            return FileResponse(page)
+    raise HTTPException(status_code=404)
+
+
 @app.get("/")
 async def root():
     index_file = WEB_DIR / "index.html"
@@ -434,28 +414,23 @@ async def root():
 
 
 @app.get("/documentos")
-async def page_documentos():
-    page = WEB_DIR / "documentos.html"
-    if page.exists():
-        return FileResponse(page)
-    raise HTTPException(status_code=404)
+async def page_documentos() -> FileResponse:
+    return _serve_web_html("documentos.html")
 
 
 @app.get("/apoiar")
-async def page_apoiar():
-    page = WEB_DIR / "apoiar.html"
-    if page.exists():
-        return FileResponse(page)
-    raise HTTPException(status_code=404)
+async def page_apoiar() -> FileResponse:
+    return _serve_web_html("apoiar.html")
+
+
+@app.get("/api-comercial")
+async def page_api_comercial() -> FileResponse:
+    return _serve_web_html("api.html")
 
 
 @app.get("/privacidade")
-async def page_privacidade():
-    for base in (WEB_DIR, SRC_WEB_DIR):
-        page = base / "privacidade.html"
-        if page.exists():
-            return FileResponse(page)
-    raise HTTPException(status_code=404)
+async def page_privacidade() -> FileResponse:
+    return _serve_web_html("privacidade.html", fallback_to_src=True)
 
 
 @app.get("/validar-{slug}")

@@ -50,7 +50,6 @@ include = ["viodigital*", "vioweb*"]
 
 [tool.setuptools.package-data]
 viodigital = ["**/*.json", "**/*.html", "**/*.css", "**/*.js"]
-vioweb = ["**/*.json", "**/*.html", "**/*.css", "**/*.js"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]

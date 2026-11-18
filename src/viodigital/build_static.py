@@ -50,13 +50,16 @@ def _hash_directory(base_dir: Path, exclude_parts: tuple[str, ...] = ("__pycache
 
 
 def compute_core_hash() -> str:
-    """Hash apenas do motor Python (src/viodigital/core + __init__.py) para invalidação da wheel."""
+    """Hash determinístico do motor Python, shims vioweb e pyproject.toml para invalidação da wheel."""
     h = hashlib.sha256()
     pkg_dir = SRC_DIR / "viodigital"
     h.update(_hash_directory(pkg_dir / "core").encode("utf-8"))
-    init_file = pkg_dir / "__init__.py"
-    if init_file.exists():
-        h.update(init_file.read_bytes())
+    h.update(b"\x00")
+    h.update(_hash_directory(SRC_DIR / "vioweb").encode("utf-8"))
+    for extra_file in (pkg_dir / "__init__.py", ROOT_DIR / "pyproject.toml"):
+        if extra_file.exists():
+            h.update(b"\x00")
+            h.update(extra_file.read_bytes())
     return h.hexdigest()[:12]
 
 
@@ -205,6 +208,7 @@ def generate_llms_txt() -> str:
         "- Site: https://viodigital.com.br/\n"
         "- Documentos: https://viodigital.com.br/documentos\n"
         "- Privacidade (LGPD): https://viodigital.com.br/privacidade\n"
+        "- API REST B2B: https://viodigital.com.br/api-comercial\n"
         "- Repositório: https://github.com/Kauerc10/VioDigital\n"
     )
 
@@ -220,6 +224,7 @@ def generate_sitemap_xml() -> str:
         ("https://viodigital.com.br/validar-cin", "0.8"),
         ("https://viodigital.com.br/validar-tie-marinha", "0.8"),
         ("https://viodigital.com.br/apoiar", "0.7"),
+        ("https://viodigital.com.br/api-comercial", "0.7"),
     ]
     items = "\n".join(
         f"  <url>\n    <loc>{loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>{prio}</priority>\n  </url>"
@@ -238,29 +243,39 @@ def _build_wheel_pure_python(wheels_dir: Path) -> Path:
     import zipfile
 
     wheels_dir.mkdir(parents=True, exist_ok=True)
-    target_whl = wheels_dir / "viodigital-0.2.0-py3-none-any.whl"
-    src_pkg = ROOT_DIR / "src" / "viodigital"
-    dist_info = "viodigital-0.2.0.dist-info"
+    target_whl = wheels_dir / f"viodigital-{__version__}-py3-none-any.whl"
+    dist_info = f"viodigital-{__version__}.dist-info"
 
     with zipfile.ZipFile(target_whl, "w", compression=zipfile.ZIP_DEFLATED) as z:
-        for p in src_pkg.rglob("*"):
-            if p.is_file() and "__pycache__" not in p.parts:
-                if "vendor" in p.parts or "wheels" in p.parts:
-                    continue
-                rel = p.relative_to(src_pkg)
-                z.write(p, arcname=f"viodigital/{rel.as_posix()}")
+        for pkg_name in ("viodigital", "vioweb"):
+            src_pkg = SRC_DIR / pkg_name
+            if not src_pkg.exists():
+                continue
+            for p in src_pkg.rglob("*"):
+                if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc":
+                    if "vendor" in p.parts or "wheels" in p.parts:
+                        continue
+                    rel = p.relative_to(src_pkg)
+                    z.write(p, arcname=f"{pkg_name}/{rel.as_posix()}")
 
         z.writestr(
             f"{dist_info}/METADATA",
-            "Metadata-Version: 2.1\nName: viodigital\nVersion: 0.2.0\nSummary: Verificador Serpro VIO e CIN\n",
+            f"Metadata-Version: 2.1\nName: viodigital\nVersion: {__version__}\nSummary: Verificador Serpro VIO e CIN\n",
         )
         z.writestr(
             f"{dist_info}/WHEEL",
-            "Wheel-Version: 1.0\nGenerator: viodigital-internal (0.2.0)\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
+            f"Wheel-Version: 1.0\nGenerator: viodigital-internal ({__version__})\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
         )
-        z.writestr(f"{dist_info}/top_level.txt", "viodigital\n")
+        z.writestr(f"{dist_info}/top_level.txt", "viodigital\nvioweb\n")
 
     return target_whl
+
+
+def _remove_wheels(wheels_dir: Path) -> None:
+    """Remove artefatos .whl anteriores do viodigital/vioweb no diretório informado."""
+    for pattern in ("viodigital-*.whl", "vioweb-*.whl"):
+        for old_whl in wheels_dir.glob(pattern):
+            old_whl.unlink(missing_ok=True)
 
 
 def build_wheel(wheels_dir: Path) -> Path | None:
@@ -287,6 +302,10 @@ def build_wheel(wheels_dir: Path) -> Path | None:
                 ret = target
 
     if not ret:
+        # Remove cache intermediário do setuptools (build/lib) e wheels antigas antes de reconstruir
+        shutil.rmtree(ROOT_DIR / "build", ignore_errors=True)
+        _remove_wheels(wheels_dir)
+
         uv_bin = shutil.which("uv")
         commands_to_try = []
         if uv_bin:
@@ -318,7 +337,7 @@ def build_wheel(wheels_dir: Path) -> Path | None:
             (wheels_dir / ".wheel_hash").write_text(core_hash, encoding="utf-8")
         except Exception:
             pass
-        legacy_alias = wheels_dir / "vioweb-0.2.0-py3-none-any.whl"
+        legacy_alias = wheels_dir / f"vioweb-{__version__}-py3-none-any.whl"
         try:
             shutil.copy2(ret, legacy_alias)
         except Exception:
@@ -459,7 +478,11 @@ def build(output_dir: Path | str = "dist") -> Path:
     if wheel_path and out == ROOT_DIR / "dist":
         src_wheels = STATIC_DIR / "wheels"
         src_wheels.mkdir(parents=True, exist_ok=True)
+        _remove_wheels(src_wheels)
         shutil.copy2(wheel_path, src_wheels / wheel_path.name)
+        legacy_whl = dist_static / "wheels" / f"vioweb-{__version__}-py3-none-any.whl"
+        if legacy_whl.exists():
+            shutil.copy2(legacy_whl, src_wheels / legacy_whl.name)
         hash_src = (dist_static / "wheels" / ".wheel_hash")
         if hash_src.exists():
             shutil.copy2(hash_src, src_wheels / ".wheel_hash")

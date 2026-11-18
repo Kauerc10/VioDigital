@@ -27,4 +27,5 @@ O VioDigital é uma aplicação de conferência e validação notarial de docume
 - Validador CIN / Novo RG: https://viodigital.com.br/validar-cin
 - Catálogo de Documentos: https://viodigital.com.br/documentos
 - Política de Privacidade: https://viodigital.com.br/privacidade
+- API REST B2B: https://viodigital.com.br/api-comercial
 - Repositório Open Source (MIT): https://github.com/Kauerc10/VioDigital
