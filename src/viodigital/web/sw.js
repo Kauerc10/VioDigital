@@ -23,6 +23,7 @@ const PRECACHE_ASSETS = [
   '/static/favicon.ico',
   '/static/icon-192.png',
   '/static/icon-512.png',
+  '/static/og-banner.png',
   '/static/pix-qrcode.png',
   '/static/style.css',
   '/static/app.js',
@@ -51,6 +52,7 @@ function isImmutableVendorAsset(pathname) {
   return (
     pathname.startsWith('/static/vendor/') ||
     pathname.startsWith('/static/icon-') ||
+    pathname === '/static/og-banner.png' ||
     pathname === '/static/pix-qrcode.png' ||
     pathname === '/favicon.ico' ||
     pathname === '/static/favicon.ico'
