@@ -1,0 +1,10 @@
+services:
+  viodigital:
+    build: .
+    image: ghcr.io/kauerc10/viodigital:latest
+    container_name: viodigital
+    ports:
+      - "8000:8000"
+    security_opt:
+      - "no-new-privileges:true"
+    restart: unless-stopped

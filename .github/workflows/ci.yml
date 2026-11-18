@@ -42,3 +42,45 @@ jobs:
       - name: Run test suite with pytest
         run: |
           pytest
+
+  docker:
+    name: Build & Verify Container
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t viodigital:ci .
+
+      - name: Start container and verify /api/health
+        run: |
+          set -euo pipefail
+          docker run -d --name viodigital-ci -p 8000:8000 viodigital:ci
+          ready=0
+          for i in $(seq 1 20); do
+            if response=$(curl -fsS http://127.0.0.1:8000/api/health 2>/dev/null); then
+              echo "Health response: $response"
+              if echo "$response" | grep -q '"status":"ok"'; then
+                ready=1
+                break
+              fi
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Container failed health check within 20s"
+            exit 1
+          fi
+          curl -fsS http://127.0.0.1:8000/ >/dev/null
+          curl -fsS -I http://127.0.0.1:8000/static/vendor/pyodide/pyodide.js >/dev/null
+          docker exec viodigital-ci python -c "import os, cv2, pymupdf, zxingcpp; assert os.geteuid() != 0"
+
+      - name: Print container logs on failure
+        if: failure()
+        run: docker logs viodigital-ci || true
+
+      - name: Remove container
+        if: always()
+        run: docker rm -f viodigital-ci || true
