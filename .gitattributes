@@ -1,0 +1,6 @@
+# Linguist classification rules: keep Python as primary repository language
+docs/** linguist-documentation
+*.md linguist-documentation
+src/viodigital/core/data/*.json linguist-generated=true
+src/viodigital/web/static/bpgdec8.js linguist-vendored
+src/viodigital/web/static/vendor/** linguist-vendored
