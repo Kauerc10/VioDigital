@@ -3,15 +3,15 @@
 > Verificador e decodificador **100% gratuito e Open Source** de documentos oficiais brasileiros (**CRLV-e, CNH, ATPV-e, CIN / Novo RG, TIE Marinha, CRAF e +160 templates VIO**) projetado para **computadores de cartórios, despachantes, empresas e cidadãos**.
 
 > [!NOTE]
-> **Aviso Legal e Não-Afiliação Institucional:** O **VioDigital** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://viodigital.vercel.app/privacidade).
+> **Aviso Legal e Não-Afiliação Institucional:** O **VioDigital** é um software livre e independente desenvolvido para a comunidade. Não possui qualquer vínculo, afiliação, representação ou endosso por parte do Serpro, SENATRAN, DETRANs ou órgãos públicos emissores. "VIO" é marca registrada de seus respectivos titulares. Consulte nossa [Política de Privacidade e Conformidade LGPD](https://viodigital.com.br/privacidade).
 
 [![CI](https://github.com/Kauerc10/VioDigital/actions/workflows/ci.yml/badge.svg)](https://github.com/Kauerc10/VioDigital/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
-[![Demo Online](https://img.shields.io/badge/Acessar_Sistema-viodigital.vercel.app-3b7a28)](https://viodigital.vercel.app)
+[![Demo Online](https://img.shields.io/badge/Acessar_Sistema-viodigital.com.br-3b7a28)](https://viodigital.com.br)
 [![LGPD Compliant](https://img.shields.io/badge/Privacidade-100%25_LGPD_Offline-1f6feb)](docs/adr/0001-offline-cryptographic-validation.md)
 
-**Acesse gratuitamente no navegador:** [**https://viodigital.vercel.app**](https://viodigital.vercel.app)
+**Acesse gratuitamente no navegador:** [**https://viodigital.com.br**](https://viodigital.com.br)
 
 ---
 
@@ -64,7 +64,7 @@ O motor do VioDigital embarca o catálogo oficial de **161 templates do Serpro/V
 
 ## Como Executar Localmente no seu Computador ou Rede do Cartório
 
-O VioDigital pode ser usado diretamente pelo site [**viodigital.vercel.app**](https://viodigital.vercel.app) ou instalado localmente em qualquer computador Windows, Linux ou macOS para operação **100% offline na rede interna do cartório**:
+O VioDigital pode ser usado diretamente pelo site [**viodigital.com.br**](https://viodigital.com.br) ou instalado localmente em qualquer computador Windows, Linux ou macOS para operação **100% offline na rede interna do cartório**:
 
 ### 1. Pré-requisitos
 * **Python 3.12+** instalado.
@@ -162,7 +162,7 @@ Se esta ferramenta economiza tempo e dinheiro no seu dia a dia, considere apoiar
 ```
 </details>
 
-Ou acesse a [página de apoio no VioDigital](https://viodigital.vercel.app/apoiar).
+Ou acesse a [página de apoio no VioDigital](https://viodigital.com.br/apoiar).
 
 ---
 
