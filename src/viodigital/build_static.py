@@ -220,6 +220,7 @@ def generate_sitemap_xml() -> str:
         ("https://viodigital.com.br/validar-cin", "0.8"),
         ("https://viodigital.com.br/validar-tie-marinha", "0.8"),
         ("https://viodigital.com.br/apoiar", "0.7"),
+        ("https://viodigital.com.br/api-comercial", "0.7"),
     ]
     items = "\n".join(
         f"  <url>\n    <loc>{loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>{prio}</priority>\n  </url>"

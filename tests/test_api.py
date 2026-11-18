@@ -28,6 +28,7 @@ def test_api_version_and_sw_auto_update():
     assert "no-store" in sw.headers.get("cache-control", "")
     assert "__BUILD_HASH__" not in sw.text
     assert ver_data["build_hash"] in sw.text
+    assert "'/api-comercial'" in sw.text
 
     manifest = client.get("/manifest.json")
     assert manifest.status_code == 200
@@ -331,6 +332,10 @@ def test_api_dedicated_pages_and_seo_routes():
     assert priv_page.status_code == 200
     assert "LGPD" in priv_page.text
 
+    api_page = client.get("/api-comercial")
+    assert api_page.status_code == 200
+    assert "API VioDigital" in api_page.text
+
     for slug, expected in [
         ("crlv", "CRLV-e Digital"),
         ("cnh", "CNH Digital"),
@@ -354,6 +359,7 @@ def test_api_seo_endpoints_and_metadata():
     sitemap = client.get("/sitemap.xml")
     assert sitemap.status_code == 200
     assert "<loc>https://viodigital.com.br/</loc>" in sitemap.text
+    assert "<loc>https://viodigital.com.br/api-comercial</loc>" in sitemap.text
     sitemap_head = client.head("/sitemap.xml")
     assert sitemap_head.status_code == 200
 
@@ -425,11 +431,16 @@ def test_api_cors_no_credentials():
 
 
 def test_api_csp_strict_no_unsafe_eval():
-    response = client.get("/")
-    assert response.status_code == 200
-    csp = response.headers.get("Content-Security-Policy", "")
-    assert "wasm-unsafe-eval" in csp
-    assert "'unsafe-eval'" not in csp
+    for route in ("/", "/documentos", "/apoiar", "/privacidade", "/api-comercial"):
+        response = client.get(route)
+        assert response.status_code == 200, f"Rota {route} falhou"
+        csp = response.headers.get("Content-Security-Policy", "")
+        assert "'wasm-unsafe-eval'" in csp
+        assert "connect-src 'self'" in csp
+        assert "'unsafe-eval'" not in csp
+        assert "'unsafe-eval'" not in response.text
+        assert "'wasm-unsafe-eval'" in response.text
+        assert "connect-src 'self'" in response.text
 
 
 def test_ensure_runtime_assets_provisions_correctly(tmp_path):

@@ -257,28 +257,9 @@ async def robots_txt():
 
 @app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
 async def sitemap_xml():
-    urls = [
-        ("https://viodigital.com.br/", "1.0"),
-        ("https://viodigital.com.br/documentos", "0.9"),
-        ("https://viodigital.com.br/privacidade", "0.9"),
-        ("https://viodigital.com.br/validar-crlv", "0.9"),
-        ("https://viodigital.com.br/validar-cnh", "0.9"),
-        ("https://viodigital.com.br/validar-atpv", "0.9"),
-        ("https://viodigital.com.br/validar-cin", "0.8"),
-        ("https://viodigital.com.br/validar-tie-marinha", "0.8"),
-        ("https://viodigital.com.br/apoiar", "0.7"),
-    ]
-    items = "\n".join(
-        f"  <url>\n    <loc>{loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>{prio}</priority>\n  </url>"
-        for loc, prio in urls
-    )
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"{items}\n"
-        "</urlset>\n"
-    )
-    return Response(content=xml, media_type="application/xml", status_code=200)
+    from viodigital.build_static import generate_sitemap_xml
+
+    return Response(content=generate_sitemap_xml(), media_type="application/xml", status_code=200)
 
 
 @app.api_route("/llms.txt", methods=["GET", "HEAD"])
@@ -444,6 +425,14 @@ async def page_documentos():
 @app.get("/apoiar")
 async def page_apoiar():
     page = WEB_DIR / "apoiar.html"
+    if page.exists():
+        return FileResponse(page)
+    raise HTTPException(status_code=404)
+
+
+@app.get("/api-comercial")
+async def page_api_comercial():
+    page = WEB_DIR / "api.html"
     if page.exists():
         return FileResponse(page)
     raise HTTPException(status_code=404)
