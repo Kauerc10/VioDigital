@@ -17,6 +17,7 @@ const PRECACHE_ASSETS = [
   '/documentos',
   '/privacidade',
   '/apoiar',
+  '/api-comercial',
   '/favicon.ico',
   '/manifest.json',
   '/static/favicon.ico',

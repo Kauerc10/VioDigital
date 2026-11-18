@@ -13,6 +13,8 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     assert (dist / "documentos.html").exists()
     assert (dist / "apoiar.html").exists()
     assert (dist / "privacidade.html").exists()
+    assert (dist / "api.html").exists()
+    assert (dist / "api-comercial" / "index.html").exists()
     assert (dist / "sw.js").exists()
     assert (dist / "manifest.json").exists()
     assert (dist / "robots.txt").exists()
@@ -54,6 +56,14 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     assert "sitemap.xml" in robots_text
     sitemap_text = (dist / "sitemap.xml").read_text(encoding="utf-8")
     assert "<urlset" in sitemap_text
+    assert "<loc>https://viodigital.com.br/api-comercial</loc>" in sitemap_text
+
+    # Verifica CSP estrita sem 'unsafe-eval' nas páginas geradas
+    for page_name in ("index.html", "documentos.html", "apoiar.html", "privacidade.html", "api.html"):
+        page_html = (dist / page_name).read_text(encoding="utf-8")
+        assert "'unsafe-eval'" not in page_html, f"'unsafe-eval' encontrado em {page_name}"
+        assert "'wasm-unsafe-eval'" in page_html
+        assert "connect-src 'self'" in page_html
 
     # Verifica version.json e injeção de hash no sw.js
     version_file = dist / "static" / "version.json"
@@ -64,6 +74,7 @@ def test_build_static_generates_all_assets(tmp_path: Path):
     sw_text = (dist / "sw.js").read_text(encoding="utf-8")
     assert "__BUILD_HASH__" not in sw_text
     assert ver_data["build_hash"] in sw_text
+    assert "'/api-comercial'" in sw_text
 
 
 def test_wheel_staleness_detection(tmp_path: Path):
