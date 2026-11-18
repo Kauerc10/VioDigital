@@ -43,6 +43,7 @@ REQUIRED_COMMUNITY_AND_DIST_FILES: Final[tuple[str, ...]] = (
     "docs/launch-playbook.md",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/workflows/release-container.yml",
+    ".github/workflows/publish-pypi.yml",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/new_vio_template.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",

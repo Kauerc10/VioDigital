@@ -31,12 +31,12 @@ Execute e marque todos os itens abaixo **pelo menos 24 horas antes** da primeira
 - [ ] **Validação dos cards OpenGraph do site (`https://vioweb.vercel.app`):**
   * Teste a URL canônica no [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/), no depurador do X/Twitter e em uma conversa de teste do WhatsApp/Telegram para confirmar o banner OpenGraph `1200×630`.
 - [ ] **Publicação no PyPI (Opcional):**
-  * Caso queira habilitar `pip install viodigital` diretamente do PyPI antes ou depois do lançamento (requer credencial / Trusted Publisher do mantenedor):
+  * Os pacotes em `dist-pypi/` já estão preparados sem colidir com o site estático de `dist/`. Você pode publicar via **Trusted Publisher** no PyPI (`.github/workflows/publish-pypi.yml` — recomenda-se configurar o publisher em `pypi.org/manage/account/publishing/` para o repositório `Kauerc10/VioDigital` e workflow `publish-pypi.yml`, sem *environment name*, e disparar via `workflow_dispatch`) ou manualmente com token local:
     ```bash
     python -m pip install --upgrade build twine
-    python -m build
-    twine check dist/*
-    twine upload dist/*
+    python -m build --outdir dist-pypi
+    twine check dist-pypi/*
+    twine upload dist-pypi/*
     ```
   * Em seguida, valide em um `venv` limpo: `pip install viodigital && viodigital --help`.
 
