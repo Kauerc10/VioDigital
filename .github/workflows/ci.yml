@@ -35,6 +35,17 @@ jobs:
         run: |
           ruff check .
 
+      - name: Check JS syntax
+        run: |
+          set -euo pipefail
+          for f in \
+            src/viodigital/web/sw.js \
+            src/viodigital/web/static/app.js \
+            src/viodigital/web/static/camera-quality.js \
+            src/viodigital/web/static/scanner.worker.js; do
+            node --check "$f"
+          done
+
       - name: Build static site
         run: |
           python src/viodigital/build_static.py
@@ -42,3 +53,46 @@ jobs:
       - name: Run test suite with pytest
         run: |
           pytest
+
+  docker:
+    name: Build & Verify Container
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t viodigital:ci .
+
+      - name: Start offline container and verify endpoints
+        run: |
+          set -euo pipefail
+          docker run -d --name viodigital-ci --network none viodigital:ci
+          ready=0
+          for i in $(seq 1 20); do
+            if [ "$(docker inspect -f '{{.State.Running}}' viodigital-ci)" != "true" ]; then
+              echo "Container exited unexpectedly"
+              exit 1
+            fi
+            if response=$(docker exec viodigital-ci python -c "import json, urllib.request; r = urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2); body = r.read().decode(); assert r.status == 200 and json.loads(body).get('status') == 'ok', (r.status, body); print(body)" 2>/dev/null); then
+              echo "Health response: $response"
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Container failed health check within 20s"
+            exit 1
+          fi
+          docker exec viodigital-ci python -c "import urllib.request; r1 = urllib.request.urlopen('http://127.0.0.1:8000/', timeout=5); assert r1.status == 200; r2 = urllib.request.urlopen('http://127.0.0.1:8000/static/vendor/pyodide/pyodide.js', timeout=5); assert r2.status == 200"
+          docker exec viodigital-ci python -c "import os, cv2, pymupdf, zxingcpp; assert os.geteuid() != 0"
+
+      - name: Print container logs on failure
+        if: failure()
+        run: docker logs viodigital-ci || true
+
+      - name: Remove container
+        if: always()
+        run: docker rm -f viodigital-ci || true

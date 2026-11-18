@@ -1,0 +1,52 @@
+name: Novo Template VIO / Handler Dedicado
+description: Solicite suporte ou implementação de um DocumentHandler tipado para um dos templates oficiais Serpro/VIO.
+title: "[Template VIO]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > ⚠️ **AVISO CRÍTICO DE PRIVACIDADE (LGPD):**
+        > **NUNCA anexe documentos reais ou QR Codes de cidadãos** neste formulário!
+        > Consulte o catálogo em `src/viodigital/core/data/templates.json` (ou `/documentos`) e utilize exclusivamente dados fictícios de exemplo (ex.: `JOAO DA SILVA`, CPF `123.456.789-09`, placa `ABC1D23`).
+
+  - type: input
+    id: template_id_name
+    attributes:
+      label: ID e Nome do Template VIO
+      description: Informe o número do template e o nome conforme `src/viodigital/core/data/templates.json`.
+      placeholder: "ex.: Template 116 — TIE (Título de Inscrição de Embarcação PF)"
+    validations:
+      required: true
+
+  - type: input
+    id: issuer_category
+    attributes:
+      label: Órgão Emissor / Categoria
+      placeholder: "ex.: Marinha do Brasil (DPC), Exército (SFPC), CREA, Ministério Público"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_fields
+    attributes:
+      label: Campos, Aliases e Formatações Esperadas
+      description: Liste quais campos do template precisam de máscaras (CPF/CNPJ, datas, placa), aliases semânticos ou decodificação de foto BPG para conferência notarial.
+    validations:
+      required: true
+
+  - type: textarea
+    id: public_reference
+    attributes:
+      label: Referência Técnica / Schema Oficial (sem dados reais)
+      description: Links públicos de documentação do órgão emissor ou observações sobre o layout dos campos no schema.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: lgpd_confirm
+    attributes:
+      label: Declaração de Privacidade e LGPD
+      options:
+        - label: "Confirmo que NÃO anexei documentos reais nem payloads de QR Code de terceiros."
+          required: true

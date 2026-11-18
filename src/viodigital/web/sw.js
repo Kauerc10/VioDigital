@@ -23,6 +23,7 @@ const PRECACHE_ASSETS = [
   '/static/favicon.ico',
   '/static/icon-192.png',
   '/static/icon-512.png',
+  '/static/og-banner.png',
   '/static/pix-qrcode.png',
   '/static/style.css',
   '/static/app.js',
@@ -47,7 +48,7 @@ const PRECACHE_ASSETS = [
   '/static/vendor/pyodide/six-1.16.0-py2.py3-none-any.whl',
 ];
 
-function isImmutableVendorAsset(pathname) {
+function isImmutableStaticAsset(pathname) {
   return (
     pathname.startsWith('/static/vendor/') ||
     pathname.startsWith('/static/icon-') ||
@@ -102,7 +103,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
 
   // 1. Ativos pesados e imutáveis (Pyodide, ZXing, PDF.js, ícones): Cache-First
-  if (isImmutableVendorAsset(url.pathname)) {
+  if (isImmutableStaticAsset(url.pathname)) {
     event.respondWith(
       caches.match(req).then((cachedResponse) => {
         if (cachedResponse) return cachedResponse;
