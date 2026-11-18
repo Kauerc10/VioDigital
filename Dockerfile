@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -17,7 +17,7 @@ COPY src/ ./src/
 RUN pip install --upgrade pip \
     && pip install -e ".[server,vision]" \
     && python src/viodigital/build_static.py \
-    && rm -rf /app/build \
+    && rm -rf /app/dist /app/build \
     && test -f src/viodigital/web/static/vendor/pyodide/pyodide.js \
     && test -f src/viodigital/web/static/vendor/pyodide/pyodide.asm.wasm \
     && test -f src/viodigital/web/static/vendor/zxing/zxing_reader.wasm \
@@ -25,7 +25,7 @@ RUN pip install --upgrade pip \
     && ls src/viodigital/web/static/wheels/viodigital-*.whl >/dev/null
 
 
-FROM python:3.12-slim AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 
 LABEL org.opencontainers.image.title="VioDigital" \
       org.opencontainers.image.description="Verificador e decodificador offline de documentos oficiais brasileiros (CRLV-e, CNH, ATPV-e, CIN e +160 templates Serpro/VIO)" \

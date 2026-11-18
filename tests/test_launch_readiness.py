@@ -21,6 +21,17 @@ REQUIRED_README_ASSETS: Final[tuple[str, ...]] = (
     "docs/assets/demo-validation.gif",
     "docs/assets/screenshot-result.png",
 )
+REQUIRED_README_MARKERS: Final[tuple[str, ...]] = (
+    "```mermaid",
+    "Zero-Network",
+    "DevTools",
+    "connect-src 'self'",
+    "161",
+    "docker compose",
+    "python -m viodigital",
+    "DETRAN",
+    "RENAVAM",
+)
 REQUIRED_COMMUNITY_AND_DIST_FILES: Final[tuple[str, ...]] = (
     ".gitattributes",
     "CODE_OF_CONDUCT.md",
@@ -109,6 +120,9 @@ def test_bilingual_readmes_showcase_and_local_assets() -> None:
 
         for required_asset in REQUIRED_README_ASSETS:
             assert required_asset in content, f"Asset obrigatório {required_asset} ausente em {label}"
+
+        for marker in REQUIRED_README_MARKERS:
+            assert marker in content, f"Seção/palavra-chave obrigatória '{marker}' ausente em {label}"
 
         local_assets = _extract_local_asset_paths(content)
         assert local_assets, f"Nenhum asset local extraído em {label}"

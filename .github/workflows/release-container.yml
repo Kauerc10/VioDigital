@@ -9,6 +9,7 @@ on:
         description: "Tag opcional para publicação (ex.: v0.2.0)"
         required: false
         default: ""
+        type: string
 
 permissions:
   contents: read
@@ -37,16 +38,40 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Normalize manual tag input
+        id: tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag || '' }}
+        run: |
+          raw="$(printf '%s' "$INPUT_TAG" | xargs)"
+          raw="${raw#refs/tags/}"
+          if [[ "$raw" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+([+-].+)?)$ ]]; then
+            echo "is_semver=true" >> "$GITHUB_OUTPUT"
+            echo "semver=v${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            echo "raw=" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_semver=false" >> "$GITHUB_OUTPUT"
+            echo "semver=" >> "$GITHUB_OUTPUT"
+            echo "raw=$raw" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=auto
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' }}
+            type=semver,pattern={{version}},enable={{is_tag}}
+            type=semver,pattern=v{{version}},enable={{is_tag}}
+            type=semver,pattern={{major}}.{{minor}},enable={{is_tag}}
+            type=semver,pattern={{version}},value=${{ steps.tag.outputs.semver }},enable=${{ github.event_name == 'workflow_dispatch' && steps.tag.outputs.is_semver == 'true' && github.ref_type != 'tag' }}
+            type=semver,pattern=v{{version}},value=${{ steps.tag.outputs.semver }},enable=${{ github.event_name == 'workflow_dispatch' && steps.tag.outputs.is_semver == 'true' && github.ref_type != 'tag' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag.outputs.semver }},enable=${{ github.event_name == 'workflow_dispatch' && steps.tag.outputs.is_semver == 'true' && github.ref_type != 'tag' }}
+            type=raw,value=${{ steps.tag.outputs.raw }},enable=${{ github.event_name == 'workflow_dispatch' && steps.tag.outputs.raw != '' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' && steps.tag.outputs.is_semver == 'false' && steps.tag.outputs.raw == '' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
             type=sha
 
       - name: Build and push Docker image

@@ -30,7 +30,7 @@ e este projeto adere ao [Versionamento Semântico (SemVer)](https://semver.org/l
 - Política estrita `Content-Security-Policy` (`default-src 'self'; connect-src 'self'`, `'wasm-unsafe-eval'`), removendo completamente `'unsafe-eval'` e fontes externas do Google Fonts.
 - Endurecimento da API FastAPI: CORS sem credenciais, limite máximo de upload de 15 MB (`HTTP 413`), sanitização de respostas `500` e segregação de `Cache-Control`.
 
-## [0.1.0] - 2026-11-10
+## 0.1.0 - 2026-11-10
 
 ### Added
 - Núcleo criptográfico offline (`DigitalDocumentChecker`) para desempacotamento de envelopes binários VIO (versões 2, 4, 5 e 6 em 6-bit, 7-bit e BasE91) e tokens JWS `ES512` da CIN.
@@ -41,4 +41,3 @@ e este projeto adere ao [Versionamento Semântico (SemVer)](https://semver.org/l
 
 [Unreleased]: https://github.com/Kauerc10/VioDigital/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/Kauerc10/VioDigital/releases/tag/v0.2.0
-[0.1.0]: https://github.com/Kauerc10/VioDigital/releases/tag/v0.1.0
